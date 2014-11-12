@@ -1,0 +1,17 @@
+
+
+This source code is an implementation of "strain limiting for clustered shape matching" from the
+2014 Motion in Games paper by Adam Bargteil and Ben Jones
+
+It should compile with a modern c++ compiler and requires only Eigen and SDL2 as dependencies.
+It has been tested on OS X, but should build easily elsewhere with a couple tweaks to the makefile
+
+We've included a simple example that can be run with ./runSimulator inputFiles/bunny.json
+
+Permission is granted to use however you see fit, though the authors would appreciate
+attribution.  If you use this work for research purposes, please cite:
+
+A. W. Bargteil and B. Jones
+"Strain Limiting for Clustered Shape Matching"
+ACM/SIGGRAPH Conference on Motion in Games 2014
+
