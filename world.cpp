@@ -160,12 +160,15 @@ void World::loadFromJson(const std::string& _filename){
   dt = root.get("dt",1/60.0).asDouble();
   neighborRadius = root.get("neighborRadius", 0.1).asDouble();
   nClusters = root.get("nClusters", -1).asInt();
-	numConstraintIters = root.get("numConstraintIters", 5).asInt();
+  numConstraintIters = root.get("numConstraintIters", 5).asInt();
   alpha = root.get("alpha", 1.0).asDouble();
   omega = root.get("omega", 1.0).asDouble();
   gamma = root.get("maxStretch", 0.1).asDouble();
   gamma = root.get("gamma", gamma).asDouble();
   springDamping = root.get("springDamping", 0.0).asDouble();
+  toughness = root.get("toughness", std::numeric_limits<double>::infinity()).asDouble();
+  
+
 
   auto gravityIn = root["gravity"];
   if(!gravityIn.isNull() && gravityIn.isArray() && gravityIn.size() == 3){
@@ -267,6 +270,8 @@ void World::saveParticleFile(const std::string& _filename) const{
 void World::timestep(){
   
   //scope block for profiler
+  using PSType = std::tuple<size_t, double,Eigen::Vector3d>;
+  std::vector<PSType> potentialSplits;
   {
 	auto timer = prof.timeName("shape matching");
 	for(auto& p : particles){
@@ -275,24 +280,50 @@ void World::timestep(){
 	  p.goalVelocity.setZero();
 	}
 	
-	for(auto& c : clusters){
-	  auto worldCOM = computeNeighborhoodCOM(c);
+	
+	
+	for(auto&& en : benlib::enumerate(clusters)){
+	  auto& cluster = en.second;
+	  auto worldCOM = computeNeighborhoodCOM(cluster);
 	  Eigen::Vector3d clusterVelocity = 
-
-		computeClusterVelocity(c);
-
-		Eigen::Matrix3d init;
-		init.setZero();
 		
-		Eigen::Matrix3d Apq = computeApq(c, init, worldCOM);
-		Eigen::Matrix3d A = Apq*c.aInv;
-		auto pr = utils::polarDecomp(A);
+		computeClusterVelocity(cluster);
+	  
+	  Eigen::Matrix3d init;
+	  init.setZero();
 		
-		for(auto n : c.neighbors){
-		  particles[n].goalPosition += 
-			(pr.first*(particles[n].restPosition - c.restCom) + worldCOM);
-		  particles[n].goalVelocity += clusterVelocity;
-		}
+	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
+	  Eigen::Matrix3d A = Apq*cluster.aInv;
+	  
+	  //do the SVD here so we can handle fracture stuff
+	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
+		  Eigen::ComputeFullU | Eigen::ComputeFullV);
+	  
+	  Eigen::Matrix3d U = solver.matrixU(), V = solver.matrixV();
+	  Eigen::Vector3d sigma = solver.singularValues();
+	  
+	  std::cout << "sigma " << sigma << std::endl;
+
+	  if(sigma(0) > toughness){
+		potentialSplits.emplace_back(en.first, sigma(0), V.col(0));
+		//eigenvecs of S part of RS is V
+	  }
+	  
+	  Eigen::Matrix3d R = U*V.transpose();
+	  
+	  
+	  
+	  //auto pr = utils::polarDecomp(A);
+	  
+	  for(auto n : cluster.neighbors){
+		particles[n].goalPosition += 
+		  (R*(particles[n].restPosition - cluster.restCom) + worldCOM);
+		particles[n].goalVelocity += clusterVelocity;
+	  }
+	  
+	  
+	  
+	  
 	}
 	
 	for(auto& p : particles){
@@ -304,7 +335,7 @@ void World::timestep(){
 	}
 	
   }
-
+  
   //scope block for profiler
   {
 	auto timer = prof.timeName("strainLimiting");
@@ -318,8 +349,86 @@ void World::timestep(){
 	
   }
   
-  bounceOutOfPlanes();
+  {
+	auto timer = prof.timeName("fracture");
+	//do fracture
+	std::sort(potentialSplits.begin(), potentialSplits.end(),
+		[](const PSType& a, const PSType& b){
+		  return std::get<1>(a) < std::get<1>(b);
+		});
+	int count = 0;
+	for(auto &ps : potentialSplits){
+	  if (++count > 10) break;
+	  size_t cIndex;
+	  Eigen::Vector3d splitDirection;
+	  std::tie(cIndex, std::ignore, splitDirection) = ps;
+	  
+	  //auto& cluster = clusters[cIndex];	  
+	  //if(cluster.neighbors.size() < 10){ continue;}
+	  auto worldCOM = computeNeighborhoodCOM(clusters[cIndex]);
+	  auto it = std::partition(clusters[cIndex].neighbors.begin(),
+		  clusters[cIndex].neighbors.end(),
+		  [&worldCOM, &splitDirection, this](int ind){
+			//which side of the split is it on?
+			return (worldCOM - particles[ind].position).dot(splitDirection) > 0;
+		  });
+	  auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
+	  auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
+
+	  // if(oldSize > 20 && newSize > 20){
+		
+		  //make a new cluster
+	  Cluster newCluster;
+	  newCluster.neighbors.assign(it, clusters[cIndex].neighbors.end());
+
+	  //delete the particles from the old one
+	  clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
+		  clusters[cIndex].neighbors.end());
+
+	  clusters.push_back(newCluster);	  
+	  
+	  updateClusterProperties();
+	  std::cout << "numClusters: " << clusters.size() << std::endl;
+	  
+	  std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
+		  [](const Cluster& a, const Cluster& b){
+			return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
+	  
+	  
+	  //split from other clusters
+	  std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
+	  std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
+		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
+	  
+	  for(auto& member : allParticles){
+		auto& particle = particles[member];
+		for(auto thisIndex : particle.clusters){
+		  auto& thisCluster = clusters[thisIndex];
+		  auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
+		  if(((particle.position - thisClusterCOM).dot(splitDirection) >= 0) !=
+			  ((particle.position - worldCOM).dot(splitDirection) >= 0 )){
+			//remove from cluster
+			thisCluster.neighbors.erase(
+				std::remove(thisCluster.neighbors.begin(),
+					thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
+			//remove cluster from this
+			particle.clusters.erase(
+				std::remove(particle.clusters.begin(), particle.clusters.end(),
+					thisIndex), particle.clusters.end());
+			
+		  }
+		}
+	  }
+	  updateClusterProperties();
+
+	  
+	  break;
+		//}
+	}
+  }	
   
+  bounceOutOfPlanes();
+  printCOM();
 }
 
 void World::bounceOutOfPlanes(){
@@ -453,20 +562,10 @@ void World::makeClusters(){
 	  }
 	  
 	  for (auto& c : clusters) {
-		double mass = std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-									  0.0,
-									  [this](double acc, int n){
-										return acc + 
-										particles[n].mass;
-									  });
+		double mass = sumMass(c.neighbors);
 		
 		if (mass > 1e-5) 
-		  c.restCom = std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-									  Eigen::Vector3d(0.0, 0.0, 0.0),
-									  [this](Eigen::Vector3d acc, int n){
-										return acc + particles[n].mass*
-										particles[n].position;
-									  }) / mass;
+		  c.restCom = sumRestCOM(c.neighbors, mass);
 	  }
 	}	
 	
@@ -478,37 +577,9 @@ void World::makeClusters(){
 	}
 	std::cout<<"kmeans clustering converged in "<<iters<<std::endl;
   }
+
+  updateClusterProperties();
   
-  // compute cluster mass, com, width, and aInv
-  for (auto& c : clusters) {
-	c.mass = 	std::accumulate(c.neighbors.begin(),
-								c.neighbors.end(),
-								0.0,
-								[this](double acc, int n){
-								  return acc + particles[n].mass / particles[n].numClusters;
-								});
-	c.restCom = computeNeighborhoodCOM(c);
-	c.width = 0.0;
-	for(auto n : c.neighbors){
-	  c.width = std::max(c.width, (c.restCom - particles[n].restPosition).norm());
-	} 
-
-	c.aInv.setZero();  
-	c.aInv = 
-	  std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-					  c.aInv,
-					  [this, &c]
-					  (const Eigen::Matrix3d& acc, int n) -> 
-					  Eigen::Matrix3d {
-						Eigen::Vector3d qj = particles[n].restPosition - c.restCom;
-						// return acc + (particles[n].mass/particles[n].numClusters)*
-						return acc + (particles[n].mass)*
-						  qj*qj.transpose();
-					  });
-	
-	c.aInv = c.aInv.inverse().eval();
-  }
-
   for (auto& p : particles) {
 	if (p.numClusters == 0) {
 	  std::cout<<"Particle has no cluster"<<std::endl;
@@ -585,17 +656,11 @@ void World::printCOM() const{
 Eigen::Vector3d World::computeNeighborhoodCOM(const Cluster& c) const {
   //positions weighted by (mass/numClusters)
   return std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-						 Eigen::Vector3d(0.0, 0.0, 0.0),
-						 [this](Eigen::Vector3d acc, int n){
-						   return acc + (particles[n].mass/particles[n].numClusters)*
-							 particles[n].position;
-						 })/
-	std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-					0.0,
-					[this](double acc, int n){
-					  return acc + 
-						particles[n].mass/particles[n].numClusters;
-					});
+	  Eigen::Vector3d(0.0, 0.0, 0.0),
+	  [this](Eigen::Vector3d acc, int n){
+		return acc + (particles[n].mass/particles[n].numClusters)*
+		  particles[n].position;
+	  })/sumWeightedMass(c.neighbors);
 }
 
 Eigen::Matrix3d World::computeApq(const Cluster& c, 
@@ -631,4 +696,58 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster& c) const {
 						particles[n].mass/particles[n].numClusters;
 					});
   
+}
+
+void World::countClusters(){
+  for(auto& p : particles){
+	p.numClusters = 0;
+	p.clusters.clear();
+  }
+  for(auto cInd : benlib::range(clusters.size())){
+	for(auto& i : clusters[cInd].neighbors){
+	  ++(particles[i].numClusters);
+	  particles[i].clusters.push_back(cInd);
+	}
+  }
+  for(auto& p : particles){assert(p.numClusters == p.clusters.size());}
+}
+
+void World::updateClusterProperties(){
+  countClusters();
+
+  // compute cluster mass, com, width, and aInv
+  for (auto&& pr : benlib::enumerate(clusters)) {
+	auto& c = pr.second;
+	c.mass = sumWeightedMass(c.neighbors);
+	assert(c.mass > 0);
+	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
+	assert(c.restCom.allFinite());
+	c.width = 0.0;
+	for(auto n : c.neighbors){
+	  c.width = std::max(c.width, (c.restCom - particles[n].restPosition).norm());
+	} 
+	assert(c.width > 0);
+
+	c.aInv.setZero();  
+	c.aInv = 
+	  std::accumulate(c.neighbors.begin(), c.neighbors.end(),
+					  c.aInv,
+					  [this, &c]
+					  (const Eigen::Matrix3d& acc, int n) -> 
+					  Eigen::Matrix3d {
+						Eigen::Vector3d qj = particles[n].restPosition - c.restCom;
+						return acc + (particles[n].mass)*
+						  qj*qj.transpose();
+					  });
+	
+	//do pseudoinverse
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Vector3d sigInv;
+	for(auto i : range(3)){
+	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-2 ? 1.0/solver.singularValues()(i) : 0;
+	}
+	c.aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
+	assert(c.aInv.allFinite());
+  }
+
 }

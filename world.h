@@ -46,6 +46,9 @@ public:
 
   void makeClusters();
 
+  void countClusters();
+  void updateClusterProperties();
+
   std::vector<Particle> particles;
   std::vector<Cluster> clusters;
 
@@ -54,6 +57,57 @@ public:
   Eigen::Vector3d computeNeighborhoodCOM(const Cluster& c) const;
   Eigen::Vector3d computeClusterVelocity(const Cluster& c) const;
   
+  template <typename cont>
+  double sumMass(const cont& indices) const{
+	return std::accumulate(indices.begin(), indices.end(),
+		0.0,
+		[this](double acc, typename cont::value_type index){
+		  return acc + particles[index].mass;
+		});
+  }
+  
+  template <typename cont> 
+  //weighted by # clusters stuff belongs to
+  double sumWeightedMass(const cont& indices) const {
+	return std::accumulate(indices.begin(), indices.end(), 0.0,
+		[this](double acc, typename cont::value_type index){
+		  return acc + particles[index].mass/particles[index].numClusters;
+		});
+  }
+
+  template <typename cont>
+  Eigen::Vector3d sumRestCOM(const cont& indices, double totalMass) const{
+	return std::accumulate(indices.begin(), indices.end(),
+		Eigen::Vector3d::Zero().eval(),
+		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
+		  return acc + particles[index].mass*
+			particles[index].restPosition;
+		})/totalMass;
+  }
+
+  template <typename cont>
+  Eigen::Vector3d sumWeightedRestCOM(const cont& indices, double totalMass) const{
+	return std::accumulate(indices.begin(), indices.end(),
+		Eigen::Vector3d::Zero().eval(),
+		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
+		  return acc + (particles[index].mass/particles[index].numClusters)*
+			particles[index].restPosition;
+		})/totalMass;
+  }
+
+
+
+  template <typename cont>
+  Eigen::Vector3d sumWorldCOM(const cont& indices, double totalMass) const{
+	return std::accumulate(indices.begin(), indices.end(),
+		Eigen::Vector3d::Zero().eval(),
+		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
+		  return acc + particles[index].mass*
+			particles[index].position;
+		})/totalMass;
+  }
+
+
   //compute the APQ matrix (see meuller 2005)
   Eigen::Matrix3d computeApq(const Cluster& c, 
 							 const Eigen::Matrix3d& init,
@@ -99,6 +153,7 @@ public:
 
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
+  double toughness; //when to fracture
 
   int maxNumClusters;
 

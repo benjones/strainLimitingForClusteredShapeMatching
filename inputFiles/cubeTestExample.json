@@ -1,0 +1,16 @@
+
+{
+	"particleFiles" : [ "inputFiles/cube.txt"],
+		"neighborRadius" : 0.4,
+		//"neighborRadius" : 1000.0,
+		"alpha" : 0.7,
+		"omega" : 0.8,
+		"numConstraintIters" : 3,
+		"maxStretch" : 0.05,
+		"gravity" : [0.0, 0.0, 0.0],
+	"planes" : [ ]
+//		[0, 1, 0, -1],
+//		[1,1,0, -1],
+//		[-1,1,0, -1]
+//	]
+}

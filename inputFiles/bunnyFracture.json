@@ -1,0 +1,17 @@
+{
+	"particleFiles" : [ "inputFiles/bunny.txt"],
+
+	"neighborRadius" : 0.5,
+	"alpha" : 0.5,
+	"omega" : 0.3,
+	"numConstraintIters" : 5,
+	"maxStretch" : 0.1,
+	"nClusters" : 20,
+	"springDamping": 0.1,
+	"toughness" : 1.05,//01,
+	"planes" : [ 
+		[0, 1, 0, -2],
+		[1, 1, 0, -2],
+		[-1, 1, 0, -2]
+	]
+}

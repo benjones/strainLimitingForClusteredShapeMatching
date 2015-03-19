@@ -12,6 +12,7 @@ public:
 	goalVelocity;
   double mass; 
   size_t numClusters;
+  std::vector<int> clusters;
 };
 
 class Cluster {
