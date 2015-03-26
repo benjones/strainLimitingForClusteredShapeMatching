@@ -33,6 +33,7 @@ public:
   }
 
   void draw(SDL_Window* window) const ;
+  void drawSingleCluster(SDL_Window* window, int frame) const ;
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,
 		   Eigen::Vector2i newPosition);
@@ -87,12 +88,14 @@ public:
 
   template <typename cont>
   Eigen::Vector3d sumWeightedRestCOM(const cont& indices, double totalMass) const{
-	return std::accumulate(indices.begin(), indices.end(),
-		Eigen::Vector3d::Zero().eval(),
-		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
-		  return acc + (particles[index].mass/particles[index].numClusters)*
-			particles[index].restPosition;
-		})/totalMass;
+	return 
+	  std::accumulate(indices.begin(), indices.end(),
+		  Eigen::Vector3d::Zero().eval(),
+		  [this](const Eigen::Vector3d& acc, typename cont::value_type index){
+			return acc + (particles[index].mass/particles[index].numClusters)*
+			  particles[index].restPosition;
+		  }) /
+	  totalMass;
   }
 
 
@@ -156,6 +159,9 @@ public:
   double toughness; //when to fracture
 
   int maxNumClusters;
+
+  bool drawClusters = true;
+  bool paused = false;
 
   benlib::Profiler prof;
 };

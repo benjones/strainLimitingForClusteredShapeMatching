@@ -57,6 +57,7 @@ void loop(SDL_Window* window, World& world){
   Eigen::Vector2i mousePosition;
 
   while(!readyToExit){
+
 	SDL_Event event;
 	while(SDL_PollEvent(&event)){
 	  switch(event.type){
@@ -69,6 +70,10 @@ void loop(SDL_Window* window, World& world){
 		  world.move(true);
 		} else if(event.key.keysym.sym == SDLK_DOWN){
 		  world.move(false);
+		} else if(event.key.keysym.sym == SDLK_c){
+		  world.drawClusters = !world.drawClusters;
+		} else if(event.key.keysym.sym == SDLK_p){
+		  world.paused = !world.paused;
 		}
 		break;
 	  case SDL_QUIT:
@@ -107,8 +112,14 @@ void loop(SDL_Window* window, World& world){
 	world.saveParticleFile(std::string(fname));
 	if(frame > 600){break;}
 	*/
-	world.timestep();
-	world.draw(window);
+	if(world.paused){
+	  world.drawSingleCluster(window, frame);
+	  SDL_Delay(300);
+	} else {
+	  world.timestep();
+	  world.draw(window);
+	}
+	++frame;
   }
   world. prof.dump<std::chrono::duration<double>>(std::cout);
   SDL_GL_DeleteContext(context);

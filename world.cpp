@@ -18,6 +18,8 @@ using benlib::enumerate;
 #include "range.hpp"
 using benlib::range;
 
+
+
 void World::draw(SDL_Window* window) const {
 
   glEnable(GL_DEPTH_TEST);
@@ -84,6 +86,25 @@ void World::draw(SDL_Window* window) const {
   glEnd();
 
 
+  glDisable(GL_DEPTH_TEST);
+  //draw clusters
+  glMatrixMode(GL_MODELVIEW);
+  if(drawClusters){
+	for(auto&& pr : benlib::enumerate(clusters)){
+	  auto& c = pr.second;
+	  auto i = pr.first;
+	  glPushMatrix();
+
+	  auto com = computeNeighborhoodCOM(c);
+	  glTranslated(com.x(), com.y(), com.z());
+	  glColor4d(i/(2.0*clusters.size()), 1.0, 1.0, 0.01);
+	  utils::drawSphere(c.width, 10, 10);
+	  glPopMatrix();
+	}
+  }
+  glEnable(GL_DEPTH_TEST);
+
+
   
   if(!particles.empty()){						
 	//	glDisable(GL_DEPTH_TEST);
@@ -102,6 +123,105 @@ void World::draw(SDL_Window* window) const {
 	*/
 
   }
+
+
+  glFlush();
+  SDL_GL_SwapWindow(window);
+}
+
+
+void World::drawSingleCluster(SDL_Window* window, int frame) const {
+
+  glEnable(GL_DEPTH_TEST);
+  glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);
+  glClearColor(0.2, 0.2, 0.2, 1);
+  glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+
+  int windowWidth, windowHeight;
+  SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  gluPerspective(45,static_cast<double>(windowWidth)/windowHeight,
+				 .5, 100);
+
+  
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  gluLookAt(cameraPosition.x(), cameraPosition.y(), cameraPosition.z(),
+			cameraLookAt.x(), cameraLookAt.y(), cameraLookAt.z(),
+			cameraUp.x(), cameraUp.y(), cameraUp.z());
+
+
+
+  //draw planes
+  glBegin(GL_QUADS);
+  for(auto&& pr : enumerate(planes)){
+	const auto i = pr.first;
+	const auto& plane = pr.second;
+	Eigen::Vector3d tangent1, tangent2;
+
+	const Eigen::Vector3d norm = plane.head(3);
+	const double w = plane.w();
+
+	tangent1 = norm.cross(Eigen::Vector3d{1,0,0});
+	if(tangent1.isZero(1e-3)){
+	  tangent1 = norm.cross(Eigen::Vector3d{0,0,1});
+	  if(tangent1.isZero(1e-3)){
+		tangent1 = norm.cross(Eigen::Vector3d{0,1,0});
+	  }
+	}
+	tangent1.normalize();
+
+	tangent2 = norm.cross(tangent1);
+	tangent2.normalize(); //probably not necessary
+	
+	const double sos = norm.dot(norm);
+	const Eigen::Vector3d supportPoint{norm.x()*w/sos,
+		norm.y()*w/sos,
+		norm.z()*w/sos};
+
+
+	glColor4d(0.5, static_cast<double>(i)/planes.size(),
+			  0.5, 1);
+
+	const double size = 100;
+	glNormal3dv(norm.data());
+	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
+  }
+  glEnd();
+
+
+  glDisable(GL_DEPTH_TEST);
+  //draw clusters
+  glMatrixMode(GL_MODELVIEW);
+  auto i = frame % clusters.size();
+  auto& c = clusters[i];
+
+  glPushMatrix();
+
+  auto com = computeNeighborhoodCOM(c);
+  glTranslated(com.x(), com.y(), com.z());
+  glColor4d(static_cast<double>(i)/clusters.size(), 0, 1.0, 0.3);
+  utils::drawSphere(c.width, 10, 10);
+  glPopMatrix();
+  glEnable(GL_DEPTH_TEST);
+
+
+  
+  //	glDisable(GL_DEPTH_TEST);
+  glColor3f(1,1,1);
+  glPointSize(3);
+  
+  glBegin(GL_POINTS);
+  for(auto i : c.neighbors){
+	glVertex3dv(particles[i].position.data());
+  }
+  glEnd();
 
   glFlush();
   SDL_GL_SwapWindow(window);
