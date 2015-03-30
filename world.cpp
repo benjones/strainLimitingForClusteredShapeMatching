@@ -45,46 +45,10 @@ void World::draw(SDL_Window* window) const {
 
 
 
-  //draw planes
-  glBegin(GL_QUADS);
-  for(auto&& pr : enumerate(planes)){
-	const auto i = pr.first;
-	const auto& plane = pr.second;
-	Eigen::Vector3d tangent1, tangent2;
-
-	const Eigen::Vector3d norm = plane.head(3);
-	const double w = plane.w();
-
-	tangent1 = norm.cross(Eigen::Vector3d{1,0,0});
-	if(tangent1.isZero(1e-3)){
-	  tangent1 = norm.cross(Eigen::Vector3d{0,0,1});
-	  if(tangent1.isZero(1e-3)){
-		tangent1 = norm.cross(Eigen::Vector3d{0,1,0});
-	  }
-	}
-	tangent1.normalize();
-
-	tangent2 = norm.cross(tangent1);
-	tangent2.normalize(); //probably not necessary
-	
-	const double sos = norm.dot(norm);
-	const Eigen::Vector3d supportPoint{norm.x()*w/sos,
-		norm.y()*w/sos,
-		norm.z()*w/sos};
-
-
-	glColor4d(0.5, static_cast<double>(i)/planes.size(),
-			  0.5, 1);
-
-	const double size = 100;
-	glNormal3dv(norm.data());
-	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
-  }
-  glEnd();
-
+  drawPlanes();
+  
+  glEnable (GL_BLEND);
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glDisable(GL_DEPTH_TEST);
   //draw clusters
@@ -97,7 +61,7 @@ void World::draw(SDL_Window* window) const {
 
 	  auto com = computeNeighborhoodCOM(c);
 	  glTranslated(com.x(), com.y(), com.z());
-	  glColor4d(i/(2.0*clusters.size()), 1.0, 1.0, 0.01);
+	  glColor4d(i/(2.0*clusters.size()), 1.0, 1.0, 0.3);
 	  utils::drawSphere(c.width, 10, 10);
 	  glPopMatrix();
 	}
@@ -155,46 +119,7 @@ void World::drawSingleCluster(SDL_Window* window, int frame) const {
 
 
 
-  //draw planes
-  glBegin(GL_QUADS);
-  for(auto&& pr : enumerate(planes)){
-	const auto i = pr.first;
-	const auto& plane = pr.second;
-	Eigen::Vector3d tangent1, tangent2;
-
-	const Eigen::Vector3d norm = plane.head(3);
-	const double w = plane.w();
-
-	tangent1 = norm.cross(Eigen::Vector3d{1,0,0});
-	if(tangent1.isZero(1e-3)){
-	  tangent1 = norm.cross(Eigen::Vector3d{0,0,1});
-	  if(tangent1.isZero(1e-3)){
-		tangent1 = norm.cross(Eigen::Vector3d{0,1,0});
-	  }
-	}
-	tangent1.normalize();
-
-	tangent2 = norm.cross(tangent1);
-	tangent2.normalize(); //probably not necessary
-	
-	const double sos = norm.dot(norm);
-	const Eigen::Vector3d supportPoint{norm.x()*w/sos,
-		norm.y()*w/sos,
-		norm.z()*w/sos};
-
-
-	glColor4d(0.5, static_cast<double>(i)/planes.size(),
-			  0.5, 1);
-
-	const double size = 100;
-	glNormal3dv(norm.data());
-	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
-  }
-  glEnd();
-
+  drawPlanes();
 
   glDisable(GL_DEPTH_TEST);
   //draw clusters
@@ -228,9 +153,64 @@ void World::drawSingleCluster(SDL_Window* window, int frame) const {
 }
 
 
+void World::drawPlanes() const{
+  //draw planes
+  glDisable(GL_CULL_FACE);
+  double totalCount = planes.size() + movingPlanes.size();
+  for(auto&& pr : enumerate(planes)){
+	const auto i = pr.first;
+	const auto& plane = pr.second;
+	glColor4d(0.5, static_cast<double>(i)/totalCount,
+			  0.5, 1);
+
+	drawPlane(plane.head(3), plane.w());
+  }
+  for(auto&& pr : enumerate(movingPlanes)){
+	const auto i = pr.first + planes.size();
+	const auto& plane = pr.second;
+	glColor4d(0.5, i/totalCount, 0.5, 1);
+	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+  }
+
+}
+
+
+void World::drawPlane(const Eigen::Vector3d& normal, double offset) const{
+	Eigen::Vector3d tangent1, tangent2;
+	
+	tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
+	if(tangent1.isZero(1e-3)){
+	  tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
+	  if(tangent1.isZero(1e-3)){
+		tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
+	  }
+	}
+	tangent1.normalize();
+
+	tangent2 = normal.cross(tangent1);
+	tangent2.normalize(); //probably not necessary
+	
+	const double sos = normal.dot(normal);
+	const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
+		normal.y()*offset/sos,
+		normal.z()*offset/sos};
+
+
+	
+	const double size = 100;
+	glBegin(GL_QUADS);
+	glNormal3dv(normal.data());
+	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
+	glEnd();
+
+}
+
 
 void World::loadFromJson(const std::string& _filename){
-
+  elapsedTime = 0;
   filename = _filename;
 
   std::ifstream ins(filename);
@@ -296,6 +276,7 @@ void World::loadFromJson(const std::string& _filename){
 	gravity.y() = gravityIn[1].asDouble();
 	gravity.z() = gravityIn[2].asDouble();
   } else {
+	std::cout << "default gravity" << std::endl;
 	gravity = Eigen::Vector3d{0, -9.81, 0};
   }
 
@@ -313,7 +294,24 @@ void World::loadFromJson(const std::string& _filename){
 		  planesIn[i][3].asDouble()});
 	planes.back().head(3).normalize();
   }
-  
+
+
+  auto movingPlanesIn = root["movingPlanes"];
+  for(auto i : range(movingPlanesIn.size())){
+	auto normalIn = movingPlanesIn[i]["normal"];
+	if(normalIn.size() != 3){
+	  std::cout << "bad moving plane, skipping" << std::endl;
+	  continue;
+	}
+	Eigen::Vector3d normal(normalIn[0].asDouble(),
+		normalIn[1].asDouble(),
+		normalIn[2].asDouble());
+	movingPlanes.emplace_back(normal, 
+		movingPlanesIn[i]["offset"].asDouble(),
+		movingPlanesIn[i]["velocity"].asDouble());
+
+  }
+  std::cout << movingPlanes.size() << " moving planes" << std::endl;
   double mass = root.get("mass", 0.1).asDouble();
   for(auto& p : particles){ p.mass = mass;}
 
@@ -388,10 +386,9 @@ void World::saveParticleFile(const std::string& _filename) const{
 }
 
 void World::timestep(){
-  
+
   //scope block for profiler
-  using PSType = std::tuple<size_t, double,Eigen::Vector3d>;
-  std::vector<PSType> potentialSplits;
+  std::vector<FractureInfo> potentialSplits;
   {
 	auto timer = prof.timeName("shape matching");
 	for(auto& p : particles){
@@ -422,7 +419,7 @@ void World::timestep(){
 	  Eigen::Matrix3d U = solver.matrixU(), V = solver.matrixV();
 	  Eigen::Vector3d sigma = solver.singularValues();
 	  
-	  std::cout << "sigma " << sigma << std::endl;
+	  //std::cout << "sigma " << sigma << std::endl;
 
 	  if(sigma(0) > toughness){
 		potentialSplits.emplace_back(en.first, sigma(0), V.col(0));
@@ -446,6 +443,8 @@ void World::timestep(){
 	  
 	}
 	
+	
+
 	for(auto& p : particles){
 	  p.goalPosition /= p.numClusters;
 	  p.goalVelocity /= p.numClusters;
@@ -469,86 +468,12 @@ void World::timestep(){
 	
   }
   
-  {
-	auto timer = prof.timeName("fracture");
-	//do fracture
-	std::sort(potentialSplits.begin(), potentialSplits.end(),
-		[](const PSType& a, const PSType& b){
-		  return std::get<1>(a) < std::get<1>(b);
-		});
-	int count = 0;
-	for(auto &ps : potentialSplits){
-	  if (++count > 10) break;
-	  size_t cIndex;
-	  Eigen::Vector3d splitDirection;
-	  std::tie(cIndex, std::ignore, splitDirection) = ps;
-	  
-	  //auto& cluster = clusters[cIndex];	  
-	  //if(cluster.neighbors.size() < 10){ continue;}
-	  auto worldCOM = computeNeighborhoodCOM(clusters[cIndex]);
-	  auto it = std::partition(clusters[cIndex].neighbors.begin(),
-		  clusters[cIndex].neighbors.end(),
-		  [&worldCOM, &splitDirection, this](int ind){
-			//which side of the split is it on?
-			return (worldCOM - particles[ind].position).dot(splitDirection) > 0;
-		  });
-	  auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
-	  auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
-
-	  // if(oldSize > 20 && newSize > 20){
-		
-		  //make a new cluster
-	  Cluster newCluster;
-	  newCluster.neighbors.assign(it, clusters[cIndex].neighbors.end());
-
-	  //delete the particles from the old one
-	  clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
-		  clusters[cIndex].neighbors.end());
-
-	  clusters.push_back(newCluster);	  
-	  
-	  updateClusterProperties();
-	  std::cout << "numClusters: " << clusters.size() << std::endl;
-	  
-	  std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
-		  [](const Cluster& a, const Cluster& b){
-			return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
-	  
-	  
-	  //split from other clusters
-	  std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
-	  std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
-		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
-	  
-	  for(auto& member : allParticles){
-		auto& particle = particles[member];
-		for(auto thisIndex : particle.clusters){
-		  auto& thisCluster = clusters[thisIndex];
-		  auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
-		  if(((particle.position - thisClusterCOM).dot(splitDirection) >= 0) !=
-			  ((particle.position - worldCOM).dot(splitDirection) >= 0 )){
-			//remove from cluster
-			thisCluster.neighbors.erase(
-				std::remove(thisCluster.neighbors.begin(),
-					thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-			//remove cluster from this
-			particle.clusters.erase(
-				std::remove(particle.clusters.begin(), particle.clusters.end(),
-					thisIndex), particle.clusters.end());
-			
-		  }
-		}
-	  }
-	  updateClusterProperties();
-
-	  
-	  break;
-		//}
-	}
-  }	
+  doFracture(std::move(potentialSplits));
   
   bounceOutOfPlanes();
-  printCOM();
+  elapsedTime += dt;
+  std::cout << "elapsed time: " << elapsedTime << std::endl;
+  //printCOM();
 }
 
 void World::bounceOutOfPlanes(){
@@ -578,6 +503,13 @@ void World::bounceOutOfPlanes(){
 	}
 	
 	++iters;
+  }
+
+
+  for(auto& movingPlane : movingPlanes){
+	for(auto& particle : particles){
+	  movingPlane.bounceParticle(particle, elapsedTime);
+	}
   }
 }
 
@@ -846,7 +778,7 @@ void World::updateClusterProperties(){
 	for(auto n : c.neighbors){
 	  c.width = std::max(c.width, (c.restCom - particles[n].restPosition).norm());
 	} 
-	assert(c.width > 0);
+	//assert(c.width >= 0);
 
 	c.aInv.setZero();  
 	c.aInv = 
@@ -871,3 +803,85 @@ void World::updateClusterProperties(){
   }
 
 }
+
+
+void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
+  auto timer = prof.timeName("fracture");
+  //do fracture
+  std::sort(potentialSplits.begin(), potentialSplits.end(),
+	  [](const FractureInfo& a, const FractureInfo& b){
+		return std::get<1>(a) < std::get<1>(b);
+	  });
+  int count = 0;
+  if(!potentialSplits.empty()){
+	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
+  }
+  for(auto &ps : potentialSplits){
+	if (++count > 10) break;
+	size_t cIndex;
+	Eigen::Vector3d splitDirection;
+	std::tie(cIndex, std::ignore, splitDirection) = ps;
+	
+	//auto& cluster = clusters[cIndex];	  
+	//if(cluster.neighbors.size() < 10){ continue;}
+	auto worldCOM = computeNeighborhoodCOM(clusters[cIndex]);
+	auto it = std::partition(clusters[cIndex].neighbors.begin(),
+		clusters[cIndex].neighbors.end(),
+		[&worldCOM, &splitDirection, this](int ind){
+		  //which side of the split is it on?
+		  return (worldCOM - particles[ind].position).dot(splitDirection) > 0;
+		});
+	auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
+	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
+	
+	// if(oldSize > 20 && newSize > 20){
+	
+	//make a new cluster
+	Cluster newCluster;
+	newCluster.neighbors.assign(it, clusters[cIndex].neighbors.end());
+	
+	//delete the particles from the old one
+	clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
+		clusters[cIndex].neighbors.end());
+	
+	clusters.push_back(newCluster);	  
+	
+	updateClusterProperties();
+	std::cout << "numClusters: " << clusters.size() << std::endl;
+	
+	std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
+		[](const Cluster& a, const Cluster& b){
+		  return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
+	
+	
+	//split from other clusters
+	std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
+	std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
+		std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
+	
+	for(auto& member : allParticles){
+	  auto& particle = particles[member];
+	  for(auto thisIndex : particle.clusters){
+		auto& thisCluster = clusters[thisIndex];
+		auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
+		if(((particle.position - thisClusterCOM).dot(splitDirection) >= 0) !=
+			((particle.position - worldCOM).dot(splitDirection) >= 0 )){
+		  //remove from cluster
+		  thisCluster.neighbors.erase(
+			  std::remove(thisCluster.neighbors.begin(),
+				  thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
+		  //remove cluster from this
+		  particle.clusters.erase(
+			  std::remove(particle.clusters.begin(), particle.clusters.end(),
+				  thisIndex), particle.clusters.end());
+		  
+		}
+	  }
+	}
+	updateClusterProperties();
+	
+	
+	break;
+	//}
+  }
+}	

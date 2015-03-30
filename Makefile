@@ -13,7 +13,7 @@ OPT = -O2 -g
 
 TARGETS = runSimulator
 
-OBJECTS =  main.o particle.o world.o jsoncpp.o
+OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o
 
 #-----------------------------------------
 # Update to point to your eigen headers, sdl headers

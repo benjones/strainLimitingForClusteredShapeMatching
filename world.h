@@ -1,6 +1,7 @@
 #pragma once
 
 #include "particle.h"
+#include "movingPlane.hpp"
 #include "accelerationGrid.h"
 #include "preallocVector.hpp"
 #include "profiler.hpp"
@@ -16,6 +17,11 @@ public:
   void saveParticleFile(const std::string& _filename) const;
   
   void timestep();
+
+  using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
+  void doFracture(std::vector<FractureInfo> potentialSplits);
+
+
   inline void restart(){ 
 	Eigen::Vector3d oldCameraPosition = cameraPosition;
 	Eigen::Vector3d oldCameraLookAt = cameraLookAt;
@@ -30,10 +36,13 @@ public:
 	cameraPosition = oldCameraPosition;
 	cameraLookAt = oldCameraLookAt;
 	cameraUp = oldCameraUp;
+	elapsedTime = 0;
   }
 
   void draw(SDL_Window* window) const ;
-  void drawSingleCluster(SDL_Window* window, int frame) const ;
+  void drawSingleCluster(SDL_Window* window, int frame) const;
+  void drawPlanes() const;
+  void drawPlane(const Eigen::Vector3d& normal, double offset) const;
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,
 		   Eigen::Vector2i newPosition);
@@ -147,10 +156,11 @@ public:
   Eigen::Vector3d cameraPosition, cameraLookAt, cameraUp, gravity;
 
   std::vector<Eigen::Vector4d> planes;
+  std::vector<MovingPlane> movingPlanes;
 
   std::vector<size_t> clusterCenters;
 
-  double dt;
+  double dt, elapsedTime;
   double neighborRadius;
   int nClusters;
 
