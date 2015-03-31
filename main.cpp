@@ -113,11 +113,12 @@ void loop(SDL_Window* window, World& world){
 	if(frame > 600){break;}
 	*/
 	if(world.paused){
-	  world.drawSingleCluster(window, frame);
-	  SDL_Delay(300);
+	  //world.drawSingleCluster(window, frame);
+	  //SDL_Delay(300);
+	  world.drawPretty(window);
 	} else {
 	  world.timestep();
-	  world.draw(window);
+	  world.drawPretty(window);
 	}
 	++frame;
   }

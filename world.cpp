@@ -10,6 +10,7 @@
 
 #include "json/json.h"
 #include "utils.h"
+#include "color_spaces.h"
 
 #include <random>
 
@@ -74,6 +75,82 @@ void World::draw(SDL_Window* window) const {
 	//	glDisable(GL_DEPTH_TEST);
 	glColor3f(1,1,1);
 	glPointSize(5);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_DOUBLE,
+					sizeof(Particle),
+					&(particles[0].position));
+	glDrawArrays(GL_POINTS, 0, particles.size());
+	/*	glPointSize(3);
+	glColor3f(0,0,1);
+	glVertexPointer(3, GL_DOUBLE, sizeof(Particle),
+					&(particles[0].goalPosition));
+	glDrawArrays(GL_POINTS, 0, particles.size());
+	*/
+
+  }
+
+
+  glFlush();
+  SDL_GL_SwapWindow(window);
+}
+
+
+
+void World::drawPretty(SDL_Window* window) const {
+
+  glEnable(GL_DEPTH_TEST);
+  glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);
+  glClearColor(0.2, 0.2, 0.2, 1);
+  glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+
+  int windowWidth, windowHeight;
+  SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  gluPerspective(45,static_cast<double>(windowWidth)/windowHeight,
+				 .5, 100);
+
+  
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  gluLookAt(cameraPosition.x(), cameraPosition.y(), cameraPosition.z(),
+			cameraLookAt.x(), cameraLookAt.y(), cameraLookAt.z(),
+			cameraUp.x(), cameraUp.y(), cameraUp.z());
+
+
+
+  drawPlanes();
+  
+  glEnable (GL_BLEND);
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glDisable(GL_DEPTH_TEST);
+  //draw clusters
+  glMatrixMode(GL_MODELVIEW);
+  if(drawClusters){
+	for(auto&& pr : benlib::enumerate(clusters)){
+	  auto& c = pr.second;
+	  auto i = pr.first;
+	  glPushMatrix();
+
+	  auto com = computeNeighborhoodCOM(c);
+	  glTranslated(com.x(), com.y(), com.z());
+     RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
+	  glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+	  utils::drawSphere(c.width, 10, 10);
+	  glPopMatrix();
+	}
+  }
+  glEnable(GL_DEPTH_TEST);
+
+
+  
+  if(!particles.empty()){						
+	//	glDisable(GL_DEPTH_TEST);
+	glColor4f(1,1,1,0.8);
+	glPointSize(3);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3, GL_DOUBLE,
 					sizeof(Particle),

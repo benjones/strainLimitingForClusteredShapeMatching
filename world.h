@@ -40,6 +40,7 @@ public:
   }
 
   void draw(SDL_Window* window) const ;
+  void drawPretty(SDL_Window* window) const ;
   void drawSingleCluster(SDL_Window* window, int frame) const;
   void drawPlanes() const;
   void drawPlane(const Eigen::Vector3d& normal, double offset) const;
