@@ -486,8 +486,10 @@ void World::timestep(){
 	  Eigen::Matrix3d init;
 	  init.setZero();
 		
+	  Eigen::Matrix3d SpInv = cluster.Sp.inverse();
+
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
-	  Eigen::Matrix3d A = Apq*cluster.aInv;
+	  Eigen::Matrix3d A = Apq*SpInv*cluster.aInv*SpInv;
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -502,16 +504,31 @@ void World::timestep(){
 		potentialSplits.emplace_back(en.first, sigma(0), V.col(0));
 		//eigenvecs of S part of RS is V
 	  }
+
+
+	  // plasticity
+
+	  // update cluster.Sp
+	  cluster.Sp = V * sigma * V.transpose() * cluster.Sp;
+
+	  // symmetrize cluster.Sp
+	  {
+		Eigen::JacobiSVD<Eigen::Matrix3d> SpSolver(cluster.Sp, 
+			Eigen::ComputeFullU | Eigen::ComputeFullV);
+		
+		Eigen::Matrix3d SpU = solver.matrixU(), SpV = solver.matrixV();
+		Eigen::Vector3d SpSigma = solver.singularValues();
+		cluster.Sp = SpV * sigma * SpV.transpose();
+	  }
 	  
 	  Eigen::Matrix3d R = U*V.transpose();
-	  
-	  
+	  Eigen::Matrix3d T = R*cluster.Sp; // plasticity
 	  
 	  //auto pr = utils::polarDecomp(A);
 	  
 	  for(auto n : cluster.neighbors){
 		particles[n].goalPosition += 
-		  (R*(particles[n].restPosition - cluster.restCom) + worldCOM);
+		  (T*(particles[n].restPosition - cluster.restCom) + worldCOM);
 		particles[n].goalVelocity += clusterVelocity;
 	  }
 	  

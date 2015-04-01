@@ -18,7 +18,7 @@ public:
 class Cluster {
  public:
 	Eigen::Vector3d restCom;
-	Eigen::Matrix3d aInv;
+	Eigen::Matrix3d aInv, Sp;
 	std::vector<int> neighbors;
 	double mass, width;
 };
