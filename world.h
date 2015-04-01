@@ -168,6 +168,7 @@ public:
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
   double toughness; //when to fracture
+  double yield, nu; // plasticity parameters
 
   int maxNumClusters;
 

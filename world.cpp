@@ -344,6 +344,10 @@ void World::loadFromJson(const std::string& _filename){
   gamma = root.get("gamma", gamma).asDouble();
   springDamping = root.get("springDamping", 0.0).asDouble();
   toughness = root.get("toughness", std::numeric_limits<double>::infinity()).asDouble();
+
+  // plasticity parameters
+  yield = root.get("yield", 0.0).asDouble();
+  nu = root.get("nu", 0.0).asDouble();
   
 
 
@@ -462,6 +466,8 @@ void World::saveParticleFile(const std::string& _filename) const{
 	outs.close();
 }
 
+inline double sqr (const double &x) {return x*x;}
+
 void World::timestep(){
 
   //scope block for profiler
@@ -486,10 +492,11 @@ void World::timestep(){
 	  Eigen::Matrix3d init;
 	  init.setZero();
 		
-	  Eigen::Matrix3d SpInv = cluster.Sp.inverse();
+	  Eigen::Matrix3d SpInv = cluster.Sp.inverse(); // plasticity
 
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
-	  Eigen::Matrix3d A = Apq*SpInv*cluster.aInv*SpInv;
+	  //Eigen::Matrix3d A = Apq*cluster.aInv;
+	  Eigen::Matrix3d A = Apq*SpInv*cluster.aInv*SpInv; // plasticity
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -506,21 +513,6 @@ void World::timestep(){
 	  }
 
 
-	  // plasticity
-
-	  // update cluster.Sp
-	  cluster.Sp = V * sigma * V.transpose() * cluster.Sp;
-
-	  // symmetrize cluster.Sp
-	  {
-		Eigen::JacobiSVD<Eigen::Matrix3d> SpSolver(cluster.Sp, 
-			Eigen::ComputeFullU | Eigen::ComputeFullV);
-		
-		Eigen::Matrix3d SpU = solver.matrixU(), SpV = solver.matrixV();
-		Eigen::Vector3d SpSigma = solver.singularValues();
-		cluster.Sp = SpV * sigma * SpV.transpose();
-	  }
-	  
 	  Eigen::Matrix3d R = U*V.transpose();
 	  Eigen::Matrix3d T = R*cluster.Sp; // plasticity
 	  
@@ -532,6 +524,31 @@ void World::timestep(){
 		particles[n].goalVelocity += clusterVelocity;
 	  }
 	  
+	  
+	  // plasticity
+	  if (nu > 0.0) {
+		Eigen::Vector3d SpHat = sigma;
+		SpHat *= 1.0/cbrt(SpHat(0) * SpHat(1) * SpHat(2));
+		double norm = sqrt(sqr(SpHat(0)-1.0) + sqr(SpHat(1)-1.0) + sqr(SpHat(2)-1.0));
+		if (norm > yield) {	
+		  std::cout<<"norm! "<<norm<<std::endl;
+		  double gamma = std::min(1.0, nu * (norm - yield) / norm);
+		  std::cout<<gamma<<std::endl;
+		  SpHat(0) = pow(SpHat(0), gamma);
+		  SpHat(1) = pow(SpHat(1), gamma);
+		  SpHat(2) = pow(SpHat(2), gamma);
+		  std::cout<<SpHat<<std::endl;
+		  // update cluster.Sp
+		  cluster.Sp = V * SpHat.asDiagonal() * V.transpose() * cluster.Sp;
+		  
+		  // symmetrize cluster.Sp
+		  Eigen::JacobiSVD<Eigen::Matrix3d> SpSolver(cluster.Sp, 
+			  Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+		  cluster.Sp = SpSolver.matrixV() * SpSolver.singularValues().asDiagonal() * SpSolver.matrixV().transpose();
+		  std::cout<<cluster.Sp<<std::endl;
+		}
+	  }
 	  
 	  
 	  
@@ -886,6 +903,8 @@ void World::updateClusterProperties(){
 						  qj*qj.transpose();
 					  });
 	
+	c.Sp.setIdentity(); // plasticity
+
 	//do pseudoinverse
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	Eigen::Vector3d sigInv;
