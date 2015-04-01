@@ -496,7 +496,7 @@ void World::timestep(){
 
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
 	  //Eigen::Matrix3d A = Apq*cluster.aInv;
-	  Eigen::Matrix3d A = Apq*SpInv*cluster.aInv*SpInv; // plasticity
+	  Eigen::Matrix3d A = Apq*cluster.aInv*SpInv; // plasticity
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
