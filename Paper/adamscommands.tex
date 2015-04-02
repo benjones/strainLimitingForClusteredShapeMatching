@@ -1,0 +1,92 @@
+%----------------------------------------------------------------------------
+%----------------------------------------------------------------------------
+\definecolor{AdamColor}{rgb}{0,0,0.7}
+\definecolor{BenColor}{rgb}{0,0.7,0}
+\definecolor{tamarColor}{rgb}{0.8,0,0.8}
+\newcommand{\mycomment}[1]{}
+\newcommand{\adam}[1]{{\color{AdamColor} #1}}
+\newcommand{\ben}[1]{{\color{BenColor} #1}}
+\definecolor{nilsCol}{rgb}{0.85,0.35,0.25}
+\newcommand{\Nils}[1]{\textcolor{nilsCol}{#1}}
+\newcommand{\tamar}[1]{\textcolor{tamarColor}{#1}}
+% for final
+%\newcommand{\adam}[1]{{#1}}
+%\newcommand{\Nils}[1]{{#1}}
+
+%\let\shortcite=\cite
+%\newcommand{\shortcite}[1]{\cite{#1}}
+\newcommand{\etal}{and colleagues}
+\newcommand{\Mueller}{M\"uller}
+\newcommand{\BM}[1]{\B{#1}}
+%\newcommand{\B}[1]{\mbox{\boldmath$#1$}}
+%\newcommand{\B}[1]{\textbf{\textit{#1}}}
+\newcommand{\B}[1]{\mathit{\mathbf{#1}}}
+\newcommand{\Per}{\%}
+\newcommand{\Unit}[1]{{\mbox{$\,\mathrm{#1}$}}}
+\newcommand{\Snit}[1]{{\mbox{\small$\mathrm{#1}$}}}
+\newcommand{\Tr}[1]{\mathrm{Tr}\left(#1\right)}
+\newcommand{\Hz}{\Unit{Hz}}
+\newcommand{\MHz}{\Unit{MHz}}
+\newcommand{\GHz}{\Unit{GHz}}
+\newcommand{\Sec}{\Unit{sec}}
+\newcommand{\SPF}{\Unit{sec/frame}}
+\newcommand{\Min}{\Unit{min}}
+\newcommand{\Max}{\Unit{max}}
+\newcommand{\M}{\Unit{m}}
+\newcommand{\Nab}{\B{\nabla}}
+\newcommand{\TP}{^\mathsf{T}}
+
+\newcommand{\Dist}{\mbox{dist}}
+
+\newcommand{\figureTopBot}[1]{
+  \begin{figure}[!tb]{\sloppy #1}\end{figure}
+}
+
+\newcommand{\figureTop}[1]{
+  \begin{figure}[!t]{\sloppy #1}\end{figure}
+}
+ 
+\newcommand{\figureBot}[1]{
+  \begin{figure}[!b]{\sloppy #1}\end{figure}
+}
+
+\newcommand{\figureWideTop}[1]{
+  \begin{figure*}[!t]{\sloppy #1}\end{figure*}
+}
+
+\newcommand{\figureWideBot}[1]{
+  \begin{figure*}[!b]{\sloppy #1}\end{figure*}
+}
+
+\newcommand{\eqAlgn}{\!\!&\!\!}
+
+\newcommand{\Eref}[1]{Equation~(\ref{#1})}
+\newcommand{\Erefs}[2]{Equations~(\ref{#1}) and (\ref{#2})}
+\newcommand{\eref}[1]{Equation~(\ref{#1})}
+\newcommand{\erefs}[2]{Equations~(\ref{#1}) and (\ref{#2})}
+\newcommand{\Sref}[1]{Section~\ref{#1}}
+\newcommand{\sref}[1]{Section~\ref{#1}}
+\newcommand{\fref}[1]{Figure~\ref{#1}}
+\newcommand{\frefAND}[2]{Figures~\ref{#1} and~\ref{#2}}
+\newcommand{\frefs}[2]{Figures~\ref{#1} and~\ref{#2}}
+\newcommand{\frefss}[3]{Figures~\ref{#1}, \ref{#2}, and~\ref{#3}}
+\newcommand{\frefsss}[4]{Figures~\ref{#1}, \ref{#2}, \ref{#3}, and~\ref{#4}}
+\newcommand{\Fref}[1]{Figure~\ref{#1}}
+\newcommand{\Frefs}[2]{Figures~\ref{#1} and~\ref{#2}}
+\newcommand{\Frefss}[3]{Figures~\ref{#1}, \ref{#2}, and~\ref{#3}}
+\newcommand{\Frefsss}[4]{Figures~\ref{#1}, \ref{#2}, \ref{#3}, and~\ref{#4}}
+\newcommand{\tref}[1]{Table~\ref{#1}}
+
+\renewcommand{\labelenumi}{\arabic{enumi}.}
+\renewcommand{\labelenumii}{\alph{enumii}.}
+\renewcommand{\labelenumiii}{\roman{enumiii}.}
+
+\newenvironment{algstep}{%
+  \begin{enumerate}%
+    \setlength{\itemsep}{0in}%
+    \setlength{\partopsep}{0in}%
+    \setlength{\topsep}{0in}%
+}{\end{enumerate}}
+
+%----------------------------------------------------------------------------
+%----------------------------------------------------------------------------
