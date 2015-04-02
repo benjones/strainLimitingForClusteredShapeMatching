@@ -492,11 +492,10 @@ void World::timestep(){
 	  Eigen::Matrix3d init;
 	  init.setZero();
 		
-	  Eigen::Matrix3d FpInv = cluster.Fp.inverse(); // plasticity
 
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
-	  //Eigen::Matrix3d A = Apq*cluster.aInv;
-	  Eigen::Matrix3d A = Apq*cluster.aInv*FpInv; // plasticity
+	  Eigen::Matrix3d A = Apq*cluster.aInv;
+	  if (nu > 0.0) A = A*cluster.Fp.inverse(); // plasticity
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -513,8 +512,8 @@ void World::timestep(){
 	  }
 
 
-	  Eigen::Matrix3d R = U*V.transpose();
-	  Eigen::Matrix3d T = R*cluster.Fp; // plasticity
+	  Eigen::Matrix3d T = U*V.transpose();
+	  if (nu > 0.0) T = T*cluster.Fp;
 	  
 	  //auto pr = utils::polarDecomp(A);
 	  
@@ -539,9 +538,6 @@ void World::timestep(){
 		  cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp;
 		}
 	  }
-	  
-	  
-	  
 	}
 	
 	
