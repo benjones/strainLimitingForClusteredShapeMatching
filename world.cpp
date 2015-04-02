@@ -492,11 +492,11 @@ void World::timestep(){
 	  Eigen::Matrix3d init;
 	  init.setZero();
 		
-	  Eigen::Matrix3d SpInv = cluster.Sp.inverse(); // plasticity
+	  Eigen::Matrix3d FpInv = cluster.Fp.inverse(); // plasticity
 
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
 	  //Eigen::Matrix3d A = Apq*cluster.aInv;
-	  Eigen::Matrix3d A = Apq*cluster.aInv*SpInv; // plasticity
+	  Eigen::Matrix3d A = Apq*cluster.aInv*FpInv; // plasticity
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -514,7 +514,7 @@ void World::timestep(){
 
 
 	  Eigen::Matrix3d R = U*V.transpose();
-	  Eigen::Matrix3d T = R*cluster.Sp; // plasticity
+	  Eigen::Matrix3d T = R*cluster.Fp; // plasticity
 	  
 	  //auto pr = utils::polarDecomp(A);
 	  
@@ -527,26 +527,16 @@ void World::timestep(){
 	  
 	  // plasticity
 	  if (nu > 0.0) {
-		Eigen::Vector3d SpHat = sigma;
-		SpHat *= 1.0/cbrt(SpHat(0) * SpHat(1) * SpHat(2));
-		double norm = sqrt(sqr(SpHat(0)-1.0) + sqr(SpHat(1)-1.0) + sqr(SpHat(2)-1.0));
+		Eigen::Vector3d FpHat = sigma;
+		FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
+		double norm = sqrt(sqr(FpHat(0)-1.0) + sqr(FpHat(1)-1.0) + sqr(FpHat(2)-1.0));
 		if (norm > yield) {	
-		  std::cout<<"norm! "<<norm<<std::endl;
 		  double gamma = std::min(1.0, nu * (norm - yield) / norm);
-		  std::cout<<gamma<<std::endl;
-		  SpHat(0) = pow(SpHat(0), gamma);
-		  SpHat(1) = pow(SpHat(1), gamma);
-		  SpHat(2) = pow(SpHat(2), gamma);
-		  std::cout<<SpHat<<std::endl;
-		  // update cluster.Sp
-		  cluster.Sp = V * SpHat.asDiagonal() * V.transpose() * cluster.Sp;
-		  
-		  // symmetrize cluster.Sp
-		  Eigen::JacobiSVD<Eigen::Matrix3d> SpSolver(cluster.Sp, 
-			  Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-		  cluster.Sp = SpSolver.matrixV() * SpSolver.singularValues().asDiagonal() * SpSolver.matrixV().transpose();
-		  std::cout<<cluster.Sp<<std::endl;
+		  FpHat(0) = pow(FpHat(0), gamma);
+		  FpHat(1) = pow(FpHat(1), gamma);
+		  FpHat(2) = pow(FpHat(2), gamma);
+		  // update cluster.Fp
+		  cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp;
 		}
 	  }
 	  
@@ -903,7 +893,7 @@ void World::updateClusterProperties(){
 						  qj*qj.transpose();
 					  });
 	
-	c.Sp.setIdentity(); // plasticity
+	c.Fp.setIdentity(); // plasticity
 
 	//do pseudoinverse
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
