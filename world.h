@@ -176,6 +176,7 @@ public:
 
   bool drawClusters = true;
   bool paused = false;
+  int which_cluster = -1;
 
   benlib::Profiler prof;
 };

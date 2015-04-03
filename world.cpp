@@ -133,18 +133,34 @@ void World::drawPretty(SDL_Window* window) const {
 	for(auto&& pr : benlib::enumerate(clusters)){
 	  auto& c = pr.second;
 	  const auto i = pr.first;
-	  glPushMatrix();
+     if (which_cluster == -1 || i == which_cluster) {
+        glPushMatrix();
 
-	  auto com = computeNeighborhoodCOM(c);
-	  glTranslated(com.x(), com.y(), com.z());
-     RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
-	  glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-	  utils::drawSphere(c.width, 10, 10);
-	  glPopMatrix();
+        auto com = computeNeighborhoodCOM(c);
+        glTranslated(com.x(), com.y(), com.z());
+        RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
+        glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+        utils::drawSphere(c.width, 10, 10);
+        glPopMatrix();
+     }
 	}
   }
   glEnable(GL_DEPTH_TEST);
 
+
+  if (which_cluster != -1) {
+     auto& c = clusters[which_cluster];
+
+     glColor4d(0,0,0, 0.9);
+
+     glPointSize(5);
+
+     glBegin(GL_POINTS);
+     for(auto i : c.neighbors){
+        glVertex3dv(particles[i].position.data());
+     }
+     glEnd();
+  }
 
   
   if(!particles.empty()){						
@@ -164,6 +180,8 @@ void World::drawPretty(SDL_Window* window) const {
 	*/
 
   }
+
+
 
 
   glFlush();
