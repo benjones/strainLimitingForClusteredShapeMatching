@@ -29,6 +29,7 @@ public:
 
 	particles.clear(); 
 	planes.clear();
+   movingPlanes.clear();
 	clusterCenters.clear();
 	
 	loadFromJson(filename);
@@ -43,6 +44,7 @@ public:
   void drawPretty(SDL_Window* window) const ;
   void drawSingleCluster(SDL_Window* window, int frame) const;
   void drawPlanes() const;
+  void drawPlanesPretty() const;
   void drawPlane(const Eigen::Vector3d& normal, double offset) const;
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,

@@ -121,7 +121,7 @@ void World::drawPretty(SDL_Window* window) const {
 
 
 
-  drawPlanes();
+  drawPlanesPretty();
   
   glEnable (GL_BLEND);
   glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -132,7 +132,7 @@ void World::drawPretty(SDL_Window* window) const {
   if(drawClusters){
 	for(auto&& pr : benlib::enumerate(clusters)){
 	  auto& c = pr.second;
-	  auto i = pr.first;
+	  const auto i = pr.first;
 	  glPushMatrix();
 
 	  auto com = computeNeighborhoodCOM(c);
@@ -246,6 +246,28 @@ void World::drawPlanes() const{
 	const auto i = pr.first + planes.size();
 	const auto& plane = pr.second;
 	glColor4d(0.5, i/totalCount, 0.5, 1);
+	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+  }
+
+}
+
+
+void World::drawPlanesPretty() const{
+  //draw planes
+  glDisable(GL_CULL_FACE);
+  for(auto&& pr : enumerate(planes)){
+	const auto i = pr.first;
+	const auto& plane = pr.second;
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.25*acos(-1), 0.3, 0.7).to_rgb();
+	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
+
+	drawPlane(plane.head(3), plane.w());
+  }
+  for(auto&& pr : enumerate(movingPlanes)){
+	const auto i = pr.first; 
+	const auto& plane = pr.second;
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/movingPlanes.size()+1.25*acos(-1), 0.3, 0.7).to_rgb();
+	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
 	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
   }
 
