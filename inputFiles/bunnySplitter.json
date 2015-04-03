@@ -1,14 +1,14 @@
 {
 	"particleFiles" : [ "inputFiles/bunny.txt"],
 
-	"neighborRadius" : 0.5,
+	"neighborRadius" : 0.8,
 	"alpha" : 0.5,
 	"omega" : 0.3,
 	"numConstraintIters" : 5,
 	"maxStretch" : 0.1,
-	"nClusters" : 20,
+	"nClusters" : 10,
 	"springDamping": 0.1,
-	"toughness" : 1.1,
+	"toughness" : 1.2,
 	"planes" : [ 
 		[0, 1, 0, -2],
 		[1, 1, 0, -2],
@@ -18,12 +18,12 @@
 		{ 
 			"normal" : [1, 0, 0],
 			"offset" : 0.7,
-			"velocity" : 0.1
+			"velocity" : 0.2
 		},
 		{ 
 			"normal" : [-1, 0, 0],
 			"offset" : 0.7,
-			"velocity" : 0.1
+			"velocity" : 0.2
 		}
 	],
 	"gravity" : [0, 0, 0]

@@ -242,13 +242,14 @@ void World::drawPlanes() const{
 
 	drawPlane(plane.head(3), plane.w());
   }
+  glDepthMask(false);
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first + planes.size();
 	const auto& plane = pr.second;
 	glColor4d(0.5, i/totalCount, 0.5, 1);
 	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
   }
-
+  glDepthMask(true);
 }
 
 
@@ -850,7 +851,9 @@ void World::updateClusterProperties(){
 	c.mass = sumWeightedMass(c.neighbors);
 	assert(c.mass > 0);
 	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
+	c.worldCom = computeNeighborhoodCOM(c);
 	assert(c.restCom.allFinite());
+	assert(c.worldCom.allFinite());
 	c.width = 0.0;
 	for(auto n : c.neighbors){
 	  c.width = std::max(c.width, (c.restCom - particles[n].restPosition).norm());
@@ -899,6 +902,16 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::Vector3d splitDirection;
 	std::tie(cIndex, std::ignore, splitDirection) = ps;
 	
+
+	//doesn't work... 
+	//just erase the cluster
+	//clusters.erase(clusters.begin() + cIndex);
+	//updateClusterProperties();
+	//break;
+
+
+	
+
 	//auto& cluster = clusters[cIndex];	  
 	//if(cluster.neighbors.size() < 10){ continue;}
 	auto worldCOM = computeNeighborhoodCOM(clusters[cIndex]);
@@ -959,6 +972,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	
 	
 	break;
-	//}
+	
   }
 }	
