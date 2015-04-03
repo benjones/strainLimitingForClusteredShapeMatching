@@ -121,7 +121,7 @@ void World::drawPretty(SDL_Window* window) const {
 
 
 
-  drawPlanes();
+  drawPlanesPretty();
   
   glEnable (GL_BLEND);
   glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -132,19 +132,35 @@ void World::drawPretty(SDL_Window* window) const {
   if(drawClusters){
 	for(auto&& pr : benlib::enumerate(clusters)){
 	  auto& c = pr.second;
-	  auto i = pr.first;
-	  glPushMatrix();
+	  const auto i = pr.first;
+     if (which_cluster == -1 || i == which_cluster) {
+        glPushMatrix();
 
-	  auto com = computeNeighborhoodCOM(c);
-	  glTranslated(com.x(), com.y(), com.z());
-     RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
-	  glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-	  utils::drawSphere(c.width, 10, 10);
-	  glPopMatrix();
+        auto com = computeNeighborhoodCOM(c);
+        glTranslated(com.x(), com.y(), com.z());
+        RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
+        glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+        utils::drawSphere(c.width, 10, 10);
+        glPopMatrix();
+     }
 	}
   }
   glEnable(GL_DEPTH_TEST);
 
+
+  if (which_cluster != -1) {
+     auto& c = clusters[which_cluster];
+
+     glColor4d(0,0,0, 0.9);
+
+     glPointSize(5);
+
+     glBegin(GL_POINTS);
+     for(auto i : c.neighbors){
+        glVertex3dv(particles[i].position.data());
+     }
+     glEnd();
+  }
 
   
   if(!particles.empty()){						
@@ -164,6 +180,8 @@ void World::drawPretty(SDL_Window* window) const {
 	*/
 
   }
+
+
 
 
   glFlush();
@@ -250,6 +268,28 @@ void World::drawPlanes() const{
 	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
   }
   glDepthMask(true);
+}
+
+
+void World::drawPlanesPretty() const{
+  //draw planes
+  glDisable(GL_CULL_FACE);
+  for(auto&& pr : enumerate(planes)){
+	const auto i = pr.first;
+	const auto& plane = pr.second;
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.25*acos(-1), 0.3, 0.7).to_rgb();
+	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
+
+	drawPlane(plane.head(3), plane.w());
+  }
+  for(auto&& pr : enumerate(movingPlanes)){
+	const auto i = pr.first; 
+	const auto& plane = pr.second;
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/movingPlanes.size()+1.25*acos(-1), 0.3, 0.7).to_rgb();
+	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
+	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+  }
+
 }
 
 
@@ -345,6 +385,10 @@ void World::loadFromJson(const std::string& _filename){
   gamma = root.get("gamma", gamma).asDouble();
   springDamping = root.get("springDamping", 0.0).asDouble();
   toughness = root.get("toughness", std::numeric_limits<double>::infinity()).asDouble();
+
+  // plasticity parameters
+  yield = root.get("yield", 0.0).asDouble();
+  nu = root.get("nu", 0.0).asDouble();
   
 
 
@@ -463,6 +507,8 @@ void World::saveParticleFile(const std::string& _filename) const{
 	outs.close();
 }
 
+inline double sqr (const double &x) {return x*x;}
+
 void World::timestep(){
 
   //scope block for profiler
@@ -487,8 +533,10 @@ void World::timestep(){
 	  Eigen::Matrix3d init;
 	  init.setZero();
 		
+
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, worldCOM);
 	  Eigen::Matrix3d A = Apq*cluster.aInv;
+	  if (nu > 0.0) A = A*cluster.Fp.inverse(); // plasticity
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -503,22 +551,34 @@ void World::timestep(){
 		potentialSplits.emplace_back(en.first, sigma(0), V.col(0));
 		//eigenvecs of S part of RS is V
 	  }
-	  
-	  Eigen::Matrix3d R = U*V.transpose();
-	  
-	  
+
+
+	  Eigen::Matrix3d T = U*V.transpose();
+	  if (nu > 0.0) T = T*cluster.Fp;
 	  
 	  //auto pr = utils::polarDecomp(A);
 	  
 	  for(auto n : cluster.neighbors){
 		particles[n].goalPosition += 
-		  (R*(particles[n].restPosition - cluster.restCom) + worldCOM);
+		  (T*(particles[n].restPosition - cluster.restCom) + worldCOM);
 		particles[n].goalVelocity += clusterVelocity;
 	  }
 	  
 	  
-	  
-	  
+	  // plasticity
+	  if (nu > 0.0) {
+		Eigen::Vector3d FpHat = sigma;
+		FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
+		double norm = sqrt(sqr(FpHat(0)-1.0) + sqr(FpHat(1)-1.0) + sqr(FpHat(2)-1.0));
+		if (norm > yield) {	
+		  double gamma = std::min(1.0, nu * (norm - yield) / norm);
+		  FpHat(0) = pow(FpHat(0), gamma);
+		  FpHat(1) = pow(FpHat(1), gamma);
+		  FpHat(2) = pow(FpHat(2), gamma);
+		  // update cluster.Fp
+		  cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp;
+		}
+	  }
 	}
 	
 	
@@ -849,7 +909,7 @@ void World::updateClusterProperties(){
   for (auto&& pr : benlib::enumerate(clusters)) {
 	auto& c = pr.second;
 	c.mass = sumWeightedMass(c.neighbors);
-	assert(c.mass > 0);
+	assert(c.mass >= 0);
 	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
 	c.worldCom = computeNeighborhoodCOM(c);
 	assert(c.restCom.allFinite());
@@ -872,6 +932,8 @@ void World::updateClusterProperties(){
 						  qj*qj.transpose();
 					  });
 	
+	c.Fp.setIdentity(); // plasticity
+
 	//do pseudoinverse
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	Eigen::Vector3d sigInv;
@@ -914,7 +976,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	//auto& cluster = clusters[cIndex];	  
 	//if(cluster.neighbors.size() < 10){ continue;}
-	auto worldCOM = computeNeighborhoodCOM(clusters[cIndex]);
+	auto worldCOM = clusters[cIndex].worldCom;
 	auto it = std::partition(clusters[cIndex].neighbors.begin(),
 		clusters[cIndex].neighbors.end(),
 		[&worldCOM, &splitDirection, this](int ind){
@@ -923,7 +985,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		});
 	auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
 	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
-	
+	if(newSize == 0 || oldSize == 0){ continue;}
 	// if(oldSize > 20 && newSize > 20){
 	
 	//make a new cluster
@@ -953,8 +1015,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  auto& particle = particles[member];
 	  for(auto thisIndex : particle.clusters){
 		auto& thisCluster = clusters[thisIndex];
-		auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
-		if(((particle.position - thisClusterCOM).dot(splitDirection) >= 0) !=
+		//auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
+		if(((particle.position - thisCluster.worldCom).dot(splitDirection) >= 0) !=
 			((particle.position - worldCOM).dot(splitDirection) >= 0 )){
 		  //remove from cluster
 		  thisCluster.neighbors.erase(

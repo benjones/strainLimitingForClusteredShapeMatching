@@ -70,11 +70,23 @@ void loop(SDL_Window* window, World& world){
 		  world.move(true);
 		} else if(event.key.keysym.sym == SDLK_DOWN){
 		  world.move(false);
+      } else if(event.key.keysym.sym == SDLK_RIGHT){
+		  world.which_cluster++;
+        if (world.which_cluster >= world.clusters.size()) {
+           world.which_cluster = world.clusters.size()-1;
+        }
+        std::cout << "Displaying cluster: " << world.which_cluster << std::endl;
+		} else if(event.key.keysym.sym == SDLK_LEFT){
+		  world.which_cluster--;
+        if (world.which_cluster < 0) {
+           world.which_cluster = -1;
+        }
+        std::cout << "Displaying cluster: " << world.which_cluster << std::endl;
 		} else if(event.key.keysym.sym == SDLK_c){
 		  world.drawClusters = !world.drawClusters;
 		} else if(event.key.keysym.sym == SDLK_p){
 		  world.paused = !world.paused;
-		}
+      }
 		break;
 	  case SDL_QUIT:
 		readyToExit = true;
@@ -112,7 +124,8 @@ void loop(SDL_Window* window, World& world){
 	world.saveParticleFile(std::string(fname));
 	if(frame > 600){break;}
 	*/
-	if(world.paused){
+
+   if(world.paused){
 	  //world.drawSingleCluster(window, frame);
 	  //SDL_Delay(300);
 	  world.drawPretty(window);
