@@ -1016,8 +1016,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  for(auto thisIndex : particle.clusters){
 		auto& thisCluster = clusters[thisIndex];
 		//auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
-		if(((particle.position - thisCluster.worldCom).dot(splitDirection) >= 0) !=
-			((particle.position - worldCOM).dot(splitDirection) >= 0 )){
+		if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
+			((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 		  //remove from cluster
 		  thisCluster.neighbors.erase(
 			  std::remove(thisCluster.neighbors.begin(),
