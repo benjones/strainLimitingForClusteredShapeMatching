@@ -84,6 +84,8 @@ void loop(SDL_Window* window, World& world){
         std::cout << "Displaying cluster: " << world.which_cluster << std::endl;
 		} else if(event.key.keysym.sym == SDLK_c){
 		  world.drawClusters = !world.drawClusters;
+      } else if(event.key.keysym.sym == SDLK_t){
+		  world.colorByToughness = !world.colorByToughness;
 		} else if(event.key.keysym.sym == SDLK_p){
 		  world.paused = !world.paused;
       }

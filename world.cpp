@@ -126,6 +126,20 @@ void World::drawPretty(SDL_Window* window) const {
   glEnable (GL_BLEND);
   glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
+  auto max_t = 0.0;
+  if (colorByToughness) {
+     for(auto&& pr : benlib::enumerate(clusters)){
+        auto& c = pr.second;
+        if (c.toughness < std::numeric_limits<double>::infinity()) {
+           if (c.toughness > max_t) {
+              max_t = c.toughness;
+           }
+        }
+     }
+  }
+
+
   glDisable(GL_DEPTH_TEST);
   //draw clusters
   glMatrixMode(GL_MODELVIEW);
@@ -139,6 +153,14 @@ void World::drawPretty(SDL_Window* window) const {
         auto com = computeNeighborhoodCOM(c);
         glTranslated(com.x(), com.y(), com.z());
         RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
+        if (colorByToughness) {
+           if (c.toughness == std::numeric_limits<double>::infinity()) {
+              rgb = RGBColor(0.0, 0.0, 0.0);
+           } else {
+              auto factor = c.toughness/max_t;
+              rgb = RGBColor(1.0-factor, factor, factor);
+           }
+        }
         glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
         utils::drawSphere(c.width, 10, 10);
         glPopMatrix();

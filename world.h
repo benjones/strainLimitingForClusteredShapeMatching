@@ -174,6 +174,7 @@ public:
   int maxNumClusters;
 
   bool drawClusters = true;
+  bool colorByToughness = false;
   bool paused = false;
   int which_cluster = -1;
 
