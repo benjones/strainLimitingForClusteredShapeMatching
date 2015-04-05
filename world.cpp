@@ -566,9 +566,11 @@ void World::timestep(){
 	  
 	  
 	  // plasticity
-	  if (nu > 0.0) {
+	  if (nu > 0.0 && sigma(2) >= 1e-4) { // adam says: the second clause is a quick hack to avoid plasticity when sigma is degenerate
 		Eigen::Vector3d FpHat = sigma;
+		//std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<" => ";
 		FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
+		//std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<std::endl;
 		double norm = sqrt(sqr(FpHat(0)-1.0) + sqr(FpHat(1)-1.0) + sqr(FpHat(2)-1.0));
 		if (norm > yield) {	
 		  double gamma = std::min(1.0, nu * (norm - yield) / norm);
@@ -908,6 +910,7 @@ void World::updateClusterProperties(){
   // compute cluster mass, com, width, and aInv
   for (auto&& pr : benlib::enumerate(clusters)) {
 	auto& c = pr.second;
+	//c.Fp.setIdentity(); // plasticity
 	c.mass = sumWeightedMass(c.neighbors);
 	assert(c.mass >= 0);
 	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
@@ -932,8 +935,6 @@ void World::updateClusterProperties(){
 						  qj*qj.transpose();
 					  });
 	
-	c.Fp.setIdentity(); // plasticity
-
 	//do pseudoinverse
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	Eigen::Vector3d sigInv;
@@ -963,7 +964,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	size_t cIndex;
 	Eigen::Vector3d splitDirection;
 	std::tie(cIndex, std::ignore, splitDirection) = ps;
-	
 
 	//doesn't work... 
 	//just erase the cluster
@@ -975,6 +975,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	
 
 	//auto& cluster = clusters[cIndex];	  
+	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
 	//if(cluster.neighbors.size() < 10){ continue;}
 	auto worldCOM = clusters[cIndex].worldCom;
 	auto it = std::partition(clusters[cIndex].neighbors.begin(),
@@ -991,6 +992,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//make a new cluster
 	Cluster newCluster;
 	newCluster.neighbors.assign(it, clusters[cIndex].neighbors.end());
+
+	// copy relevant variables
+	newCluster.Fp = clusters[cIndex].Fp; // plasticity
+	// we will want to copy toughness here as well...
 	
 	//delete the particles from the old one
 	clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
