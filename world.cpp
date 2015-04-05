@@ -547,8 +547,8 @@ void World::timestep(){
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
-	  if(sigma(0) > toughness){
-		potentialSplits.emplace_back(en.first, sigma(0), V.col(0));
+	  if(sigma(0) > cluster.toughness){
+		potentialSplits.emplace_back(en.first, sigma(0) - cluster.toughness, V.col(0));
 		//eigenvecs of S part of RS is V
 	  }
 
@@ -785,6 +785,31 @@ void World::makeClusters(){
 	}
   }
   std::cout << "numClusters: " << clusters.size() << std::endl;
+
+  for(auto& c : clusters){ 
+	bool crossingPlane = false;
+	for(auto& plane : movingPlanes){
+	  bool firstSide = particles[c.neighbors.front()].position.dot(plane.normal) > plane.offset;
+	  
+	  for(auto n : c.neighbors){
+		bool thisSide = particles[n].position.dot(plane.normal) > plane.offset;
+		if(thisSide != firstSide){
+		  crossingPlane = true;
+		  break;
+		}
+	  }
+	  if(crossingPlane){break;}
+	}
+	if(crossingPlane){
+	  c.toughness = std::numeric_limits<double>::infinity();
+	} else {
+	  c.toughness = toughness;
+	}
+  }
+
+  
+
+
 }
 
 

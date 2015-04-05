@@ -1,12 +1,12 @@
 {
 	"particleFiles" : [ "inputFiles/cube.txt"],
 
-	"neighborRadius" : 0.5,
+	"neighborRadius" : 0.3,
 	"alpha" : 0.5,
 	"omega" : 0.3,
 	"numConstraintIters" : 8,
 	"maxStretch" : 0.1,
-	"nClusters" : 20,
+	"nClusters" : 30,
 	"springDamping": 0.1,
 	"toughness" : 1.1,
 	"planes" : [ 
