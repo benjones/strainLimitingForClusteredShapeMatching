@@ -20,6 +20,7 @@ public:
 
   using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
   void doFracture(std::vector<FractureInfo> potentialSplits);
+  void doFracture2(std::vector<FractureInfo> potentialSplits);
 
 
   inline void restart(){ 
@@ -169,12 +170,12 @@ public:
 
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
-  double toughness; //when to fracture
   double yield, nu; // plasticity parameters
-
+  double toughness;
   int maxNumClusters;
 
   bool drawClusters = true;
+  bool colorByToughness = false;
   bool paused = false;
   int which_cluster = -1;
 

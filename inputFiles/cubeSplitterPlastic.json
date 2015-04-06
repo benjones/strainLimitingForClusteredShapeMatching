@@ -1,12 +1,12 @@
 {
-	"particleFiles" : [ "inputFiles/thinBox.txt"],
+	"particleFiles" : [ "inputFiles/cube.txt"],
 
-	"neighborRadius" : 0.25,
-	"alpha" : 0.1,
+	"neighborRadius" : 0.5,
+	"alpha" : 0.5,
 	"omega" : 0.3,
 	"numConstraintIters" : 8,
 	"maxStretch" : 0.1,
-	"nClusters" : 30,
+	"nClusters" : 20,
 	"springDamping": 0.1,
 	"toughness" : 1.1,
 	"planes" : [ 
@@ -26,5 +26,7 @@
 			"velocity" : 0.1
 		}
 	],
-	"gravity" : [0, 0, 0]
+	"gravity" : [0, 0, 0],
+	"nu" : 1.0,
+	"yield" : 0.2
 }
