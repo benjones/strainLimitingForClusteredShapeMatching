@@ -63,7 +63,7 @@ void World::draw(SDL_Window* window) const {
 	  auto com = computeNeighborhoodCOM(c);
 	  glTranslated(com.x(), com.y(), com.z());
 	  glColor4d(i/(2.0*clusters.size()), 1.0, 1.0, 0.3);
-	  utils::drawSphere(c.width, 10, 10);
+	  utils::drawSphere(c.renderWidth, 10, 10);
 	  glPopMatrix();
 	}
   }
@@ -162,7 +162,7 @@ void World::drawPretty(SDL_Window* window) const {
            }
         }
         glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-        utils::drawSphere(c.width, 10, 10);
+        utils::drawSphere(c.renderWidth, 10, 10);
         glPopMatrix();
      }
 	}
@@ -635,6 +635,14 @@ void World::timestep(){
   bounceOutOfPlanes();
   elapsedTime += dt;
   std::cout << "elapsed time: " << elapsedTime << std::endl;
+  for(auto& c : clusters){
+	c.renderWidth = 0;
+	c.worldCom = computeNeighborhoodCOM(c);
+	for(auto& n : c.neighbors){
+	  c.renderWidth = std::max(c.renderWidth, 
+		  (c.worldCom - particles[n].position).norm());
+	}
+  }
   //printCOM();
 }
 

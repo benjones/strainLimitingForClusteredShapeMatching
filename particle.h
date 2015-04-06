@@ -21,7 +21,7 @@ class Cluster {
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp;
 	std::vector<int> neighbors;
-	double mass, width;
+  double mass, width, renderWidth;
   double toughness;
 	Cluster() {Fp.setIdentity();}
 
