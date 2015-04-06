@@ -570,7 +570,11 @@ void World::timestep(){
 	  //std::cout << "sigma " << sigma << std::endl;
 
 	  if(sigma(0) > cluster.toughness){
-		potentialSplits.emplace_back(en.first, sigma(0) - cluster.toughness, V.col(0));
+	  //if(cluster.renderWidth > toughness*cluster.width){ //doesn't improve anything
+		potentialSplits.emplace_back(en.first, 
+			//cluster.renderWidth - toughness*cluster.width, 
+			sigma(0) - cluster.toughness, 
+			V.col(0));
 		//eigenvecs of S part of RS is V
 	  }
 
@@ -630,7 +634,7 @@ void World::timestep(){
 	
   }
   
-  doFracture(std::move(potentialSplits));
+  doFracture2(std::move(potentialSplits));
   
   bounceOutOfPlanes();
   elapsedTime += dt;
@@ -831,7 +835,7 @@ void World::makeClusters(){
 	  if(crossingPlane){break;}
 	}
 	if(crossingPlane){
-	  c.toughness = std::numeric_limits<double>::infinity();
+	  c.toughness = 10*toughness;//std::numeric_limits<double>::infinity();
 	} else {
 	  c.toughness = toughness;
 	}
@@ -874,6 +878,7 @@ void World::strainLimitingIteration(){
 		  q.position;
 	  }
 	}
+	
   }
   
   for(auto& p : particles){
@@ -976,6 +981,7 @@ void World::updateClusterProperties(){
 	for(auto n : c.neighbors){
 	  c.width = std::max(c.width, (c.restCom - particles[n].restPosition).norm());
 	} 
+	c.renderWidth = c.width; //it'll get updated soon enough
 	//assert(c.width >= 0);
 
 	c.aInv.setZero();  
@@ -1031,6 +1037,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	//auto& cluster = clusters[cIndex];	  
 	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
+	//ben says: when I push_back, the reference gets invalidated if the vector reallocates (which bit me).
+
+
 	//if(cluster.neighbors.size() < 10){ continue;}
 	auto worldCOM = clusters[cIndex].worldCom;
 	auto it = std::partition(clusters[cIndex].neighbors.begin(),
@@ -1043,6 +1052,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
 	if(newSize == 0 || oldSize == 0){ continue;}
 	// if(oldSize > 20 && newSize > 20){
+
+	//expected to be mostly in teh x direction for the cube example, and it was
+	//std::cout << "split direction: " << splitDirection << std::endl;
 	
 	//make a new cluster
 	Cluster newCluster;
@@ -1050,6 +1062,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	// copy relevant variables
 	newCluster.Fp = clusters[cIndex].Fp; // plasticity
+	newCluster.toughness = clusters[cIndex].toughness;
 	// we will want to copy toughness here as well...
 	
 	//delete the particles from the old one
@@ -1093,7 +1106,110 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	updateClusterProperties();
 	
 	
-	break;
+	//break;
+	
+  }
+}	
+
+
+void World::doFracture2(std::vector<World::FractureInfo> potentialSplits){
+  auto timer = prof.timeName("fracture");
+  //do fracture
+  std::sort(potentialSplits.begin(), potentialSplits.end(),
+	  [](const FractureInfo& a, const FractureInfo& b){
+		return std::get<1>(a) < std::get<1>(b);
+	  });
+  int count = 0;
+  if(!potentialSplits.empty()){
+	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
+  }
+  for(auto &ps : potentialSplits){
+	if (++count > 10) break;
+	size_t cIndex;
+	Eigen::Vector3d splitDirection;
+	std::tie(cIndex, std::ignore, splitDirection) = ps;
+
+	//doesn't work... 
+	//just erase the cluster
+	//clusters.erase(clusters.begin() + cIndex);
+	//updateClusterProperties();
+	//break;
+
+
+	
+
+	//auto& cluster = clusters[cIndex];	  
+	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
+	//ben says: when I push_back, the reference gets invalidated if the vector reallocates (which bit me).
+
+
+	//if(cluster.neighbors.size() < 10){ continue;}
+	auto worldCOM = clusters[cIndex].worldCom;
+	auto it = std::partition(clusters[cIndex].neighbors.begin(),
+		clusters[cIndex].neighbors.end(),
+		[&worldCOM, &splitDirection, this](int ind){
+		  //which side of the split is it on?
+		  return (worldCOM - particles[ind].position).dot(splitDirection) > 0;
+		});
+	auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
+	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
+	if(newSize == 0 || oldSize == 0){ continue;}
+	// if(oldSize > 20 && newSize > 20){
+
+	//expected to be mostly in teh x direction for the cube example, and it was
+	//std::cout << "split direction: " << splitDirection << std::endl;
+	
+	//make a new cluster
+	Cluster newCluster;
+	newCluster.neighbors.assign(it, clusters[cIndex].neighbors.end());
+
+	// copy relevant variables
+	newCluster.Fp = clusters[cIndex].Fp; // plasticity
+	newCluster.toughness = clusters[cIndex].toughness;
+	// we will want to copy toughness here as well...
+	
+	//delete the particles from the old one
+	clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
+		clusters[cIndex].neighbors.end());
+	
+	clusters.push_back(newCluster);	  
+	
+	updateClusterProperties();
+	std::cout << "numClusters: " << clusters.size() << std::endl;
+	
+	std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
+		[](const Cluster& a, const Cluster& b){
+		  return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
+	
+	
+	//split from other clusters
+	std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
+	std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
+		std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
+	
+	for(auto& member : allParticles){
+	  auto& particle = particles[member];
+	  for(auto thisIndex : particle.clusters){
+		auto& thisCluster = clusters[thisIndex];
+		//auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
+		if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
+			((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
+		  //remove from cluster
+		  thisCluster.neighbors.erase(
+			  std::remove(thisCluster.neighbors.begin(),
+				  thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
+		  //remove cluster from this
+		  particle.clusters.erase(
+			  std::remove(particle.clusters.begin(), particle.clusters.end(),
+				  thisIndex), particle.clusters.end());
+		  
+		}
+	  }
+	}
+	updateClusterProperties();
+	
+	
+	//break;
 	
   }
 }	
