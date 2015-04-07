@@ -85,35 +85,30 @@ versatile, and simple to implement.
 \copyrightspace
 
 \section{Introduction}\label{sec:Introduction}
-In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
-for deformable bodies, thus filling a gap in the shape matching literature. 
 {\em Shape matching} is a geometrically motivated technique for animating deformable bodies introduced
 a decade ago by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
-In this approach
-objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
-that follow a path, $\B{x}_i(t)$, in world-space through time.  
-At each frame, shape matching solves for the rotation matrix, $\B{R}$, and a translation
-vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimize
-\begin{equation}
-\sum_i \left(\B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
-\end{equation}
-The best translations are given by the center-of-mass in the rest and world space, respectively.  
-The rotation, $\B{R}$, is computed through a polar decomposition.  Intuitively, this computation
-yields the least-squares best-fit rigid transformation from the rest pose to the current deformed pose.
-This transformation allows us to define goal positions, $\B{g}_i$,
-\begin{equation}
-\B{g}_i = \B{R}\left(\B{r}_i-\B{r}_{cm}\right)+\B{x}_{cm}.
-\end{equation}
-Hookean springs are then used to define forces that move the particles toward the goal positions.
-This basic approach was extended by including linear and quadratic global deformations, cluster-based
-deformations, and plasticity.
-
+\fref{fig:shapematching} summarizes the approach.
 In their seminal work, \Mueller and colleagues~\shortcite{Mueller:2005:MDB} introduced a simple plasticity
-model, but did not address fracture.  In follow up work, Rivers and James~\shortcite{Rivers:2007:FFL}
-incorporated a simple fracture model, but did not address plasticity.  
+model and, in follow up work, Rivers and James~\shortcite{Rivers:2007:FFL}
+incorporated a simple fracture model.  However, ductile fracture has not yet been addressed in the
+shape matching literature.
 
-In this paper, we present plasticity and fracture models inspired by finite element approaches to 
-animating deformable bodies.  
+\begin{figure*}
+\includegraphics[width=\linewidth]{Figures/shapematching.png}
+\caption{Shape Matching Overview: (a) An object (here, a square) is sampled with particles, $p_i$, to get rest positions, $\B{r}_i$.  
+(b) As particles are subjected to external forces and constraints, their positions, $\B{x}_i$, are updated in world space.  
+(c)  The best-fitting rigid transformation of the particles' rest positions, $\B{r}_i$, 
+to their world positions, $\B{x}_i$ is computed.  The dotted red circles are the {\em goal} positions, $\B{g}_i$.  
+(d) Hookean springs pull the world positions toward the goal positions.}
+\label{fig:shapematching}
+\end{figure*}
+
+%In this paper, we incorporate ductile fracture into the clustered shape matching simulation framework
+%for deformable bodies, thus filling a gap in the shape matching literature. 
+In this paper, we enable the animation of ductile fracture 
+by incorporating plasticity and fracture models into the clustered shape matching framework.
+Our models are inspired by finite element approaches to animating deformable bodies, but are adapted to 
+clustered shape matching.
 Specifically, inspired by the work of Irving and colleagues~\shortcite{Irving:2004:IFE} and Bargteil and 
 colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plasticity model that incorporates
 yield stress, flow rate, and work hardening.  Inspired by the work of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA},
@@ -157,6 +152,52 @@ we apply it to shape matching clusters instead of individual tetrahedra and make
 lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
 
 \section{Methods}
+\subsection{Shape Matching}
+In the shape matching framework
+objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
+that follow a path, $\B{x}_i(t)$, in world-space through time.  
+At each frame, shape matching solves for the rotation matrix, $\B{R}$, and a translation
+vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimize
+\begin{equation}
+\sum_i \left(\B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\end{equation}
+The best translations are given by the center-of-mass in the rest and world space, respectively.  
+The rotation, $\B{R}$, is computed through a polar decomposition.  Intuitively, this computation
+yields the least-squares best-fit rigid transformation from the rest pose to the current deformed pose.
+This transformation allows us to define goal positions, $\B{g}_i$,
+\begin{equation}
+\B{g}_i = \B{R}\left(\B{r}_i-\B{r}_{cm}\right)+\B{x}_{cm}.
+\end{equation}
+Hookean springs are then used to define forces that move the particles toward the goal positions.
+
+More specifically, we first compute the least-squares best-fit linear deformation gradient as
+\begin{equation}
+\B{F} = \left(\sum_i m_i \B{O}(\B{x}_i,\B{r}_i)\right)\left(\sum_im_i\B{O}(\B{r}_i,\B{r}_i)\right)^{-1},
+\end{equation}
+where $\B{O}(\cdot,\cdot)$ is the outer product matrix
+\begin{equation}
+\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T
+\end{equation}
+%\begin{align}
+%\B{F} = &\left(\sum_i m_i\left(\B{x}_{i}-\B{x}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)\notag\\
+%&\left(\sum_i m_i\left(\B{r}_{i}-\B{r}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)^{-1},
+%\end{align}
+and $m_i$ is the mass of $p_i$.  $\B{F}$ minimizes
+\begin{equation}
+\sum_i \left(\B{F}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\end{equation}
+We then compute $\B{R}$ using the polar decomposition,
+\begin{equation}
+\B{F} = \B{R}\B{S} = \left(\B{UV}^T\right)\left(\B{V\Sigma V}^T\right)
+\end{equation}
+where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the singular value decomposition (SVD) of $F$.
+While several researchers have pointed out that the polar decompositions can be computed faster than the SVD,
+especially when warm started, we use the the SVD for its robustness and for our plasticity and fracture models
+that follow.  We also note that we compute the rotation from 
+
+%This basic approach was extended by including linear and quadratic global deformations, cluster-based
+%deformations, and plasticity.
+
 
 \section{Results and Discussion}
 
