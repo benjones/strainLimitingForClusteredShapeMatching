@@ -68,7 +68,9 @@
 \maketitle
 
 \begin{abstract}
-
+In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
+for deformable bodies, thus filling a gap in the shape matching literature.  The resulting approach is fast,
+versatile, and simple to implement.
 \end{abstract}
 
 \begin{CRcatlist}
@@ -83,9 +85,11 @@
 \copyrightspace
 
 \section{Introduction}\label{sec:Introduction}
-
-A decade ago, \Mueller and colleagues~\shortcite{Mueller:2005:MDB} introduced
-{\em shape matching} for physics-based computer animation.  In this approach
+In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
+for deformable bodies, thus filling a gap in the shape matching literature. 
+{\em Shape matching} is a geometrically motivated technique for animating deformable bodies introduced
+a decade ago by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
+In this approach
 objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
 that follow a path, $\B{x}_i(t)$, in world-space through time.  
 At each frame, shape matching solves for the rotation matrix, $\B{R}$, and a translation
@@ -140,7 +144,7 @@ fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. g
 real-world materials demonstrate some amount of plastic deformation during failure, so purely brittle models have fairly limited
 application in computer animation.  
 Both plasticity and fracture
-were first demonstrated in computer animation by the pioneering work of Terzopolous and Fleischer~\shortcite{}; 
+were first demonstrated in computer animation by the pioneering work of Terzopoulos and Fleischer~\shortcite{Terzopoulos:1988:MID}; 
 however, it was O'Brien and colleagues~\shortcite{Obrien:2002:GMA}
 who first combined these phenomena to animate ductile fracture.  Since that time, plasticity and fracture have
 remained very active research areas in computer animation and a thorough review is beyond the scope of this short paper.
@@ -150,7 +154,7 @@ Our approach
 to fracture closely resembles that of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA}; however, instead of splitting tetrahedra,
 we split shape matching clusters.  Our plasticity model closely resembles that of Bargteil and colleagues~\shortcite{Bargteil:2007:AFE}, except that
 we apply it to shape matching clusters instead of individual tetrahedra and make no particular effort to ensure that plastic deformation does not
-lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:}.
+lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
 
 \section{Methods}
 
