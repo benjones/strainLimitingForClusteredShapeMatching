@@ -136,11 +136,21 @@ the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated
 We incorporate our ductile fracture approach into their framework.
 
 Ductile fracture is distinguished from brittle fracture by the inclusion plastic deformation.  Materials undergoing ductile
-fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  For many
-practical fracture applications some amount of plastic deformation is needed to achieve realism.  Plasticity and fracture
-were first demonstrating in computer animation by Terzopolous and colleagues~\shortcite{}, though they did not combine
-these phenomena.  The first demonstration of ductile fracture was performed by O'Brien and colleagues~\shortcite{Obrien:2002:GMA},
-who built on the finite element approach to brittle fracture of O'Brien and Hodgins~\shortcite{Obrien:1999:GMA}.
+fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  Most
+real-world materials demonstrate some amount of plastic deformation during failure, so purely brittle models have fairly limited
+application in computer animation.  
+Both plasticity and fracture
+were first demonstrated in computer animation by the pioneering work of Terzopolous and Fleischer~\shortcite{}; 
+however, it was O'Brien and colleagues~\shortcite{Obrien:2002:GMA}
+who first combined these phenomena to animate ductile fracture.  Since that time, plasticity and fracture have
+remained very active research areas in computer animation and a thorough review is beyond the scope of this short paper.
+\adam{in part this is because I am lazy, does anyone think it would be important?}
+
+Our approach 
+to fracture closely resembles that of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA}; however, instead of splitting tetrahedra,
+we split shape matching clusters.  Our plasticity model closely resembles that of Bargteil and colleagues~\shortcite{Bargteil:2007:AFE}, except that
+we apply it to shape matching clusters instead of individual tetrahedra and make no particular effort to ensure that plastic deformation does not
+lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:}.
 
 \section{Methods}
 
