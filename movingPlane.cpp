@@ -9,7 +9,7 @@ void MovingPlane::bounceParticle(Particle& particle, double timeElapsed) const {
   if(particle.restPosition.dot(normal) > offset){
 	
 	Eigen::Vector3d tangential = 
-	  particle.position - (particle.position.dot(normal))*normal;
+	  particle.restPosition - (particle.restPosition.dot(normal))*normal;
 
 	particle.position = tangential + currentOffset*normal;
 	

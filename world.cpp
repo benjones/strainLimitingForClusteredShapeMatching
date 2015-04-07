@@ -570,7 +570,7 @@ void World::timestep(){
 	  //std::cout << "sigma " << sigma << std::endl;
 
 	  if(sigma(0) > cluster.toughness){
-	  //if(cluster.renderWidth > toughness*cluster.width){ //doesn't improve anything
+		//if(cluster.renderWidth > toughness*cluster.width){ //doesn't improve anything
 		potentialSplits.emplace_back(en.first, 
 			//cluster.renderWidth - toughness*cluster.width, 
 			sigma(0) - cluster.toughness, 

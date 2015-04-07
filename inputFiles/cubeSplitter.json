@@ -17,12 +17,12 @@
 	"movingPlanes" : [
 		{ 
 			"normal" : [1, 0, 0],
-			"offset" : 0.45,
+			"offset" : 0.5,
 			"velocity" : 0.1
 		},
 		{ 
 			"normal" : [-1, 0, 0],
-			"offset" : 0.45,
+			"offset" : 0.5,
 			"velocity" : 0.1
 		}
 	],
