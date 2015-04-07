@@ -1000,7 +1000,7 @@ void World::updateClusterProperties(){
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	Eigen::Vector3d sigInv;
 	for(auto i : range(3)){
-	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-2 ? 1.0/solver.singularValues()(i) : 0;
+	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-6 ? 1.0/solver.singularValues()(i) : 0;
 	}
 	c.aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
 	assert(c.aInv.allFinite());
