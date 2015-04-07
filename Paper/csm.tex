@@ -11,8 +11,23 @@
 %%% - use ``conference'' for final content accepted to a sponsored event
 %%%   (hint: If you don't know, you should use ``conference.'')
 
-\documentclass[tog]{acmsiggraph}
+\documentclass[review]{acmsiggraph}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{wasysym}
+\usepackage[scaled=.92]{helvet}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{parskip}
+\usepackage{url}
+\usepackage[labelfont=bf,textfont=it]{caption}
+\usepackage{color}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{enumitem}
+\usepackage{authblk}
 
+\input{adamscommands}
 %%% Make the ``BibTeX'' word pretty...
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -21,19 +36,24 @@
 %%% Used by the ``review'' variation; the online ID will be printed on 
 %%% every page of the content.
 
-\TOGonlineid{45678}
+\TOGonlineid{}
 
 %%% Used by the ``preprint'' variation.
 
 \TOGvolume{0}
 \TOGnumber{0}
 
-\title{SIGGRAPH Content Formatting Instructions}
+\title{Ductile Fracture for Clustered Shape Matching}
+\author[*]{Ben Jones}
+\author[**]{Joshua A. Levine}
+\author[***]{Tamar Shinar}
+\author[*]{Adam W. Bargteil}
+\affil[*]{University of Utah}
+\affil[**]{Clemson University}
+\affil[***]{University of California, Riverside}
+\pdfauthor{}
 
-\author{Stephen N. Spencer\thanks{e-mail:spencer@cs.washington.edu}\\Chair, ACM SIGGRAPH Publications Committee}
-\pdfauthor{Stephen N. Spencer}
-
-\keywords{radiosity, global illumination, constant time}
+\keywords{Shape Matching, Ductile Fracture}
 
 \begin{document}
 
@@ -41,26 +61,21 @@
 %%% the title and author information, and above the body of the content.
 
  \teaser{
-   \includegraphics[height=1.5in]{images/sampleteaser}
-   \caption{Spring Training 2009, Peoria, AZ.}
+   %\includegraphics[height=1.5in]{Figures/}
+   \caption{}
  }
 
 \maketitle
 
 \begin{abstract}
-
-In this sample paper, we describe the formatting requirements for
-content accepted to SIGGRAPH-sponsored events. The same format can be
-used for content ranging from a one-page Poster or Talk abstract, to a
-full-length Technical Paper. Please review this document even if you
-have submitted content to a SIGGRAPH-sponsored event in the past, as
-some of the details have changed relative to previous years.
-
+In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
+for deformable bodies, thus filling a gap in the shape matching literature.  The resulting approach is fast,
+versatile, and simple to implement.
 \end{abstract}
 
 \begin{CRcatlist}
-  \CRcat{I.3.3}{Computer Graphics}{Three-Dimensional Graphics and Realism}{Display Algorithms}
-  \CRcat{I.3.7}{Computer Graphics}{Three-Dimensional Graphics and Realism}{Radiosity};
+  \CRcat{I.3.7}{Computer Graphics}{Three-Dimensional Graphics and Realism}{Animation};
+  \CRcat{I.6.8}{Simulation and Modeling}{Types of Simulation}{Animation}.
 \end{CRcatlist}
 
 \keywordlist
@@ -69,266 +84,87 @@ some of the details have changed relative to previous years.
 
 \copyrightspace
 
-\section{The Basics: General Organization}
+\section{Introduction}\label{sec:Introduction}
+In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
+for deformable bodies, thus filling a gap in the shape matching literature. 
+{\em Shape matching} is a geometrically motivated technique for animating deformable bodies introduced
+a decade ago by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
+In this approach
+objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
+that follow a path, $\B{x}_i(t)$, in world-space through time.  
+At each frame, shape matching solves for the rotation matrix, $\B{R}$, and a translation
+vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimize
+\begin{equation}
+\sum_i \left(\B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\end{equation}
+The best translations are given by the center-of-mass in the rest and world space, respectively.  
+The rotation, $\B{R}$, is computed through a polar decomposition.  Intuitively, this computation
+yields the least-squares best-fit rigid transformation from the rest pose to the current deformed pose.
+This transformation allows us to define goal positions, $\B{g}_i$,
+\begin{equation}
+\B{g}_i = \B{R}\left(\B{r}_i-\B{r}_{cm}\right)+\B{x}_{cm}.
+\end{equation}
+Hookean springs are then used to define forces that move the particles toward the goal positions.
+This basic approach was extended by including linear and quadratic global deformations, cluster-based
+deformations, and plasticity.
 
-Your content should have the following elements, in this order:
-\begin{itemize}
-\item title, author, and affiliation information
-\item abstract
-\item CR categories *
-\item keywords *
-\item body of the content
-\item bibliography
-\end{itemize}
+In their seminal work, \Mueller and colleagues~\shortcite{Mueller:2005:MDB} introduced a simple plasticity
+model, but did not address fracture.  In follow up work, Rivers and James~\shortcite{Rivers:2007:FFL}
+incorporated a simple fracture model, but did not address plasticity.  
 
-CR categories and keywords are required for Technical Papers and
-Technical Briefs, and optional for all other types of content. The
-\LaTeX{} and Word templates faithfully implement the formatting
-specifications in this document, and the sample PDF documents can be
-used as visual examples for organization and layout.
+In this paper, we present plasticity and fracture models inspired by finite element approaches to 
+animating deformable bodies.  
+Specifically, inspired by the work of Irving and colleagues~\shortcite{Irving:2004:IFE} and Bargteil and 
+colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plasticity model that incorporates
+yield stress, flow rate, and work hardening.  Inspired by the work of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA},
+we introduce a cluster-based fracture approach that splits individual clusters along the plane orthogonal to the direction the 
+cluster is most stretched.
+Taken together these contributions allow animation of ductile in the clustered shape matching framework.
 
-\section{The Basics: Page Size and Columns}
+\section{Related Work}
+The geometrically motivated shape matching approach was introduced by \Mueller and 
+colleagues~\shortcite{Mueller:2005:MDB}, who demonstrated impressive results and 
+described the key advantages of the approach: efficiency, stability, and controllability.
+Given these advantages, shape matching is especially appealing in interactive animation contexts such 
+video games.  The authors also introduced several extensions including linear and quadratic deformations 
+(in addition to rigid deformations), cluster-based deformation, and plasticity.  
 
-Your content should be formatted on a US Letter (8.5 inches wide by 11
-inches tall) page size. Please make sure you.re not working on an A4
-page size. Page margins should be set at 0.75 inches on the right,
-left, and top, and one inch at the bottom. Two columns should be used
-throughout your content, except for the title, affiliations, and large
-images or tables which span both columns.
+Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice-based shape matching,
+which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
+of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
+simple fracture model that removed over-extended links in the lattice.  
 
-To summarize, here are the basic page specifications: 
-\begin{itemize}
-\item page size: 8.5 inches wide by 11 inches wide (not A4)
-\item top margin: 0.75 inches
-\item right margin: 0.75 inches
-\item left margin: 0.75 inches
-\item bottom margin: 1 inch
-\item number of columns: 2
-\item column width: 3.3 inches
-\item column height: 9.25 inches
-\item column gutter: 0.33 inches
-\end{itemize}
+Since this time, the shape matching framework has been largely disregarded by the research community in favor of position-based
+dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
+the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching.
+We incorporate our ductile fracture approach into their framework.
 
-\section{The Basics: Typefaces, Paragraphs, and Line Spacing}
+Ductile fracture is distinguished from brittle fracture by the inclusion plastic deformation.  Materials undergoing ductile
+fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  Most
+real-world materials demonstrate some amount of plastic deformation during failure, so purely brittle models have fairly limited
+application in computer animation.  
+Both plasticity and fracture
+were first demonstrated in computer animation by the pioneering work of Terzopoulos and Fleischer~\shortcite{Terzopoulos:1988:MID}; 
+however, it was O'Brien and colleagues~\shortcite{Obrien:2002:GMA}
+who first combined these phenomena to animate ductile fracture.  Since that time, plasticity and fracture have
+remained very active research areas in computer animation and a thorough review is beyond the scope of this short paper.
+\adam{in part this is because I am lazy, does anyone think it would be important?}
 
-Please use a serif (Times, Times New Roman, etc.) typeface for the
-body of your content. This serif typeface should be used for
-everything except the title of your content and section headings,
-which should be set in a sans-serif (Helvetica, etc.) typeface.
+Our approach 
+to fracture closely resembles that of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA}; however, instead of splitting tetrahedra,
+we split shape matching clusters.  Our plasticity model closely resembles that of Bargteil and colleagues~\shortcite{Bargteil:2007:AFE}, except that
+we apply it to shape matching clusters instead of individual tetrahedra and make no particular effort to ensure that plastic deformation does not
+lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
 
-Your content should be prepared with 9-point text and 10-point line
-spacing. This includes the references section. Do not reduce the
-typeface size or the line spacing of any part of your content, in an
-effort to fit more into a specific number of pages. 
+\section{Methods}
 
-All typefaces used in your content must be embedded in the PDF you
-create. 
+\section{Results and Discussion}
 
-Paragraphs are prepared without any indentation on the first line, and
-with a 10-point-tall space between paragraphs.
-
-Please do not add page numbers to your content. They will be added
-during production.
-
-\section{The Basics: Title, Author, and Affiliation Information}
-
-The title, author, and affiliation information should be centered
-above the body of your content. The title should be set in a 14-point
-bold sans-serif typeface with 18-point line spacing. The author and
-affiliation information should be set in a 10-point serif typeface
-with 12-point line spacing.
-
-The title should be appropriately capitalized. ``All caps'' is not
-appropriate. The following link provides assistance with appropriate
-capitalization:
-
-{\small\url{http://www.grammarbook.com/punctuation/capital.asp}}
-
-Affiliations should include your educational institution or employer's
-name, and a valid e-mail address.
-
-\section{The Basics: Section Headings}
-
-Section headings should be set in a 10-point bold sans-serif typeface
-and numbered - ``1'', ``2'', and so on. Subsection headings should be
-set in a 10-point bold sans-serif typeface and numbered - ``1.1'',
-``1.2'', and so on. Subsubsection headings should be set in a 10-point
-italic sans-serif typeface and numbered - ``1.2.1'', ``1.2.2'', and so
-on. A 10-point-tall space should separate a section heading and the
-next paragraph.
-
-\section{Abstract, Keywords, and CR Categories}
-
-Your content should begin with an abstract of about 150 words,
-describing the work and its contribution to the field.
-
-Authors of technical papers and technical briefs must also provide a
-set of user-generated keywords and a selection of CR categories, from
-the following link:
-
-{\small\url{http://www.acm.org/about/class/1998/}}
-
-Authors of other types of content may include CR categories and
-keywords at their discretion.
-
-\section{ACM Rights Management Text}
-
-You are required to leave a blank space at the base of the left column
-on the first page of your content for the ACM rights management
-text. This blank space will be one column wide, and one inch tall for
-all types of content except technical papers accepted to our annual
-(SIGGRAPH and SIGGRAPH Asia) conferences. In this case, the space must
-be 1.5 inches tall. (These technical papers are accepted as articles
-in the ACM ``Transactions on Graphics'' journal, and the rights
-management text is slightly different, and occupies more space.)
-
-\section{Figures and Tables and Captions}
-
-Figures and tables can span one or both columns. Captions for figures
-should be centered underneath the figure. Captions for tables should
-be centered above the table.
-
-\begin{table}[ht]
-  \centering
-  \caption{A simple table.}
-  \begin{tabular}{|r|l|}
-    \hline
-    7C0 & hexadecimal \\
-    3700 & octal \\ \cline{2-2}
-    11111000000 & binary \\
-    \hline \hline
-    1984 & decimal \\
-    \hline
-  \end{tabular}
-\end{table}
-  
-Please use 9-point bold serif type for the caption title, and 9-point
-serif type for the caption text (both on 10-point line spacing).
-
-\section{Citations and References}
-
-\subsection{Citations}
-
-The SIGGRAPH citation format is the ``author year''
-format~\cite{Pellacini:2005:LAH}. The year is separated from the
-author by a single space~\cite{yee:2000:ssa}. Two authors are
-separated by the word ``and''~\cite{parke:1996:CFA}. More than two
-authors are represented by the primary author and ``et al.''~\cite{levoy:2000:TDM}.
-
-Multiple citations at a single point in the content are separated by
-semicolons~\cite{levoy:2000:TDM,sako:2001:SSB}.
-
-When the last name of the cited author is part of the text, it may be
-omitted from the citation: ``\ldots as shown in Fedkiw et
-al.~\shortcite{fedkiw:2001:VSO}, the coefficient remains\ldots''
-
-\subsection{References}
-
-The reference list, or bibliography, must be unnumbered, alphabetized
-by the primary author's last name, followed by the year of publication
-and other identifying information (article title, journal title,
-volume, number, etc.). Author names are arranged as ``last name,
-initials.'' The page number, if any, is the last piece of information
-in the reference.
-
-The first line of each entry in the bibliography has no
-indentation. The second successive lines has a 2em
-indentation. 
-
-Please use 9-point serif type, with 10-point line spacing, for each
-entry in the bibliography, with a single blank line between each
-entry. 
-
-Journal, book, thesis, and conference proceedings titles are set in an
-italic serif type. {\sc Author names should be typeset in a ``Small
-Caps'' typeface.}
-
-\section{Third-Party Material}
-
-If you are using third-party material in your content - that is,
-material which you or your co-authors did not create - you need to
-clearly identify it as such in the material itself or in the 
-content's caption, as shown in Figure~\ref{fig:ferrari}.
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=3.0in]{images/ferrari_laferrari}
-  \caption{Ferrari LaFerrari. Image courtesy Flickr user ``gfreeman23.''}
-  \label{fig:ferrari}
-\end{figure}
-
-ACM's policy on third-party material can be found at the following link:
-
-{\small\url{http://www.acm.org/publications/third-party-material}}
-
-\section{``Artistic Images'' and Copyright Transfer}
-
-ACM's rights management policy mandates that if copyright is
-transferred to ACM, and authors wish to retain copyright of one or
-more of their own images or figures in the content, they can identify
-them as ``artistic images'' by including the author's copyright notice
-in the image itself or in the caption.
-
-(Please note that only technical papers and technical briefs have
-copyright transfer as an option. All other forms of content have
-permission and licensing options, but not copyright transfer.)
-
-\section{Author-Prepared Versions of Final Content}
-
-ACM's rights management policy provides for author-prepared versions
-of final content to be made available on the author's personal or
-employer's web site for distribution.
-
-The author is responsible for creating the article-specific notice and
-making it part of the PDF. The following is an example of such a
-notice. Yours will have the year, publication, and article DOI
-information specific to your final content.
-
-\texttt{\small(c) 2009 ACM. This is the author's version of the work. It is posted here by permission of ACM for your personal use. Not for redistribution. The definitive version was published in ACM Transactions on Graphics 28(3), August 2009. http://doi.acm.org/10.1145/1576246.1531329.}
-
-\section{Application-Specific Notes}
-
-\subsection{\LaTeX}
-
-The ``acmsiggraph'' \LaTeX{} class will faithfully implement the formatting specifications found in this document. Please look at the ``template.tex'' file that accompanies the \LaTeX\ and \BibTeX\ class files, noting these points:
-\begin{itemize}
-\item In order to leave the correct amount of space clear for the rights management text, you must do two things: 
-\begin{enumerate}
-\item Use the proper parameter to the \cs{documentclass} command at the top of your source file: use ``tog'' for technical papers accepted to our annual events and published as TOG articles, and use ``conference'' for all other types of content. The parameter determines the amount of space left clear for the rights management text.
-\item Use the \cs{copyrightspace} command. It should be placed immediately before the first section of your paper.
-\end{enumerate}
-If you do not use any parameter to the \cs{documentclass} command, and use the \cs{copyrightspace} command, you'll end up with much more blank space than you want or need.
-
-\item Many authors like to have a large image - called a ``teaser'' image - after the title, author, and affiliation and before the body of the paper. There is a command - \cs{teaser} - which can be used to place such an image. (As has been done in this example document.) Under certain circumstances, the space left clear for the rights management text will move to the base of the right column on the first page. This is acceptable.
-\item Use the \cs{keywords} command to define your own keywords, and the \cs{keywordlist} command to prepare and print that block of text.
-\item Use the \cs{CRcatlist} environment and the \cs{CRcat} command to define the CR categories appropriate for your paper.
-\item There are also ``review'' and ``preprint'' variations of this document class, to be used for material submitted for review, and accepted content to be distributed as a ``preprint.'' These variations have special commands associated with them; see the ``template.tex'' file for more information.
-\end{itemize}
-
-\subsection{Microsoft Word}
-
-The ``acmsiggraph.docx'' file will faithfully implement the formatting
-specifications found in this document.
-
-An appropriately-placed column break is one way to leave the right
-amount of space for the rights management text.
-
-\section{Proceedings Production}
-
-Your final content will be checked and, if found acceptable for publication, will have the appropriate page header and footer information and ACM rights management text added to it. 
-
-If your final content is not acceptable for publication - for example, unembedded typefaces, missing required elements, or modification of the format - you will be directed to correct these issues and submit a new version of your final content as soon as possible.
-
-\section{Contact Information}
-
-If you have questions or suggestions regarding this document, please
-contact Stephen Spencer at ``spencer@cs.washington.edu''.
+\paragraph{Limitations}
 
 \section*{Acknowledgements}
-
-To Robert, for all the bagels.
+Removed for anonymous review.
 
 \bibliographystyle{acmsiggraph}
-\nocite{*}
-\bibliography{template}
+\bibliography{csm}
 \end{document}
