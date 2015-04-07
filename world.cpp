@@ -173,6 +173,23 @@ void World::drawPretty(SDL_Window* window) const {
   if (which_cluster != -1) {
      auto& c = clusters[which_cluster];
 
+	 Eigen::Matrix3d init;
+	 init.setZero();
+	 
+	 
+	 Eigen::Matrix3d Apq = computeApq(c, init, c.worldCom);
+	 Eigen::Matrix3d A = Apq*c.aInv;
+	 if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
+	 
+	 //do the SVD here so we can handle fracture stuff
+	 Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
+		 Eigen::ComputeFullU | Eigen::ComputeFullV);
+	 
+	 Eigen::Matrix3d U = solver.matrixU(), V = solver.matrixV();
+	 Eigen::Vector3d sigma = solver.singularValues();
+
+	 std::cout << "sigma: " << sigma << std::endl;
+
      glColor4d(0,0,0, 0.9);
 
      glPointSize(5);
