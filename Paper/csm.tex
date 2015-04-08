@@ -152,9 +152,10 @@ we apply it to shape matching clusters instead of individual tetrahedra and make
 lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
 
 \section{Methods}
-For completeness and readability, we first review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB} before
+For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB} before
 introducing our plasticity and fracture models.  Finally we briefly discuss our approaches to sampling and clustering.
 \subsection{Shape Matching}
+\label{sec:ShapeMatching}
 In the shape matching framework
 objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
 that follow a path, $\B{x}_i(t)$, in world-space through time.  
@@ -190,9 +191,10 @@ where $\B{O}(\cdot,\cdot)$ is the outer product matrix
 and $m_i$ is the mass of $p_i$. 
 We then compute $\B{R}$ using the polar decomposition,
 \begin{equation}
+\label{eq:decomp}
 \B{F} = \B{R}\B{S} = \left(\B{UV}^T\right)\left(\B{V\Sigma V}^T\right)
 \end{equation}
-where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the singular value decomposition (SVD) of $F$.
+where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the singular value decomposition (SVD) of $\B{F}$.
 While several researchers (e.g.~\cite{Rivers:2007:FFL}) have pointed out that the polar decompositions can be computed faster than the SVD,
 especially when warm started, we use the SVD for its robustness and for our plasticity and fracture models 
 (see~\srefs{sec:Plasticity}{sec:Fracture}.  We also note that we compute the polar decomposition of $\B{F}$, not
@@ -220,19 +222,47 @@ average of the goal positions given by each cluster it is a part of.  That is,
 \end{equation}
 where $\B{g}_{ic}$ is the goal position for particle $p_i$ in cluster $c$.
 
-We also adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
+\paragraph{Strain Limiting}
+To maintain stability we adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
 
 \subsection{Plasticity}
 \label{sec:Plasticity}
 To accommodate plastic deformation we store and update an additional matrix, $\B{F}^p_c$ for each cluster, $c$.
+For readability we drop the subscript, but the following is computed for each cluster.
 We then compute the elastic part of the deformation gradient
 \begin{equation}
-\B{F}^e_c = \B{F}_c \left(\B{F}^p_c\right)^{-1},
+\B{F}^e = \B{F} \left(\B{F}^p\right)^{-1},
 \end{equation}
-where $\B{F}_c$ is given by~\eref{eq:defgrad}.
+where $\B{F}$ is given by~\eref{eq:defgrad}.  We then decompose $\B{F}^e$ in~\eref{eq:decomp}.
+
+$\B{F}^p$ is initialized to the identity, $\B{I}$.  Then each timestep we compute the volume preserving part 
+of the diagonalized $\B{F}^e$,
+\begin{equation}
+\B{F}^* = \det(\B{\Sigma}^e)^{-1/3}\B{\Sigma}^e.
+\end{equation}
+We then compare
+\begin{equation}
+\|\B{F}^* - \B{I}\|_F
+\end{equation}
+to a plastic yield threshold, $\lambda$, where $\|\cdot\|_F$ is the Frobenius norm.  If the threshold
+is not exceeded $\B{F}^p$ remains unchanged.  Otherwise we update $\B{F}^p$ by
+\begin{equation}
+\B{F}^p_{new} = \left(\B{F}^*\right)^\gamma\B{V}\B{F}^p_{old},
+\end{equation}
+where $\B{V}$ is the matrix of right singular vectors in~\eref{eq:decomp} and $\gamma$ is given by
+\begin{equation}
+\gamma = \min\left(\frac{\nu * \|\B{F}^* - \B{I}\|_F - \lambda - K\alpha}{\|\B{F}^* - \B{I}\|_F},1\right),
+\end{equation}
+where $\nu$ and $K$ are user-given flow rate and work hardening/softening constant, respectively, 
+and $\alpha$ is a measure of cumulative stress that is initialized to zero and then updated by
+\begin{equation}
+\dot{\alpha} = \|\B{F}^e-\B{I}\|_F.
+\end{equation}
+
 
 \subsection{Fracture}
 \label{sec:Fracture}
+We duplicate $\B{F}^p$ to the new cluster.
 
 \subsection{Sampling and Clustering}
 
