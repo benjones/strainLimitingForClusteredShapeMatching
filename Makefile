@@ -13,7 +13,7 @@ OPT = -O2 -g
 
 TARGETS = runSimulator
 
-OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o color_spaces.o
+OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o color_spaces.o projectile.o
 
 #-----------------------------------------
 # Update to point to your eigen headers, sdl headers

@@ -22,7 +22,7 @@ using benlib::range;
 
 
 void World::draw(SDL_Window* window) const {
-
+  throw("don't call me");
   glEnable(GL_DEPTH_TEST);
   glFrontFace(GL_CCW);
   glEnable(GL_CULL_FACE);
@@ -220,6 +220,16 @@ void World::drawPretty(SDL_Window* window) const {
 
   }
 
+
+  glColor3d(1, 0, 1);
+  for(auto& projectile : projectiles){
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	auto currentPosition = projectile.start + elapsedTime*projectile.velocity;
+	glTranslated(currentPosition.x(), currentPosition.y(), currentPosition.z());
+	utils::drawSphere(projectile.radius, 10, 10);
+	glPopMatrix();
+  }
 
 
 
@@ -473,6 +483,23 @@ void World::loadFromJson(const std::string& _filename){
 
   }
   std::cout << movingPlanes.size() << " moving planes" << std::endl;
+
+  auto projectilesIn = root["projectiles"];
+  for(auto i : range(projectilesIn.size())){
+	auto& projectile = projectilesIn[i];
+	Eigen::Vector3d start(projectile["start"][0].asDouble(),
+		projectile["start"][1].asDouble(),
+		projectile["start"][2].asDouble());
+	Eigen::Vector3d vel(projectile["velocity"][0].asDouble(),
+		projectile["velocity"][1].asDouble(),
+		projectile["velocity"][2].asDouble());
+
+	projectiles.emplace_back(start, vel, projectile["radius"].asDouble());
+
+  }
+
+
+
   double mass = root.get("mass", 0.1).asDouble();
   for(auto& p : particles){ p.mass = mass;}
 
@@ -700,6 +727,11 @@ void World::bounceOutOfPlanes(){
   for(auto& movingPlane : movingPlanes){
 	for(auto& particle : particles){
 	  movingPlane.bounceParticle(particle, elapsedTime);
+	}
+  }
+  for(auto& projectile : projectiles){
+	for(auto& particle : particles){
+	  projectile.bounceParticle(particle, elapsedTime);
 	}
   }
 }

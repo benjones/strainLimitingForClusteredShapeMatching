@@ -2,6 +2,7 @@
 
 #include "particle.h"
 #include "movingPlane.hpp"
+#include "projectile.hpp"
 #include "accelerationGrid.h"
 #include "preallocVector.hpp"
 #include "profiler.hpp"
@@ -32,6 +33,7 @@ public:
 	planes.clear();
    movingPlanes.clear();
 	clusterCenters.clear();
+	projectiles.clear();
 	
 	loadFromJson(filename);
 
@@ -161,6 +163,7 @@ public:
 
   std::vector<Eigen::Vector4d> planes;
   std::vector<MovingPlane> movingPlanes;
+  std::vector<Projectile> projectiles;
 
   std::vector<size_t> clusterCenters;
 
