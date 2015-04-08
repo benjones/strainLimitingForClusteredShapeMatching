@@ -176,6 +176,7 @@ Specifically, we seek the $\B{F}$ that minimizes
 \end{equation}
 Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we arrive at
 \begin{equation}
+\label{eq:defgrad}
 \B{F} = \left(\sum_i m_i \B{O}(\B{x}_i,\B{r}_i)\right)\left(\sum_im_i\B{O}(\B{r}_i,\B{r}_i)\right)^{-1},
 \end{equation}
 where $\B{O}(\cdot,\cdot)$ is the outer product matrix
@@ -204,10 +205,31 @@ This transformation allows us to define goal positions, $\B{g}_i$,
 \end{equation}
 Hookean springs are then used to define forces that move the particles toward the goal positions.
 
+\paragraph{Clustered Shape Matching}
+Handling multiple clusters is straightforward.  When computing the cluster mass and center-of-mass,
+we divide a particle's mass by the number of clusters it belongs to.  That is if particle, $p_i$ belongs
+to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$ is
+\begin{equation}
+\B{x}_{cm,c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
+\end{equation}
+where $\mathcal{P}_c$ is the set of particles in cluster $c$.
+Furthermore, when computing the goal position, $\B{g}_i$ for a particle we perform a simple
+average of the goal positions given by each cluster it is a part of.  That is,
+\begin{equation}
+\B{g}_i = \frac{\B{g}_{ic}}{n_i},
+\end{equation}
+where $\B{g}_{ic}$ is the goal position for particle $p_i$ in cluster $c$.
+
 We also adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
 
 \subsection{Plasticity}
 \label{sec:Plasticity}
+To accommodate plastic deformation we store and update an additional matrix, $\B{F}^p_c$ for each cluster, $c$.
+We then compute the elastic part of the deformation gradient
+\begin{equation}
+\B{F}^e_c = \B{F}_c \left(\B{F}^p_c\right)^{-1},
+\end{equation}
+where $\B{F}_c$ is given by~\eref{eq:defgrad}.
 
 \subsection{Fracture}
 \label{sec:Fracture}
