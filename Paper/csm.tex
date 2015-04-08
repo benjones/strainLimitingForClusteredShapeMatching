@@ -85,35 +85,30 @@ versatile, and simple to implement.
 \copyrightspace
 
 \section{Introduction}\label{sec:Introduction}
-In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
-for deformable bodies, thus filling a gap in the shape matching literature. 
 {\em Shape matching} is a geometrically motivated technique for animating deformable bodies introduced
 a decade ago by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
-In this approach
-objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
-that follow a path, $\B{x}_i(t)$, in world-space through time.  
-At each frame, shape matching solves for the rotation matrix, $\B{R}$, and a translation
-vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimize
-\begin{equation}
-\sum_i \left(\B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
-\end{equation}
-The best translations are given by the center-of-mass in the rest and world space, respectively.  
-The rotation, $\B{R}$, is computed through a polar decomposition.  Intuitively, this computation
-yields the least-squares best-fit rigid transformation from the rest pose to the current deformed pose.
-This transformation allows us to define goal positions, $\B{g}_i$,
-\begin{equation}
-\B{g}_i = \B{R}\left(\B{r}_i-\B{r}_{cm}\right)+\B{x}_{cm}.
-\end{equation}
-Hookean springs are then used to define forces that move the particles toward the goal positions.
-This basic approach was extended by including linear and quadratic global deformations, cluster-based
-deformations, and plasticity.
-
+\fref{fig:shapematching} summarizes the approach.
 In their seminal work, \Mueller and colleagues~\shortcite{Mueller:2005:MDB} introduced a simple plasticity
-model, but did not address fracture.  In follow up work, Rivers and James~\shortcite{Rivers:2007:FFL}
-incorporated a simple fracture model, but did not address plasticity.  
+model and, in follow up work, Rivers and James~\shortcite{Rivers:2007:FFL}
+incorporated a simple fracture model.  However, ductile fracture has not yet been addressed in the
+shape matching literature.
 
-In this paper, we present plasticity and fracture models inspired by finite element approaches to 
-animating deformable bodies.  
+\begin{figure*}
+\includegraphics[width=\linewidth]{Figures/shapematching.png}
+\caption{Shape Matching Overview: (a) An object (here, a square) is sampled with particles, $p_i$, to get rest positions, $\B{r}_i$.  
+(b) As particles are subjected to external forces and constraints, their positions, $\B{x}_i$, are updated in world space.  
+(c)  The best-fitting rigid transformation of the particles' rest positions, $\B{r}_i$, 
+to their world positions, $\B{x}_i$ is computed.  The dotted red circles are the {\em goal} positions, $\B{g}_i$.  
+(d) Hookean springs pull the world positions toward the goal positions.}
+\label{fig:shapematching}
+\end{figure*}
+
+%In this paper, we incorporate ductile fracture into the clustered shape matching simulation framework
+%for deformable bodies, thus filling a gap in the shape matching literature. 
+In this paper, we enable the animation of ductile fracture 
+by incorporating plasticity and fracture models into the clustered shape matching framework.
+Our models are inspired by finite element approaches to animating deformable bodies, but are adapted to 
+clustered shape matching.
 Specifically, inspired by the work of Irving and colleagues~\shortcite{Irving:2004:IFE} and Bargteil and 
 colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plasticity model that incorporates
 yield stress, flow rate, and work hardening.  Inspired by the work of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA},
@@ -157,10 +152,126 @@ we apply it to shape matching clusters instead of individual tetrahedra and make
 lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
 
 \section{Methods}
+For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB} before
+introducing our plasticity and fracture models.  Finally we briefly discuss our approaches to sampling and clustering.
+\subsection{Shape Matching}
+\label{sec:ShapeMatching}
+In the shape matching framework
+objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
+that follow a path, $\B{x}_i(t)$, in world-space through time.  
+Shape matching takes its name from the fact that, each frame, we match the rest shape to 
+the deformed shape by finding
+the least-squares best-fit rigid transformation from the rest pose
+to the current deformed pose by
+solving for the rotation matrix, $\B{R}$, and translation
+vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimize
+\begin{equation}
+\sum_i \left(\B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\end{equation}
+The best translation is given by the center-of-mass in the rest and world space.  
+Computing the rotation, $\B{R}$, is more involved.  
+We first compute the least-squares best-fit linear deformation gradient, $\B{F}$.
+Specifically, we seek the $\B{F}$ that minimizes
+\begin{equation}
+\sum_i \left(\B{F}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\end{equation}
+Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we arrive at
+\begin{equation}
+\label{eq:defgrad}
+\B{F} = \left(\sum_i m_i \B{O}(\B{x}_i,\B{r}_i)\right)\left(\sum_im_i\B{O}(\B{r}_i,\B{r}_i)\right)^{-1},
+\end{equation}
+where $\B{O}(\cdot,\cdot)$ is the outer product matrix
+\begin{equation}
+\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T
+\end{equation}
+%\begin{align}
+%\B{F} = &\left(\sum_i m_i\left(\B{x}_{i}-\B{x}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)\notag\\
+%&\left(\sum_i m_i\left(\B{r}_{i}-\B{r}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)^{-1},
+%\end{align}
+and $m_i$ is the mass of $p_i$. 
+We then compute $\B{R}$ using the polar decomposition,
+\begin{equation}
+\label{eq:decomp}
+\B{F} = \B{R}\B{S} = \left(\B{UV}^T\right)\left(\B{V\Sigma V}^T\right)
+\end{equation}
+where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the singular value decomposition (SVD) of $\B{F}$.
+While several researchers (e.g.~\cite{Rivers:2007:FFL}) have pointed out that the polar decompositions can be computed faster than the SVD,
+especially when warm started, we use the SVD for its robustness and for our plasticity and fracture models 
+(see~\srefs{sec:Plasticity}{sec:Fracture}.  We also note that we compute the polar decomposition of $\B{F}$, not
+the left matrix ($\sum_im_i\B{O}(\B{x}_i,\B{r}_i)$) as done by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.  This modification
+is particularly important if the distribution of mass in the cluster is non-uniform.
+
+This transformation allows us to define goal positions, $\B{g}_i$,
+\begin{equation}
+\B{g}_i = \B{R}\left(\B{r}_i-\B{r}_{cm}\right)+\B{x}_{cm}.
+\end{equation}
+Hookean springs are then used to define forces that move the particles toward the goal positions.
+
+\paragraph{Clustered Shape Matching}
+Handling multiple clusters is straightforward.  When computing the cluster mass and center-of-mass,
+we divide a particle's mass by the number of clusters it belongs to.  That is if particle, $p_i$ belongs
+to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$ is
+\begin{equation}
+\B{x}_{cm,c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
+\end{equation}
+where $\mathcal{P}_c$ is the set of particles in cluster $c$.
+Furthermore, when computing the goal position, $\B{g}_i$ for a particle we perform a simple
+average of the goal positions given by each cluster it is a part of.  That is,
+\begin{equation}
+\B{g}_i = \frac{\B{g}_{ic}}{n_i},
+\end{equation}
+where $\B{g}_{ic}$ is the goal position for particle $p_i$ in cluster $c$.
+
+\paragraph{Strain Limiting}
+To maintain stability we adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
+
+\subsection{Plasticity}
+\label{sec:Plasticity}
+To accommodate plastic deformation we store and update an additional matrix, $\B{F}^p_c$ for each cluster, $c$.
+For readability we drop the subscript, but the following is computed for each cluster.
+We then compute the elastic part of the deformation gradient
+\begin{equation}
+\B{F}^e = \B{F} \left(\B{F}^p\right)^{-1},
+\end{equation}
+where $\B{F}$ is given by~\eref{eq:defgrad}.  We then decompose $\B{F}^e$ in~\eref{eq:decomp}.
+
+$\B{F}^p$ is initialized to the identity, $\B{I}$.  Then each timestep we compute the volume preserving part 
+of the diagonalized $\B{F}^e$,
+\begin{equation}
+\B{F}^* = \det(\B{\Sigma}^e)^{-1/3}\B{\Sigma}^e.
+\end{equation}
+We then compare
+\begin{equation}
+\|\B{F}^* - \B{I}\|_F
+\end{equation}
+to a plastic yield threshold, $\lambda$, where $\|\cdot\|_F$ is the Frobenius norm.  If the threshold
+is not exceeded $\B{F}^p$ remains unchanged.  Otherwise we update $\B{F}^p$ by
+\begin{equation}
+\B{F}^p_{new} = \left(\B{F}^*\right)^\gamma\B{V}\B{F}^p_{old},
+\end{equation}
+where $\B{V}$ is the matrix of right singular vectors in~\eref{eq:decomp} and $\gamma$ is given by
+\begin{equation}
+\gamma = \min\left(\frac{\nu * \|\B{F}^* - \B{I}\|_F - \lambda - K\alpha}{\|\B{F}^* - \B{I}\|_F},1\right),
+\end{equation}
+where $\nu$ and $K$ are user-given flow rate and work hardening/softening constant, respectively, 
+and $\alpha$ is a measure of cumulative stress that is initialized to zero and then updated by
+\begin{equation}
+\dot{\alpha} = \|\B{F}^e-\B{I}\|_F.
+\end{equation}
+We do not apply additional rotations when computing $\B{F}^p_{new}$ as these would be discarded during
+the decomposition in~\eref{eq:decomp}.
+
+
+\subsection{Fracture}
+\label{sec:Fracture}
+We duplicate $\B{F}^p$ to the new cluster.
+
+\subsection{Sampling and Clustering}
+
 
 \section{Results and Discussion}
 
-\paragraph{Limitations}
+\paragraph{Limitations and Future Work}
 
 \section*{Acknowledgements}
 Removed for anonymous review.
