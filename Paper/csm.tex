@@ -68,7 +68,7 @@
 \maketitle
 
 \begin{abstract}
-In this paper, we introduce incorporate ductile fracture into the clustered shape matching simulation framework
+In this paper, we incorporate ductile fracture into the clustered shape matching simulation framework
 for deformable bodies, thus filling a gap in the shape matching literature.  The resulting approach is fast,
 versatile, and simple to implement.
 \end{abstract}
@@ -114,13 +114,13 @@ colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plastici
 yield stress, flow rate, and work hardening.  Inspired by the work of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA},
 we introduce a cluster-based fracture approach that splits individual clusters along the plane orthogonal to the direction the 
 cluster is most stretched.
-Taken together these contributions allow animation of ductile in the clustered shape matching framework.
+Taken together these contributions allow animation of ductile fracturein the clustered shape matching framework.
 
 \section{Related Work}
 The geometrically motivated shape matching approach was introduced by \Mueller and 
 colleagues~\shortcite{Mueller:2005:MDB}, who demonstrated impressive results and 
 described the key advantages of the approach: efficiency, stability, and controllability.
-Given these advantages, shape matching is especially appealing in interactive animation contexts such 
+Given these advantages, shape matching is especially appealing in interactive animation contexts such as
 video games.  The authors also introduced several extensions including linear and quadratic deformations 
 (in addition to rigid deformations), cluster-based deformation, and plasticity.  
 
@@ -134,7 +134,7 @@ dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP
 the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching.
 We incorporate our ductile fracture approach into their framework.
 
-Ductile fracture is distinguished from brittle fracture by the inclusion plastic deformation.  Materials undergoing ductile
+Ductile fracture is distinguished from brittle fracture by the inclusion of plastic deformation.  Materials undergoing ductile
 fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  Most
 real-world materials demonstrate some amount of plastic deformation during failure, so purely brittle models have fairly limited
 application in computer animation.  
@@ -144,12 +144,16 @@ however, it was O'Brien and colleagues~\shortcite{Obrien:2002:GMA}
 who first combined these phenomena to animate ductile fracture.  Since that time, plasticity and fracture have
 remained very active research areas in computer animation and a thorough review is beyond the scope of this short paper.
 \adam{in part this is because I am lazy, does anyone think it would be important?}
+\josh{I think the review would only be important if we were able to draw
+a conclusion like ``the most promising way to apply it in the context of
+csm is blah...'', or some other general trend regarding it that's
+applicable in this context}
 
 Our approach 
 to fracture closely resembles that of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA}; however, instead of splitting tetrahedra,
 we split shape matching clusters.  Our plasticity model closely resembles that of Bargteil and colleagues~\shortcite{Bargteil:2007:AFE}, except that
 we apply it to shape matching clusters instead of individual tetrahedra and make no particular effort to ensure that plastic deformation does not
-lead to insability, i.e. we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
+lead to instability, i.e.~we do not update clusters to ensure well-conditioned matrices as done by, for example, Jones and colleagues~\shortcite{Jones:2014:DEF}.
 
 \section{Methods}
 For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB} before
@@ -197,7 +201,10 @@ We then compute $\B{R}$ using the polar decomposition,
 where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the singular value decomposition (SVD) of $\B{F}$.
 While several researchers (e.g.~\cite{Rivers:2007:FFL}) have pointed out that the polar decompositions can be computed faster than the SVD,
 especially when warm started, we use the SVD for its robustness and for our plasticity and fracture models 
-(see~\srefs{sec:Plasticity}{sec:Fracture}.  We also note that we compute the polar decomposition of $\B{F}$, not
+(see~
+%\srefs{sec:Plasticity}{sec:Fracture}
+).  
+We also note that we compute the polar decomposition of $\B{F}$, not
 the left matrix ($\sum_im_i\B{O}(\B{x}_i,\B{r}_i)$) as done by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.  This modification
 is particularly important if the distribution of mass in the cluster is non-uniform.
 
@@ -268,6 +275,28 @@ We duplicate $\B{F}^p$ to the new cluster.
 
 \subsection{Sampling and Clustering}
 
+Both the distribution of particles that model and object as well as the
+clustering of particles can affect the simulation quality.  We
+experiment with both uniform sampling as well as blue noise sampling.
+Our blue noise sampler is based on Bridson's fast Poisson disk
+sampling~\cite{Bridson:2007:FPD}.  In either case, for objects whose
+boundary is an arbitrary manifold, we simple sample particles within
+the bounding box of the sample, and then discard for particles within
+the surface.
+
+To avoid mass lumping, our approach for clustering is a variant of the
+well know $k$-means algorithm.  The user is allowed to specify both the
+number of clusters, $n$, as well as a target neighborhood radius, $d$.
+We initialize $n$ clusters as randomly selected seed particles.
+Particles are then placed into whichever cluster they are closest to.
+We then iteratively compute the center of mass for each cluster, and
+redistribute the particles into the clusters based on distance to the
+nearest center of mass.  This process iterates until clustering has
+converged.  Finally, we then include all particles within any cluster
+provided that the distance between the particle and the cluster center
+of mass is less than $d$.
+
+\josh{what else needs to be said here?}
 
 \section{Results and Discussion}
 
