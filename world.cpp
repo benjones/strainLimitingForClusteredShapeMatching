@@ -438,6 +438,7 @@ void World::loadFromJson(const std::string& _filename){
   // plasticity parameters
   yield = root.get("yield", 0.0).asDouble();
   nu = root.get("nu", 0.0).asDouble();
+  hardening = root.get("hardening", 0.0).asDouble();
   
 
 
@@ -645,20 +646,24 @@ void World::timestep(){
 	  
 	  
 	  // plasticity
-	  if (nu > 0.0 && sigma(2) >= 1e-4) { // adam says: the second clause is a quick hack to avoid plasticity when sigma is degenerate
-		Eigen::Vector3d FpHat = sigma;
-		//std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<" => ";
-		FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
-		//std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<std::endl;
-		double norm = sqrt(sqr(FpHat(0)-1.0) + sqr(FpHat(1)-1.0) + sqr(FpHat(2)-1.0));
-		if (norm > yield) {	
-		  double gamma = std::min(1.0, nu * (norm - yield) / norm);
-		  FpHat(0) = pow(FpHat(0), gamma);
-		  FpHat(1) = pow(FpHat(1), gamma);
-		  FpHat(2) = pow(FpHat(2), gamma);
-		  // update cluster.Fp
-		  cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp;
+	  if (nu > 0.0) {
+		if (sigma(2) >= 1e-4) { // adam says: the second clause is a quick hack to avoid plasticity when sigma is degenerate
+		  Eigen::Vector3d FpHat = sigma;
+		  //std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<" => ";
+		  FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
+		  //std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<std::endl;
+		  double norm = sqrt(sqr(FpHat(0)-1.0) + sqr(FpHat(1)-1.0) + sqr(FpHat(2)-1.0));
+		  double local_yield = yield + hardening * cluster.cstrain;
+		  if (norm > local_yield) {	
+			double gamma = std::min(1.0, nu * (norm - local_yield) / norm);
+			FpHat(0) = pow(FpHat(0), gamma);
+			FpHat(1) = pow(FpHat(1), gamma);
+			FpHat(2) = pow(FpHat(2), gamma);
+			// update cluster.Fp
+			cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp;
+		  }
 		}
+		cluster.cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
 	  }
 	}
 	
