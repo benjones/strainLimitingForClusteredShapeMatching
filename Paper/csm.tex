@@ -114,7 +114,7 @@ colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plastici
 yield stress, flow rate, and work hardening.  Inspired by the work of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA},
 we introduce a cluster-based fracture approach that splits individual clusters along the plane orthogonal to the direction the 
 cluster is most stretched.
-Taken together these contributions allow animation of ductile fracturein the clustered shape matching framework.
+Taken together these contributions allow animation of ductile fracture in the clustered shape matching framework.
 
 \section{Related Work}
 The geometrically motivated shape matching approach was introduced by \Mueller and 
@@ -161,23 +161,24 @@ introducing our plasticity and fracture models.  Finally we briefly discuss our 
 \subsection{Shape Matching}
 \label{sec:ShapeMatching}
 In the shape matching framework
-objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with rest positions, $\B{r}_i$, 
-that follow a path, $\B{x}_i(t)$, in world-space through time.  
+objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with masses, $m_i$, rest positions, $\B{r}_i$, 
+and that follow a path, $\B{x}_i(t)$, in world-space through time.  
 Shape matching takes its name from the fact that, each frame, we match the rest shape to 
 the deformed shape by finding
 the least-squares best-fit rigid transformation from the rest pose
 to the current deformed pose by
 solving for the rotation matrix, $\B{R}$, and translation
-vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimize
+vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimizes
 \begin{equation}
-\sum_i \left(\B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\label{eq:sm}
+\sum_i m_i \| \B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\|^2.
 \end{equation}
 The best translation is given by the center-of-mass in the rest and world space.  
 Computing the rotation, $\B{R}$, is more involved.  
 We first compute the least-squares best-fit linear deformation gradient, $\B{F}$.
 Specifically, we seek the $\B{F}$ that minimizes
 \begin{equation}
-\sum_i \left(\B{F}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\right)^2.
+\sum_i m_i \| \B{F}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\|^2.
 \end{equation}
 Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we arrive at
 \begin{equation}
@@ -186,13 +187,13 @@ Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we 
 \end{equation}
 where $\B{O}(\cdot,\cdot)$ is the outer product matrix
 \begin{equation}
-\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T
+\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T.
 \end{equation}
 %\begin{align}
 %\B{F} = &\left(\sum_i m_i\left(\B{x}_{i}-\B{x}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)\notag\\
 %&\left(\sum_i m_i\left(\B{r}_{i}-\B{r}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)^{-1},
 %\end{align}
-and $m_i$ is the mass of $p_i$. 
+%and $m_i$ is the mass of $p_i$. 
 We then compute $\B{R}$ using the polar decomposition,
 \begin{equation}
 \label{eq:decomp}
@@ -216,7 +217,7 @@ Hookean springs are then used to define forces that move the particles toward th
 
 \paragraph{Clustered Shape Matching}
 Handling multiple clusters is straightforward.  When computing the cluster mass and center-of-mass,
-we divide a particle's mass by the number of clusters it belongs to.  That is if particle, $p_i$ belongs
+we divide a particle's mass by the number of clusters it belongs to, and we replace $m_i$ with $m_i/n_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad}.  That is if particle, $p_i$ belongs
 to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$ is
 \begin{equation}
 \B{x}_{cm,c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
@@ -225,7 +226,7 @@ where $\mathcal{P}_c$ is the set of particles in cluster $c$.
 Furthermore, when computing the goal position, $\B{g}_i$ for a particle we perform a simple
 average of the goal positions given by each cluster it is a part of.  That is,
 \begin{equation}
-\B{g}_i = \frac{\B{g}_{ic}}{n_i},
+\B{g}_i = \frac{1}{n_i} \sum_c \B{g}_{ic},
 \end{equation}
 where $\B{g}_{ic}$ is the goal position for particle $p_i$ in cluster $c$.
 
