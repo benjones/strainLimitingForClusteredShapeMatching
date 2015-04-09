@@ -12,6 +12,7 @@ public:
 	goalVelocity;
   double mass; 
   size_t numClusters;
+  bool outsideSomeMovingPlane;
   std::vector<int> clusters;
 };
 

@@ -2,17 +2,43 @@
 #include "particle.h"
 
 
+bool MovingPlane::outside(Particle& particle) const {
+   if(particle.restPosition.dot(normal) > offset){
+      return true;
+   }
+
+   return false;
+}
+
+   
+
 void MovingPlane::bounceParticle(Particle& particle, double timeElapsed) const {
+   double currentOffset = offset + timeElapsed*velocity;
 
-  double currentOffset = offset + timeElapsed*velocity;
-  
-  if(particle.restPosition.dot(normal) > offset){
-	
-	Eigen::Vector3d tangential = 
-	  particle.restPosition - (particle.restPosition.dot(normal))*normal;
+   if(outside(particle)){
+      Eigen::Vector3d tangential = 
+         particle.restPosition - (particle.restPosition.dot(normal))*normal;
 
-	particle.position = tangential + currentOffset*normal;
-	
-  }
+      particle.position = tangential + currentOffset*normal;
+   }
+}
+
+
+void MovingPlane::dragParticle(Particle& particle, double timeElapsed) const {
+   if(outside(particle)){
+      particle.velocity = velocity*normal;
+   }
+}
+
+void MovingPlane::backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
+   double w = -1*(offset + timeElapsed*velocity);
+
+   if (particle.position.dot(normal) < w) {
+      particle.position += (epsilon + w - particle.position.dot(normal))*normal;
+
+      //zero velocity in the normalal direction
+      particle.velocity -= particle.velocity.dot(normal)*normal;
+      particle.velocity *= 0.4; //friction
+   }
 
 }

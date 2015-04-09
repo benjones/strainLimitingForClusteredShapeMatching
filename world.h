@@ -181,6 +181,7 @@ public:
 
   bool drawClusters = true;
   bool colorByToughness = false;
+  bool dragWithPlanes = true;
   bool paused = false;
   int which_cluster = -1;
 

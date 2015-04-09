@@ -86,6 +86,8 @@ void loop(SDL_Window* window, World& world){
 		  world.drawClusters = !world.drawClusters;
       } else if(event.key.keysym.sym == SDLK_t){
 		  world.colorByToughness = !world.colorByToughness;
+      } else if(event.key.keysym.sym == SDLK_d){
+		  world.dragWithPlanes = !world.dragWithPlanes;  
 		} else if(event.key.keysym.sym == SDLK_p){
 		  world.paused = !world.paused;
       }

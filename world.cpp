@@ -477,6 +477,7 @@ void World::loadFromJson(const std::string& _filename){
 	Eigen::Vector3d normal(normalIn[0].asDouble(),
 		normalIn[1].asDouble(),
 		normalIn[2].asDouble());
+   normal.normalize();
 	movingPlanes.emplace_back(normal, 
 		movingPlanesIn[i]["offset"].asDouble(),
 		movingPlanesIn[i]["velocity"].asDouble());
@@ -502,6 +503,14 @@ void World::loadFromJson(const std::string& _filename){
 
   double mass = root.get("mass", 0.1).asDouble();
   for(auto& p : particles){ p.mass = mass;}
+
+  for(auto& p : particles){ p.outsideSomeMovingPlane = false;}
+
+  for(auto& movingPlane : movingPlanes){
+	for(auto& p : particles){
+      p.outsideSomeMovingPlane |= movingPlane.outside(p);
+   }
+  }
 
   
   restPositionGrid.numBuckets = 6;
@@ -725,8 +734,23 @@ void World::bounceOutOfPlanes(){
 
 
   for(auto& movingPlane : movingPlanes){
-	for(auto& particle : particles){
-	  movingPlane.bounceParticle(particle, elapsedTime);
+	for(auto& p : particles){
+      if (dragWithPlanes) {
+   	  movingPlane.dragParticle(p, elapsedTime);
+      } else {
+   	  movingPlane.bounceParticle(p, elapsedTime);
+      }
+   }
+  }
+
+  //do normal plane bounces on the backside of each plane.
+  for(auto& movingPlane : movingPlanes){
+	for(auto& p : particles){
+      //if not being pushed along outside of any plane, check for a
+      //normal bounce off the backside of the plane
+      if (!p.outsideSomeMovingPlane) {
+         movingPlane.backsideReflectBounceParticle(p, elapsedTime, epsilon);
+      }
 	}
   }
   for(auto& projectile : projectiles){
