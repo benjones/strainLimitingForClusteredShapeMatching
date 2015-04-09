@@ -21,7 +21,6 @@ public:
 
   using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
   void doFracture(std::vector<FractureInfo> potentialSplits);
-  void doFracture2(std::vector<FractureInfo> potentialSplits);
 
 
   inline void restart(){ 
@@ -63,7 +62,10 @@ public:
   void makeClusters();
 
   void countClusters();
-  void updateClusterProperties();
+
+  //pass a container of clusters to update
+  template <typename Container>
+  void updateClusterProperties(const Container& clusterIndices);
 
   std::vector<Particle> particles;
   std::vector<Cluster> clusters;
