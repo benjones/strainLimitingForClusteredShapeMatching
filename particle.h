@@ -23,6 +23,6 @@ class Cluster {
 	std::vector<int> neighbors;
   double mass, width, renderWidth;
   double toughness;
-	Cluster() {Fp.setIdentity();}
-
+  double cstrain; // cumulative strain (for work hardening)
+  Cluster() {Fp.setIdentity(); cstrain = 0.0;}
 };
