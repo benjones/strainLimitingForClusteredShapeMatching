@@ -266,12 +266,25 @@ the decomposition in~\eref{eq:decomp}.
 \label{sec:Fracture}
 We duplicate $\B{F}^p$ to the new cluster.
 
+We update cluster properties after each split.
+
 \subsection{Sampling and Clustering}
 
 
 \section{Results and Discussion}
+One view of clustered shape matching is that there are far fewer integration units than degrees of freedom compared to
+fem.  This makes sense for computer graphics applications where degrees of freedom correspond lead to visual detail 
+while integrations units lead to computational cost.
+
 
 \paragraph{Limitations and Future Work}
+The biggest limitation of our approach is a lack of theoretical underpinnings for the clustered shape matching
+approach.  While this framework effective and useful, especially for interactive applications, convergence
+behavior is poorly understood.
+
+We should also look at adaptive sampling and hierarchical clustering.
+
+
 
 \section*{Acknowledgements}
 Removed for anonymous review.
