@@ -183,12 +183,13 @@ Specifically, we seek the $\B{F}$ that minimizes
 Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we arrive at
 \begin{equation}
 \label{eq:defgrad}
-\B{F} = \left(\sum_i m_i \B{O}(\B{x}_i,\B{r}_i)\right)\left(\sum_im_i\B{O}(\B{r}_i,\B{r}_i)\right)^{-1},
+\B{F} = \left(\sum_i m_i \B{O}(\B{x}_i,\B{r}_i)\right)\left(\sum_im_i\B{O}(\B{r}_i,\B{r}_i)\right)^{-1} = \B{A}_{xr}\B{A}_{rr}^{-1},
 \end{equation}
 where $\B{O}(\cdot,\cdot)$ is the outer product matrix
 \begin{equation}
-\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T.
+\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T,
 \end{equation}
+and $\B{A}_{**}$ is a convenient shorthand.
 %\begin{align}
 %\B{F} = &\left(\sum_i m_i\left(\B{x}_{i}-\B{x}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)\notag\\
 %&\left(\sum_i m_i\left(\B{r}_{i}-\B{r}_{cm}\right)\left(\B{r}_{i}-\B{r}_{cm}\right)^T\right)^{-1},
@@ -202,11 +203,11 @@ We then compute $\B{R}$ using the polar decomposition,
 where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the singular value decomposition (SVD) of $\B{F}$.
 While several researchers (e.g.~\cite{Rivers:2007:FFL}) have pointed out that the polar decompositions can be computed faster than the SVD,
 especially when warm started, we use the SVD for its robustness and for our plasticity and fracture models 
-(see~
-%\srefs{sec:Plasticity}{sec:Fracture}
-).  
+(see~\srefs{sec:Plasticity}{sec:Fracture}).  
 We also note that we compute the polar decomposition of $\B{F}$, not
-the left matrix ($\sum_im_i\B{O}(\B{x}_i,\B{r}_i)$) as done by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.  This modification
+the left matrix ($\B{A}_{xr}$)
+%($\sum_im_i\B{O}(\B{x}_i,\B{r}_i)$) 
+as done by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.  This modification
 is particularly important if the distribution of mass in the cluster is non-uniform.
 
 This transformation allows us to define goal positions, $\B{g}_i$,
@@ -272,9 +273,33 @@ the decomposition in~\eref{eq:decomp}.
 
 \subsection{Fracture}
 \label{sec:Fracture}
-We duplicate $\B{F}^p$ to the new cluster.
+To model fracture, we allow shape matching clusters to split into two clusters.  Each timestep, for each cluster,
+we compare the largest singular value, $\Sigma_2$, computed in~\eref{eq:decomp}, to a toughness, $\tau_c$, which
+can vary between clusters.  
+If $\Sigma_2 > \tau_c$ then the cluster is added to a priority queue with priority $\Sigma_2 - \tau_c$.  We also
+record the corresponding right singular vector $\B{V}_2$.  At the end of the timestep, we iteratively remove
+clusters from the priority queue and, if the $\Sigma_2$ still exceeds $\tau_c$, we split the cluster into two clusters
+as follows.
 
-We update cluster properties after each split.
+We assume that the fracture surface is defined by the plane that passes through the center of mass of the 
+cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_2$.  Particles on the positive\adam{?}
+side of this plane are removed from the cluster and added to a new cluster.  Additionally, we remove particles 
+from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
+That is if, for particle $p_i$,
+\begin{equation}
+\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_2} \mathrel{!}=
+\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_2}
+\end{equation}
+particle $p_i$ is removed from cluster $d$.  We then update the properties of the affected clusters.
+The plasticity variables, $\B{F}^p$ and $\alpha$, are copied from the fractured cluster to the new cluster.
+For every cluster that undergoes a membership change, we update the mass, $m_c$; the 
+rest and world center of mass, $\B{r}_{cm,c}$ and $\B{x}_{cm,c}$; the cluster width (see~\cite{Bargteil:2014:SLF});
+and the stored matrix, $\B{A}_{rr}^{-1}$.  To handle potentially degenerate clusters, we compute $\B{A}_{rr}^{-1}$
+through the pseudoinverse.  If, when computing the pseudoinverse, any of the singular values are thresholded,
+we set $\B{F}_c^p = \B{I}$.  We also update particle-to-cluster maps and $n_i$ for affected particles.
+
+Because cluster membership may have changed due to the fracturing of a different cluster, we verify that 
+$\Sigma_2 > \tau_c$ before fracturing and also recompute $\B{V}_2$.
 
 \subsection{Sampling and Clustering}
 
