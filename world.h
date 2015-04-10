@@ -4,6 +4,7 @@
 #include "movingPlane.hpp"
 #include "twistingPlane.hpp"
 #include "projectile.hpp"
+#include "cylinderObstacle.hpp"
 #include "accelerationGrid.h"
 #include "preallocVector.hpp"
 #include "profiler.hpp"
@@ -35,7 +36,8 @@ public:
    twistingPlanes.clear();
 	clusterCenters.clear();
 	projectiles.clear();
-	
+	cylinders.clear();
+
 	loadFromJson(filename);
 
 	cameraPosition = oldCameraPosition;
@@ -170,7 +172,7 @@ public:
   std::vector<MovingPlane> movingPlanes;
   std::vector<TwistingPlane> twistingPlanes;
   std::vector<Projectile> projectiles;
-
+  std::vector<CylinderObstacle> cylinders;
   std::vector<size_t> clusterCenters;
 
   double dt, elapsedTime;
