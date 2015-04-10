@@ -442,7 +442,7 @@ void World::loadFromJson(const std::string& _filename){
   
 
 
-  auto gravityIn = root["gravity"];
+  auto& gravityIn = root["gravity"];
   if(!gravityIn.isNull() && gravityIn.isArray() && gravityIn.size() == 3){
 	gravity.x() = gravityIn[0].asDouble();
 	gravity.y() = gravityIn[1].asDouble();
@@ -452,7 +452,7 @@ void World::loadFromJson(const std::string& _filename){
 	gravity = Eigen::Vector3d{0, -9.81, 0};
   }
 
-  auto planesIn =  root["planes"];
+  auto& planesIn =  root["planes"];
   for(auto i : range(planesIn.size())){
 	if(planesIn[i].size() != 4){
 	  std::cout << "not a good plane... skipping" << std::endl;
@@ -468,7 +468,7 @@ void World::loadFromJson(const std::string& _filename){
   }
 
 
-  auto movingPlanesIn = root["movingPlanes"];
+  auto& movingPlanesIn = root["movingPlanes"];
   for(auto i : range(movingPlanesIn.size())){
 	auto normalIn = movingPlanesIn[i]["normal"];
 	if(normalIn.size() != 3){
@@ -486,7 +486,7 @@ void World::loadFromJson(const std::string& _filename){
   }
   std::cout << movingPlanes.size() << " moving planes" << std::endl;
 
-  auto projectilesIn = root["projectiles"];
+  auto& projectilesIn = root["projectiles"];
   for(auto i : range(projectilesIn.size())){
 	auto& projectile = projectilesIn[i];
 	Eigen::Vector3d start(projectile["start"][0].asDouble(),
@@ -499,7 +499,21 @@ void World::loadFromJson(const std::string& _filename){
 	projectiles.emplace_back(start, vel, projectile["radius"].asDouble());
 
   }
+  
+  auto& cylindersIn = root["cylinders"];
+  for(auto i : range(cylindersIn.size())){
+	auto& cylinder = cylindersIn[i];
+	Eigen::Vector3d normal(cylinder["normal"][0].asDouble(),
+		cylinder["normal"][1].asDouble(),
+		cylinder["normal"][2].asDouble());
 
+	Eigen::Vector3d supportPoint(cylinder["supportPoint"][0].asDouble(),
+		cylinder["supportPoint"][1].asDouble(),
+		cylinder["supportPoint"][2].asDouble());
+
+
+	cylinders.emplace_back(normal, supportPoint, cylinder["radius"].asDouble());
+  }
 
 
   double mass = root.get("mass", 0.1).asDouble();
@@ -761,6 +775,12 @@ void World::bounceOutOfPlanes(){
   for(auto& projectile : projectiles){
 	for(auto& particle : particles){
 	  projectile.bounceParticle(particle, elapsedTime);
+	}
+  }
+
+  for(auto& cylinder : cylinders){
+	for(auto& particle : particles){
+	  cylinder.bounceParticle(particle);
 	}
   }
 }
