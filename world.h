@@ -46,6 +46,8 @@ public:
 	elapsedTime = 0;
   }
 
+  void dumpParticlePositions(const std::string& filename) const;
+
   void draw(SDL_Window* window) const ;
   void drawPretty(SDL_Window* window) const ;
   void drawSingleCluster(SDL_Window* window, int frame) const;

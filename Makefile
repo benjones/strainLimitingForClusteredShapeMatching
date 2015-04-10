@@ -11,7 +11,7 @@ OPT = -O2 -g
 #-----------------------------------------
 #-----------------------------------------
 
-TARGETS = runSimulator
+TARGETS = runSimulator mitsubafy
 
 OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o color_spaces.o projectile.o cylinderObstacle.o
 
@@ -33,6 +33,8 @@ LDOPTS = $(OPT)
 
 default: $(TARGETS) 
 
+mitsubafy: mitsubafy.cpp jsoncpp.o
+	$(CC) $(OPT) $(FLAGS) -o mitsubafy mitsubafy.cpp jsoncpp.o
 
 clean:
 	/bin/rm -fv *.o $(TARGETS) 
