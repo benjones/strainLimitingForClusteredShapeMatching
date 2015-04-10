@@ -660,7 +660,7 @@ void World::timestep(){
 			FpHat(1) = pow(FpHat(1), gamma);
 			FpHat(2) = pow(FpHat(2), gamma);
 			// update cluster.Fp
-			cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp;
+			cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp * V.determinant();
 		  }
 		}
 		cluster.cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
@@ -1079,6 +1079,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	Eigen::Vector3d sigInv;
 	for(auto i : range(3)){
+	  if (solver.singularValues()(i) < 1e-6) c.Fp.setIdentity();
 	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-6 ? 1.0/solver.singularValues()(i) : 0;
 	}
 	c.aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
@@ -1141,6 +1142,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	// copy relevant variables
 	newCluster.Fp = clusters[cIndex].Fp; // plasticity
+	newCluster.cstrain = clusters[cIndex].cstrain; // plasticity
 	newCluster.toughness = clusters[cIndex].toughness;
 	// we will want to copy toughness here as well...
 	
