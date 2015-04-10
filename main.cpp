@@ -14,13 +14,16 @@
 void loop(SDL_Window* window,
 		  World& world);
 
+bool dumpFrames;
 int main(int argc, char** argv){
   
-  if(argc != 2){
-	std::cout << "usage: ./runSimulator <inputfile.json>" << std::endl;
+  if(argc < 2){
+	std::cout << "usage: ./runSimulator <inputfile.json> [writeSomethinHereIfYouWantToDumpFrames]" << std::endl;
 	exit(1);
   }
   
+  dumpFrames = (argc == 3);
+
   World world;
   world.loadFromJson(argv[1]);
 
@@ -136,8 +139,14 @@ void loop(SDL_Window* window, World& world){
 	} else {
 	  world.timestep();
 	  world.drawPretty(window);
+
+	  if(dumpFrames){
+		world.dumpParticlePositions(std::string("frames/particles.") + std::to_string(frame) + ".txt");
+	  }
+	  ++frame;
 	}
-	++frame;
+   
+
   }
   world. prof.dump<std::chrono::duration<double>>(std::cout);
   SDL_GL_DeleteContext(context);
