@@ -2,7 +2,9 @@
 
 #include "particle.h"
 #include "movingPlane.hpp"
+#include "twistingPlane.hpp"
 #include "projectile.hpp"
+#include "cylinderObstacle.hpp"
 #include "accelerationGrid.h"
 #include "preallocVector.hpp"
 #include "profiler.hpp"
@@ -31,9 +33,11 @@ public:
 	particles.clear(); 
 	planes.clear();
    movingPlanes.clear();
+   twistingPlanes.clear();
 	clusterCenters.clear();
 	projectiles.clear();
-	
+	cylinders.clear();
+
 	loadFromJson(filename);
 
 	cameraPosition = oldCameraPosition;
@@ -48,6 +52,7 @@ public:
   void drawPlanes() const;
   void drawPlanesPretty() const;
   void drawPlane(const Eigen::Vector3d& normal, double offset) const;
+  void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,
 		   Eigen::Vector2i newPosition);
@@ -165,8 +170,9 @@ public:
 
   std::vector<Eigen::Vector4d> planes;
   std::vector<MovingPlane> movingPlanes;
+  std::vector<TwistingPlane> twistingPlanes;
   std::vector<Projectile> projectiles;
-
+  std::vector<CylinderObstacle> cylinders;
   std::vector<size_t> clusterCenters;
 
   double dt, elapsedTime;
