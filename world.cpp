@@ -300,7 +300,7 @@ void World::drawSingleCluster(SDL_Window* window, int frame) const {
 void World::drawPlanes() const{
   //draw planes
   glDisable(GL_CULL_FACE);
-  double totalCount = planes.size() + movingPlanes.size();
+  double totalCount = planes.size() + movingPlanes.size() + twistingPlanes.size();
   for(auto&& pr : enumerate(planes)){
 	const auto i = pr.first;
 	const auto& plane = pr.second;
@@ -316,6 +316,12 @@ void World::drawPlanes() const{
 	glColor4d(0.5, i/totalCount, 0.5, 1);
 	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
   }
+  for(auto&& pr : enumerate(twistingPlanes)){
+	const auto i = pr.first + planes.size() + movingPlanes.size();
+	const auto& plane = pr.second;
+	glColor4d(0.5, i/totalCount, 0.5, 1);
+	drawTPlane(plane.normal, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
+  }
   glDepthMask(true);
 }
 
@@ -326,7 +332,7 @@ void World::drawPlanesPretty() const{
   for(auto&& pr : enumerate(planes)){
 	const auto i = pr.first;
 	const auto& plane = pr.second;
-   RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.25*acos(-1), 0.3, 0.7).to_rgb();
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
 
 	drawPlane(plane.head(3), plane.w());
@@ -334,10 +340,18 @@ void World::drawPlanesPretty() const{
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first; 
 	const auto& plane = pr.second;
-   RGBColor rgb = HSLColor(0.25*acos(-1)*i/movingPlanes.size()+1.25*acos(-1), 0.3, 0.7).to_rgb();
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/movingPlanes.size()+1.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
 	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
   }
+  for(auto&& pr : enumerate(twistingPlanes)){
+	const auto i = pr.first; 
+	const auto& plane = pr.second;
+   RGBColor rgb = HSLColor(0.25*acos(-1)*i/twistingPlanes.size()+0.5*acos(-1), 0.3, 0.7).to_rgb();
+	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
+	drawTPlane(plane.normal, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
+  }
+
 
 }
 
@@ -374,6 +388,44 @@ void World::drawPlane(const Eigen::Vector3d& normal, double offset) const{
 	glEnd();
 
 }
+
+void World::drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const{
+	Eigen::Vector3d tangent1, tangent2;
+	
+	tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
+	if(tangent1.isZero(1e-3)){
+	  tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
+	  if(tangent1.isZero(1e-3)){
+		tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
+	  }
+	}
+	tangent1.normalize();
+
+	tangent2 = normal.cross(tangent1);
+	tangent2.normalize(); //probably not necessary
+	
+   Eigen::AngleAxisd t(roffset,normal);
+   tangent1 = t * tangent1; 
+   tangent2 = t * tangent2; 
+
+	const double sos = normal.dot(normal);
+	const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
+		normal.y()*offset/sos,
+		normal.z()*offset/sos};
+
+
+	
+	const double size = width;
+	glBegin(GL_QUADS);
+	glNormal3dv(normal.data());
+	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
+	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
+	glEnd();
+
+}
+
 
 
 void World::loadFromJson(const std::string& _filename){
@@ -486,6 +538,25 @@ void World::loadFromJson(const std::string& _filename){
   }
   std::cout << movingPlanes.size() << " moving planes" << std::endl;
 
+  auto twistingPlanesIn = root["twistingPlanes"];
+  for(auto i : range(twistingPlanesIn.size())){
+	auto normalIn = twistingPlanesIn[i]["normal"];
+	if(normalIn.size() != 3){
+	  std::cout << "bad twisting plane, skipping" << std::endl;
+	  continue;
+	}
+	Eigen::Vector3d normal(normalIn[0].asDouble(),
+		normalIn[1].asDouble(),
+		normalIn[2].asDouble());
+   normal.normalize();
+	twistingPlanes.emplace_back(normal, 
+		twistingPlanesIn[i]["offset"].asDouble(),
+		twistingPlanesIn[i]["angularVelocity"].asDouble(),
+      twistingPlanesIn[i]["width"].asDouble());
+
+  }
+  std::cout << twistingPlanes.size() << " twisting planes" << std::endl;
+
   auto projectilesIn = root["projectiles"];
   for(auto i : range(projectilesIn.size())){
 	auto& projectile = projectilesIn[i];
@@ -510,6 +581,12 @@ void World::loadFromJson(const std::string& _filename){
   for(auto& movingPlane : movingPlanes){
 	for(auto& p : particles){
       p.outsideSomeMovingPlane |= movingPlane.outside(p);
+   }
+  }
+
+  for(auto& twistingPlane : twistingPlanes){
+	for(auto& p : particles){
+      p.outsideSomeMovingPlane |= twistingPlane.outside(p);
    }
   }
 
@@ -672,8 +749,10 @@ void World::timestep(){
 	for(auto& p : particles){
 	  p.goalPosition /= p.numClusters;
 	  p.goalVelocity /= p.numClusters;
-	  p.velocity += dt * gravity + (alpha/dt)*(p.goalPosition- p.position) + 
-		springDamping*(p.goalVelocity - p.velocity); 
+     if (!p.outsideSomeMovingPlane) {
+        p.velocity += dt * gravity + (alpha/dt)*(p.goalPosition- p.position) + 
+           springDamping*(p.goalVelocity - p.velocity); 
+     }
 	  p.position += dt * p.velocity;
 	}
 	
@@ -737,7 +816,7 @@ void World::bounceOutOfPlanes(){
 	++iters;
   }
 
-
+   //handle moving planes
   for(auto& movingPlane : movingPlanes){
 	for(auto& p : particles){
       if (dragWithPlanes) {
@@ -758,6 +837,29 @@ void World::bounceOutOfPlanes(){
       }
 	}
   }
+
+   //handle twisting planes
+  for(auto& twistingPlane : twistingPlanes){
+	for(auto& p : particles){
+   	  twistingPlane.twistParticle(p, elapsedTime);
+   }
+  }
+
+  //do normal plane bounces on the backside of each plane.
+  //JAL commented this out because the twisting planes are finite...the code is
+  //there but it's slowish...
+//  for(auto& twistingPlane : twistingPlanes){
+//	for(auto& p : particles){
+//      //if not being pushed along outside of any plane, check for a
+//      //normal bounce off the backside of the plane
+//      if (!p.outsideSomeMovingPlane) {
+//         twistingPlane.backsideReflectBounceParticle(p, elapsedTime, epsilon);
+//      }
+//	}
+//  }
+
+
+
   for(auto& projectile : projectiles){
 	for(auto& particle : particles){
 	  projectile.bounceParticle(particle, elapsedTime);
@@ -911,6 +1013,18 @@ void World::makeClusters(){
 		}
 	  }
 	  if(crossingPlane){break;}
+	}
+   for(auto& plane : twistingPlanes){
+	  if(crossingPlane){break;}
+	  bool firstSide = particles[c.neighbors.front()].position.dot(plane.normal) > plane.offset;
+	  
+	  for(auto n : c.neighbors){
+		bool thisSide = particles[n].position.dot(plane.normal) > plane.offset;
+		if(thisSide != firstSide){
+		  crossingPlane = true;
+		  break;
+		}
+	  }
 	}
 	if(crossingPlane){
 	  c.toughness = 10*toughness;//std::numeric_limits<double>::infinity();

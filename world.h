@@ -2,6 +2,7 @@
 
 #include "particle.h"
 #include "movingPlane.hpp"
+#include "twistingPlane.hpp"
 #include "projectile.hpp"
 #include "accelerationGrid.h"
 #include "preallocVector.hpp"
@@ -31,6 +32,7 @@ public:
 	particles.clear(); 
 	planes.clear();
    movingPlanes.clear();
+   twistingPlanes.clear();
 	clusterCenters.clear();
 	projectiles.clear();
 	
@@ -48,6 +50,7 @@ public:
   void drawPlanes() const;
   void drawPlanesPretty() const;
   void drawPlane(const Eigen::Vector3d& normal, double offset) const;
+  void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,
 		   Eigen::Vector2i newPosition);
@@ -165,6 +168,7 @@ public:
 
   std::vector<Eigen::Vector4d> planes;
   std::vector<MovingPlane> movingPlanes;
+  std::vector<TwistingPlane> twistingPlanes;
   std::vector<Projectile> projectiles;
 
   std::vector<size_t> clusterCenters;
