@@ -1354,7 +1354,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 void World::dumpParticlePositions(const std::string& filename) const{
   std::ofstream outs(filename, std::ios_base::binary | std::ios_base::out);
   size_t numParticles = particles.size();
-  outs.write(reinterpret_cast<const char*>(&numParticles), sizeof(particles));
+  outs.write(reinterpret_cast<const char*>(&numParticles), sizeof(numParticles));
   std::vector<float> positions(3*numParticles);
   for(auto i : range(particles.size())){
 	positions[3*i    ] = particles[i].position.x();

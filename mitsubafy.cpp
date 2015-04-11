@@ -53,6 +53,7 @@ int main(int argc, char** argv){
 
 
   std::vector<std::string> planeStrings;
+   
   
   //load json stuff for collision geo
   Json::Value root;
@@ -95,6 +96,11 @@ int main(int argc, char** argv){
 	  planeStrings.push_back(std::move(planeString));
 	}
 
+
+
+
+
+
   }
 
 
@@ -118,6 +124,7 @@ int main(int argc, char** argv){
 	  break;
 	}
 	std::cout << "processing file: " << currentFile << std::endl;
+
 	size_t nParticles;
 	particleIns.read(reinterpret_cast<char*>(&nParticles), sizeof(nParticles));
 	std::vector<float> positions(nParticles*3);
@@ -131,7 +138,47 @@ int main(int argc, char** argv){
 	std::ofstream outs(outputFile);
 	
 	outs << mitsubaHeader;
+	outs << extraXML;
 	for(auto&& ps : planeStrings){ outs << ps << std::endl;}
+
+	//deal with moving obstacles:
+	for(auto i : range(root["movingPlanes"].size())){  
+
+	  auto& plane = root["movingPlanes"][i];
+
+	  Eigen::Vector3d normal(plane["normal"][0].asDouble(),
+		  plane["normal"][1].asDouble(),
+		  plane["normal"][2].asDouble());
+	  normal.normalize();
+	  double offset = plane["offset"].asDouble();
+	  double velocity = plane["velocity"].asDouble();
+	  Eigen::Vector3d zAxis(0,0,1);
+	  Eigen::Vector3d cp = zAxis.cross(normal);
+	  
+
+	  outs << "<shape type=\"rectangle\" >\n<transform name=\"toWorld\">\n"
+		   << "<scale x=\"1\" y=\"1\" z=\"1\" />\n";
+	  if(cp.norm() > 1e-3){
+		Eigen::Vector3d direction = cp.normalized();
+		double angle = asin(std::max(-1.0, std::min(1.0, cp.norm())))*180.0/M_PI;
+		outs << "<rotate x=\"" << direction[0] 
+			 << "\" y=\""  << direction[1]
+			 << "\" z=\""  << direction[2]  
+			 << "\" angle=\""  << angle << "\" />\n";
+	  }
+	  auto supportingPoint = getSupportingPoint(normal, 
+		  frame*root.get("dt", 1.0/60.0).asDouble()*velocity + offset);
+	  outs << "<translate x=\"" << supportingPoint.x()
+		   << "\" y=\""  << supportingPoint.y()
+		   << "\" z=\""  << supportingPoint.z()
+		   << "\" />\n"
+		   << "</transform>\n"
+		   << "<bsdf type=\"thindielectric\"><srgb name=\"specularTransmittance\" value=\"#ff8888\" />"
+		   << "</bsdf>\n</shape>\n";
+	
+
+	}
+
 	for(auto i : range(nParticles)){
 	  outs << sphereStart << "x=\"" 
 		   << positions[3*i] << "\" y=\"" 
