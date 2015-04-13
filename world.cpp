@@ -789,7 +789,7 @@ void World::timestep(){
   
   bounceOutOfPlanes();
   elapsedTime += dt;
-  std::cout << "elapsed time: " << elapsedTime << std::endl;
+  //std::cout << "elapsed time: " << elapsedTime << std::endl;
   for(auto& c : clusters){
 	c.renderWidth = 0;
 	c.worldCom = computeNeighborhoodCOM(c);
@@ -1236,9 +1236,28 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   }
   for(auto &ps : potentialSplits){
 	if (++count > 10) break;
-	size_t cIndex;
-	Eigen::Vector3d splitDirection;
-	std::tie(cIndex, std::ignore, splitDirection) = ps;
+	size_t cIndex = std::get<0>(ps);
+
+	auto worldCOM = clusters[cIndex].worldCom;
+
+	//recompute A matrix:
+	Eigen::Matrix3d init;
+	init.setZero();
+
+	Eigen::Matrix3d Apq = computeApq(clusters[cIndex], init, worldCOM);
+	Eigen::Matrix3d A = Apq*clusters[cIndex].aInv;
+	if (nu > 0.0) A = A*clusters[cIndex].Fp.inverse(); // plasticity
+	
+	//do the SVD here so we can handle fracture stuff
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullV);
+	
+	Eigen::Vector3d sigma = solver.singularValues();
+	if(sigma(0) < clusters[cIndex].toughness){
+	  std::cout << "cancelled fracture with updated stuff" << std::endl;
+	  continue;
+	}
+	
+	Eigen::Vector3d splitDirection = solver.matrixV().col(0);
 
 	//doesn't work... 
 	//just erase the cluster
@@ -1255,7 +1274,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 
 	//if(cluster.neighbors.size() < 10){ continue;}
-	auto worldCOM = clusters[cIndex].worldCom;
+
 	auto it = std::partition(clusters[cIndex].neighbors.begin(),
 		clusters[cIndex].neighbors.end(),
 		[&worldCOM, &splitDirection, this](int ind){
@@ -1335,7 +1354,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 void World::dumpParticlePositions(const std::string& filename) const{
   std::ofstream outs(filename, std::ios_base::binary | std::ios_base::out);
   size_t numParticles = particles.size();
-  outs.write(reinterpret_cast<const char*>(&numParticles), sizeof(particles));
+  outs.write(reinterpret_cast<const char*>(&numParticles), sizeof(numParticles));
   std::vector<float> positions(3*numParticles);
   for(auto i : range(particles.size())){
 	positions[3*i    ] = particles[i].position.x();
