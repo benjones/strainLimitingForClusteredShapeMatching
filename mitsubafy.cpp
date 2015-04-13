@@ -37,7 +37,7 @@ getPlaneTangents(const Eigen::Vector3d& normal){
 int main(int argc, char** argv){
 
 
-  const std::string usage = "mitsubafy <jsonFile> <formatStringForParticles> <outputDirectory> <radius> [extraXMLStuff]";
+  const std::string usage = "mitsubafy <jsonFile> <formatStringForParticles> <outputDirectory> <radius/skinnedObjFormatString> [extraXMLStuff]";
   
   if(argc < 5){ std::cout << usage << std::endl; return 1;}
   
@@ -49,8 +49,11 @@ int main(int argc, char** argv){
   }
 
   const std::string outputDir = argv[3];
-  const double radius = std::stod(argv[4]);
-
+  
+  char* strEnd;
+  const double radius = std::strtod(argv[4], &strEnd);
+  const bool renderSpheres = (strEnd != argv[4]);
+  std::string objFormatString(argv[4]);
 
   std::vector<std::string> planeStrings;
    
@@ -117,20 +120,17 @@ int main(int argc, char** argv){
 
   char currentFile[2048];
   for(int frame = 0; ; ++frame){
+	std::vector<float> positions;
 	sprintf(currentFile, argv[2], frame);
+	//this will tell us how many files there are, even if we're using objs.
 	std::ifstream particleIns(currentFile, std::ios_base::binary | std::ios_base::in);
 	if(!particleIns.good()){
 	  std::cout << "no more particle files, " << currentFile << std::endl;
 	  break;
 	}
 	std::cout << "processing file: " << currentFile << std::endl;
-
-	size_t nParticles;
-	particleIns.read(reinterpret_cast<char*>(&nParticles), sizeof(nParticles));
-	std::vector<float> positions(nParticles*3);
-	particleIns.read(reinterpret_cast<char*>(positions.data()), 
-		3*nParticles*sizeof(typename decltype(positions)::value_type));
-
+	
+	
 	char frameString[8];
 	sprintf(frameString, "%04d", frame); //why I can't use std::to_string for this is beyond me
 
@@ -173,19 +173,61 @@ int main(int argc, char** argv){
 		   << "\" z=\""  << supportingPoint.z()
 		   << "\" />\n"
 		   << "</transform>\n"
-		   << "<bsdf type=\"thindielectric\"><srgb name=\"specularTransmittance\" value=\"#ff8888\" />"
+		   << "<bsdf type=\"thindielectric\"><srgb name=\"specularTransmittance\" value=\"#ff8888\" />\n"
+		   << "<srgb name=\"specularReflectance\" value=\"#333333\" />"
 		   << "</bsdf>\n</shape>\n";
 	
 
 	}
 
-	for(auto i : range(nParticles)){
-	  outs << sphereStart << "x=\"" 
-		   << positions[3*i] << "\" y=\"" 
-		   << positions[3*i + 1] << "\" z=\""
-		   << positions[3*i + 2] << "\" />\n<float name=\"radius\" value=\""
-		   << radius << "\" />"
-		   << shadingInfo << sphereEnd << std::endl;
+	//projectiles
+	for(auto i : range(root["projectiles"].size())){
+	  auto& projectile = root["projectiles"][i];
+	  Eigen::Vector3d start(projectile["start"][0].asDouble(),
+		  projectile["start"][1].asDouble(),
+		  projectile["start"][2].asDouble());
+
+	  Eigen::Vector3d velocity(projectile["velocity"][0].asDouble(),
+		  projectile["velocity"][1].asDouble(),
+		  projectile["velocity"][2].asDouble());
+
+	  Eigen::Vector3d position = start + frame*root.get("dt", 1.0/60.0).asDouble()*velocity;
+
+	  double sphereRadius = projectile["radius"].asDouble();
+	  
+	  outs << "<shape type=\"sphere\" >\n<point name=\"center\" x=\""
+		   << position.x() << "\" y=\""
+		   << position.y() << "\" z=\""
+		   << position.z() << "\" />\n<float name=\"radius\" value=\""
+		   << sphereRadius << "\" />\n"
+		   << "<bsdf type=\"diffuse\"><srgb name=\"reflectance\" value=\"#3333ee\" />"
+		   << "</bsdf></shape>\n";
+	}
+
+
+	if(renderSpheres){
+	  size_t nParticles;
+	  particleIns.read(reinterpret_cast<char*>(&nParticles), sizeof(nParticles));
+	  positions.resize(nParticles*3);
+	  particleIns.read(reinterpret_cast<char*>(positions.data()), 
+		  3*nParticles*sizeof(typename decltype(positions)::value_type));
+	  	  
+	  for(auto i : range(nParticles)){
+		outs << sphereStart << "x=\"" 
+			 << positions[3*i] << "\" y=\"" 
+			 << positions[3*i + 1] << "\" z=\""
+			 << positions[3*i + 2] << "\" />\n<float name=\"radius\" value=\""
+			 << radius << "\" />"
+			 << shadingInfo << sphereEnd << std::endl;
+	  }
+	} else {
+	  char objName[2048];
+	  sprintf(objName, objFormatString.c_str(), frame);
+	  outs << "<shape type=\"obj\" >\n"
+		   << "<string name=\"filename\" value=\""
+		   << objName << "\" />\n"
+		   << "<bsdf type=\"diffuse\"><srgb name=\"reflectance\" value=\"#33ee33\" /></bsdf>\n"
+		   << "</shape>\n";
 	}
 	outs << mitsubaFooter << std::endl;
   }

@@ -1,4 +1,5 @@
 <integrator type="adaptive">
+<integer name="maxSampleFactor" value="8" />
 <integrator type="path" />
 </integrator>
 <sensor type="perspective">
@@ -9,11 +10,11 @@
     <float name="nearClip" value="0.0205208"/>
     <transform name="toWorld">
 
-        <lookat target="0, 0, 0" origin="0, 1, 5" up="0, 1, 0"/>
+        <lookat target="0, 0, 0" origin="-1, 0, 2" up="0, 1, 0"/>
     </transform>
 
     <sampler type="independent">
-        <integer name="sampleCount" value="32"/>
+        <integer name="sampleCount" value="64"/>
     </sampler>
 
     <film type="hdrfilm">
