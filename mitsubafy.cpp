@@ -211,14 +211,33 @@ int main(int argc, char** argv){
 	  positions.resize(nParticles*3);
 	  particleIns.read(reinterpret_cast<char*>(positions.data()), 
 		  3*nParticles*sizeof(typename decltype(positions)::value_type));
-	  	  
+	  std::ifstream colorFile(std::string(currentFile) + ".colors", std::ios_base::binary | std::ios_base::in);
+	  bool colors = colorFile.good();
+	  std::vector<float> colorList;
+	  if(colors){
+		std::cout << "found colors" << std::endl;
+		size_t numParticles;
+		colorFile.read(reinterpret_cast<char*>(&numParticles), sizeof(numParticles));
+		assert(numParticles == nParticles);
+		colorList.resize(numParticles*3);
+		colorFile.read(reinterpret_cast<char*>(colorList.data()), 
+			3*numParticles*sizeof(float));
+		
+	  }
 	  for(auto i : range(nParticles)){
 		outs << sphereStart << "x=\"" 
 			 << positions[3*i] << "\" y=\"" 
 			 << positions[3*i + 1] << "\" z=\""
 			 << positions[3*i + 2] << "\" />\n<float name=\"radius\" value=\""
-			 << radius << "\" />"
-			 << shadingInfo << sphereEnd << std::endl;
+			 << radius << "\" />";
+		if(colors){
+		  outs << "<bsdf type=\"diffuse\"><rgb name=\"reflectance\" value=\""
+			   << colorList[3*i] << ", " << colorList[3*i +1] << ", " << colorList[3*i +2]
+			   << "\" /></bsdf>\n";
+		} else {
+		  outs << shadingInfo;
+		}
+		outs << sphereEnd << std::endl;
 	  }
 	} else {
 	  char objName[2048];

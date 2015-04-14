@@ -144,30 +144,32 @@ void World::drawPretty(SDL_Window* window) const {
   //draw clusters
   glMatrixMode(GL_MODELVIEW);
   if(drawClusters){
-	for(auto&& pr : benlib::enumerate(clusters)){
-	  auto& c = pr.second;
-	  const auto i = pr.first;
-     if (which_cluster == -1 || i == which_cluster) {
-        glPushMatrix();
+     for(auto&& pr : benlib::enumerate(clusters)){
+        auto& c = pr.second;
+        const auto i = pr.first;
+        if (which_cluster == -1 || i == which_cluster) {
+           glPushMatrix();
 
-        auto com = computeNeighborhoodCOM(c);
-        glTranslated(com.x(), com.y(), com.z());
-        RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
-        if (colorByToughness) {
-           if (c.toughness == std::numeric_limits<double>::infinity()) {
-              rgb = RGBColor(0.0, 0.0, 0.0);
-           } else {
-              auto factor = c.toughness/max_t;
-              rgb = RGBColor(1.0-factor, factor, factor);
+           auto com = computeNeighborhoodCOM(c);
+           glTranslated(com.x(), com.y(), com.z());
+           RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
+           //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
+           if (colorByToughness) {
+              if (c.toughness == std::numeric_limits<double>::infinity()) {
+                 rgb = RGBColor(0.0, 0.0, 0.0);
+              } else {
+                 auto factor = c.toughness/max_t;
+                 rgb = RGBColor(1.0-factor, factor, factor);
+              }
            }
+           glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+           utils::drawSphere(c.renderWidth, 10, 10);
+           glPopMatrix();
         }
-        glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-        utils::drawSphere(c.renderWidth, 10, 10);
-        glPopMatrix();
      }
-	}
   }
   glEnable(GL_DEPTH_TEST);
+
 
 
   if (which_cluster != -1) {
@@ -194,29 +196,71 @@ void World::drawPretty(SDL_Window* window) const {
 
      glPointSize(5);
 
-     glBegin(GL_POINTS);
-     for(auto i : c.neighbors){
-        glVertex3dv(particles[i].position.data());
+     if (!drawColoredParticles) {
+        glBegin(GL_POINTS);
+        for(auto i : c.neighbors){
+           glVertex3dv(particles[i].position.data());
+        }
+        glEnd();
      }
-     glEnd();
   }
 
   
   if(!particles.empty()){						
-	//	glDisable(GL_DEPTH_TEST);
-	glColor4f(1,1,1,0.8);
-	glPointSize(3);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_DOUBLE,
-					sizeof(Particle),
-					&(particles[0].position));
-	glDrawArrays(GL_POINTS, 0, particles.size());
-	/*	glPointSize(3);
-	glColor3f(0,0,1);
-	glVertexPointer(3, GL_DOUBLE, sizeof(Particle),
-					&(particles[0].goalPosition));
-	glDrawArrays(GL_POINTS, 0, particles.size());
-	*/
+     //	glDisable(GL_DEPTH_TEST);
+     glPointSize(10);
+
+     if (!drawColoredParticles) {
+        glColor4d(1,1,1,0.8);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(3, GL_DOUBLE,
+              sizeof(Particle),
+              &(particles[0].position));
+        glDrawArrays(GL_POINTS, 0, particles.size());
+     } else {
+        glBegin(GL_POINTS);
+        for(auto& p : particles) {
+           //find nearest cluster
+
+           int min_cluster = p.clusters[0];
+           auto com = clusters[min_cluster].worldCom;//computeNeighborhoodCOM(clusters[min_cluster]);
+           Eigen::Vector3d dir = p.position - com;
+           double min_sqdist = dir.squaredNorm();
+           for (auto& cInd : p.clusters) {
+			 com = clusters[cInd].worldCom;//computeNeighborhoodCOM(clusters[cInd]);
+              dir = p.position - com;
+              double dist = dir.squaredNorm();
+              if (dist < min_sqdist) {
+                 min_sqdist = dist;
+                 min_cluster = cInd;
+              }
+           }
+
+           RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
+           //RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
+           if ((which_cluster == -1 || min_cluster == which_cluster) &&
+                 clusters[min_cluster].neighbors.size() > 1) {
+           //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
+              glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
+           } else {
+              glColor4d(1,1,1,0.8);
+           }
+           //glPushMatrix();
+           //glTranslated(p.position[0], p.position[1], p.position[2]);
+           //utils::drawSphere(0.01, 4, 4);
+           glVertex3dv(p.position.data());
+           //glPopMatrix();
+        }
+        glEnd();
+     }
+
+
+     /*	glPointSize(3);
+         glColor3f(0,0,1);
+         glVertexPointer(3, GL_DOUBLE, sizeof(Particle),
+         &(particles[0].goalPosition));
+         glDrawArrays(GL_POINTS, 0, particles.size());
+      */
 
   }
 
@@ -567,7 +611,8 @@ void World::loadFromJson(const std::string& _filename){
 		projectile["velocity"][1].asDouble(),
 		projectile["velocity"][2].asDouble());
 
-	projectiles.emplace_back(start, vel, projectile["radius"].asDouble());
+	projectiles.emplace_back(start, vel, projectile["radius"].asDouble(),
+		projectile.get("momentumScale", 0).asDouble());
 
   }
   
@@ -1378,4 +1423,46 @@ void World::dumpParticlePositions(const std::string& filename) const{
   outs.write(reinterpret_cast<const char*>(positions.data()), 
 	  3*numParticles*sizeof(typename decltype(positions)::value_type));
 
+}
+
+void World::dumpColors(const std::string& filename) const {
+  std::ofstream outs(filename, std::ios_base::binary | std::ios_base::out);
+  size_t numParticles = particles.size();
+  outs.write(reinterpret_cast<const char*>(&numParticles), sizeof(numParticles));
+  std::vector<float> colors(3*numParticles);
+  for(auto&& pr : benlib::enumerate(particles)) {
+	//find nearest cluster
+	auto i = pr.first;
+	auto& p = pr.second;
+
+	int min_cluster = p.clusters[0];
+	auto com = clusters[min_cluster].worldCom;
+	Eigen::Vector3d dir = p.position - com;
+	double min_sqdist = dir.squaredNorm();
+	for (auto& cInd : p.clusters) {
+	  com = clusters[cInd].worldCom;//computeNeighborhoodCOM(clusters[cInd]);
+	  dir = p.position - com;
+	  double dist = dir.squaredNorm();
+	  if (dist < min_sqdist) {
+		min_sqdist = dist;
+		min_cluster = cInd;
+	  }
+	}
+
+	RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
+	//RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
+	if(clusters[min_cluster].neighbors.size() > 1) {
+	  //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
+	  //glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
+	  colors[3*i]  = rgb.r;
+	  colors[3*i+ 1]  = rgb.g;
+	  colors[3*i+ 2]  = rgb.b;
+	} else {
+	  colors[3*i] = 1;
+	  colors[3*i + 1] = 1;
+	  colors[3*i + 2] = 1;
+	}
+  }
+  outs.write(reinterpret_cast<const char*>(colors.data()),
+	  3*numParticles*sizeof(float));
 }

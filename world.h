@@ -47,6 +47,7 @@ public:
   }
 
   void dumpParticlePositions(const std::string& filename) const;
+  void dumpColors(const std::string& filename) const;
 
   void draw(SDL_Window* window) const ;
   void drawPretty(SDL_Window* window) const ;
@@ -188,6 +189,7 @@ public:
   int maxNumClusters;
 
   bool drawClusters = true;
+  bool drawColoredParticles = false;
   bool colorByToughness = false;
   bool dragWithPlanes = true;
   bool paused = false;

@@ -15,14 +15,16 @@ void loop(SDL_Window* window,
 		  World& world);
 
 bool dumpFrames;
+bool dumpColors;
 int main(int argc, char** argv){
   
   if(argc < 2){
-	std::cout << "usage: ./runSimulator <inputfile.json> [writeSomethinHereIfYouWantToDumpFrames]" << std::endl;
+	std::cout << "usage: ./runSimulator <inputfile.json> [writeSomethinHereIfYouWantToDumpFrames, 'color' will dump colors, anything else won't]" << std::endl;
 	exit(1);
   }
   
   dumpFrames = (argc == 3);
+  dumpColors = dumpFrames && (std::string("color") == argv[2]);
 
   World world;
   world.loadFromJson(argv[1]);
@@ -87,6 +89,8 @@ void loop(SDL_Window* window, World& world){
         std::cout << "Displaying cluster: " << world.which_cluster << std::endl;
 		} else if(event.key.keysym.sym == SDLK_c){
 		  world.drawClusters = !world.drawClusters;
+      } else if(event.key.keysym.sym == SDLK_v){
+		  world.drawColoredParticles = !world.drawColoredParticles;
       } else if(event.key.keysym.sym == SDLK_t){
 		  world.colorByToughness = !world.colorByToughness;
       } else if(event.key.keysym.sym == SDLK_d){
@@ -142,6 +146,9 @@ void loop(SDL_Window* window, World& world){
 
 	  if(dumpFrames){
 		world.dumpParticlePositions(std::string("frames/particles.") + std::to_string(frame) + ".txt");
+		if(dumpColors){
+		  world.dumpColors(std::string("frames/particles.") + std::to_string(frame) + ".txt.colors");
+		}
 	  }
 	  ++frame;
 	}

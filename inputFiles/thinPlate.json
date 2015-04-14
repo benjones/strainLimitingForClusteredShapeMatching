@@ -30,7 +30,8 @@
 		{
 			"start" : [0,  0, -0.9],
 			"velocity" : [0, 0, 0.3],
-			"radius" : 0.1
+			"radius" : 0.1,
+			"momentumScale" : 10
 		}
 	],
 

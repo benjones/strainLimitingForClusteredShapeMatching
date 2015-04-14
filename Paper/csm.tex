@@ -304,25 +304,35 @@ $\Sigma_2 > \tau_c$ before fracturing and also recompute $\B{V}_2$.
 \subsection{Sampling and Clustering}
 
 Both the distribution of particles that model and object as well as the
-clustering of particles can affect the simulation quality.  We
-experiment with both uniform sampling as well as blue noise sampling.
+clustering of particles affect the resulting simulation.  We
+experimented with both grid based and blue noise sampling and
+preferred the results from blue noise over the highly structured grid-based sampling.
 Our blue noise sampler is based on Bridson's fast Poisson disk
-sampling~\cite{Bridson:2007:FPD}.  In either case, for objects whose
-boundary is an arbitrary manifold, we simple sample particles within
-the bounding box of the sample, and then discard for particles within
+sampling~\cite{Bridson:2007:FPD}.  In both cases, for objects whose
+boundary is an arbitrary manifold, we simply sample particles within
+the bounding box of the object and discard particles outside
 the surface.
 
-To avoid mass lumping, our approach for clustering is a variant of the
-well know $k$-means algorithm.  The user is allowed to specify both the
-number of clusters, $n$, as well as a target neighborhood radius, $d$.
+The selection of clusters affects the effective distribution of mass 
+within the object.  Bargteil and Jones~\shortcite{Bargteil:2014:SLF}
+allowed the user to select a cluster width and then
+chose cluster centers randomly from the simulation particles until every particle
+was in at least on cluster.  They complained that this approach led
+to a highly non-uniform distribution of mass over the object.  
+To mitigate this artifact, we use a variant of the
+well know $k$-means algorithm.  The user specifies both the
+number of clusters, $n$, and the cluster radius, $d$.
 We initialize $n$ clusters as randomly selected seed particles.
 Particles are then placed into whichever cluster they are closest to.
 We then iteratively compute the center of mass for each cluster, and
 redistribute the particles into the clusters based on distance to the
-nearest center of mass.  This process iterates until clustering has
-converged.  Finally, we then include all particles within any cluster
-provided that the distance between the particle and the cluster center
-of mass is less than $d$.
+nearest center of mass.  This process iterates until 
+convergence.  Finally, we then include particle $p_i$ within any cluster, $c$,
+such that the distance between $p_i$ and the cluster's center
+of mass, $\B{r}_{cm,c}$ is less than $d$.  That is
+\begin{equation}
+p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < d.
+\end{equation}
 
 \josh{what else needs to be said here?}
 
@@ -331,15 +341,36 @@ One view of clustered shape matching is that there are far fewer integration uni
 fem.  This makes sense for computer graphics applications where degrees of freedom correspond lead to visual detail 
 while integrations units lead to computational cost.
 
+We could compare our approaches to plasticity and fracture to Irving2004,Barteil2007 and O'Brien1999. 
 
 \paragraph{Limitations and Future Work}
+Our approach has a number of limitations that provide ample potential future work in clustered shape matching.
+One limitation of our implementation is that we only handle simple collision geometry and do not handle self-collisions.
+More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman}.
+Handling self-collisions would require further research; the sphere-packing approach of someone and bin Zafar~\shortcite{}
+seems particularly promising.  
+
+Like many approaches to fracture in computer animation, we do not have a good solution to generating fractured
+geometry.  Like many approaches, we can embed a high-resolution render mesh for unbreakable objects, but
+creating new geometry when fracture occurs is more difficult.  
+Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2014:ALS} to skin simulation particles.
+This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.
+One approach to generating fracture geometry
+is to simply render the simulation geometry and increase the resolution of
+the around the fracture~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The geometry can can later be 
+coarsened to improve computational efficiency~\cite{Pfaff:2014:ATC}.  This approach leads to
+somewhat unpredictable costs and is, at present, too slow for interactive applications where shape matching excels.
+Levine and colleagues~\shortcite{Levine:2014:APP} suggested a number of other techniques for generating fracture geometry
+from spring-mass systems that may be applicable in our interactive context.  Exploring these ideas is an interesting avenue 
+for future work.
+
+
+We have only a simple approach to sampling and clustering.
+We should also look at adaptive sampling and hierarchical clustering.
+
 The biggest limitation of our approach is a lack of theoretical underpinnings for the clustered shape matching
 approach.  While this framework effective and useful, especially for interactive applications, convergence
 behavior is poorly understood.
-
-Geometry
-
-We should also look at adaptive sampling and hierarchical clustering.
 
 
 
