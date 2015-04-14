@@ -1,0 +1,57 @@
+{
+	"particleFiles" : [ "inputFiles/blue_noise/penguin.txt"],
+
+	"neighborRadius" : 0.5,
+	"alpha" : 0.5,
+	"omega" : 0.3,
+	"numConstraintIters" : 5,
+	"maxStretch" : 0.1,
+	"nClusters" : 20,
+	"springDamping": 0.1,
+	"toughness" : 1.05,//01,
+	"gravity" : [0, -9.81, 0],
+	"cylinders" : [
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [0.1, -1.0, 0],
+			"radius" : 0.3
+		},
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [1.9, -1.0, 0],
+			"radius" : 0.3
+		},
+		{
+			"normal" : [0.1, 0, 1],
+			"supportPoint" : [-2.1, -1.0, 0],
+			"radius" : 0.3
+		},
+
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [-1, -2, 0],
+			"radius" : 0.3
+		},
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [1.2, -2, 0],
+			"radius" : 0.3
+		},
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [0, -2.2, 0],
+			"radius" : 0.3
+		},
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [0.6, -2.8, 0],
+			"radius" : 0.2
+		},
+		{
+			"normal" : [0, 0, 1],
+			"supportPoint" : [-0.6, -2.8, 0],
+			"radius" : 0.2
+		}
+	]
+
+}

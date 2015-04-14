@@ -275,7 +275,10 @@ void World::drawPretty(SDL_Window* window) const {
 	glPopMatrix();
   }
 
-
+  glColor3d(0,1,0);
+  for(auto& cylinder : cylinders){
+	utils::drawCylinder(cylinder.supportPoint, cylinder.normal, cylinder.radius);
+  }
 
   glFlush();
   SDL_GL_SwapWindow(window);

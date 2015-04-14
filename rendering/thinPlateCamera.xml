@@ -5,16 +5,16 @@
 <sensor type="perspective">
     <float name="farClip" value="50"/>
     <float name="focusDistance" value="4.86293"/>
-    <float name="fov" value="57.8224"/>
+    <float name="fov" value="20"/>
     <string name="fovAxis" value="x"/>
     <float name="nearClip" value="0.0205208"/>
     <transform name="toWorld">
 
-        <lookat target="0, 0, 0" origin="-1, 0, 2" up="0, 1, 0"/>
+        <lookat target="0, 0, 0" origin="-2.0, 0, 4" up="0, 1, 0"/>
     </transform>
 
     <sampler type="independent">
-        <integer name="sampleCount" value="64"/>
+        <integer name="sampleCount" value="80"/>
     </sampler>
 
     <film type="hdrfilm">
