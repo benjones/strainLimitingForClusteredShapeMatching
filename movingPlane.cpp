@@ -31,6 +31,7 @@ void MovingPlane::dragParticle(Particle& particle, double timeElapsed) const {
 }
 
 void MovingPlane::backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
+   //JAL believes this needs to be debug, it causes weird offsetting
    double w = -1*(offset + timeElapsed*velocity);
 
    if (particle.position.dot(normal) < w) {

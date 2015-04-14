@@ -894,15 +894,16 @@ void World::bounceOutOfPlanes(){
   }
 
   //do normal plane bounces on the backside of each plane.
-  for(auto& movingPlane : movingPlanes){
-	for(auto& p : particles){
-      //if not being pushed along outside of any plane, check for a
-      //normal bounce off the backside of the plane
-      if (!p.outsideSomeMovingPlane) {
-         movingPlane.backsideReflectBounceParticle(p, elapsedTime, epsilon);
-      }
-	}
-  }
+  //JAL commented this out, it causes weird offsetting
+//  for(auto& movingPlane : movingPlanes){
+//	for(auto& p : particles){
+//      //if not being pushed along outside of any plane, check for a
+//      //normal bounce off the backside of the plane
+//      if (!p.outsideSomeMovingPlane) {
+//         movingPlane.backsideReflectBounceParticle(p, elapsedTime, epsilon);
+//      }
+//	}
+//  }
 
    //handle twisting planes
   for(auto& twistingPlane : twistingPlanes){
