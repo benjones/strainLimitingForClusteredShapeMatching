@@ -350,9 +350,20 @@ More complicated collision geometry should be easily handled using well-establis
 Handling self-collisions would require further research; the sphere-packing approach of someone and bin Zafar~\shortcite{}
 seems particularly promising.  
 
-One of the major open problems in fracture research for computer graphics is the generation of fracture geometry.  
-Some have addressed this by using crazy high-resolution.  That won't work in real-time contexts.  Josh had another
-approach.
+Like many approaches to fracture in computer animation, we do not have a good solution to generating fractured
+geometry.  Like many approaches, we can embed a high-resolution render mesh for unbreakable objects, but
+creating new geometry when fracture occurs is more difficult.  
+Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2014:ALS} to skin simulation particles.
+This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.
+One approach to generating fracture geometry
+is to simply render the simulation geometry and increase the resolution of
+the around the fracture~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The geometry can can later be 
+coarsened to improve computational efficiency~\cite{Pfaff:2014:ATC}.  This approach leads to
+somewhat unpredictable costs and is, at present, too slow for interactive applications where shape matching excels.
+Levine and colleagues~\shortcite{Levine:2014:APP} suggested a number of other techniques for generating fracture geometry
+from spring-mass systems that may be applicable in our interactive context.  Exploring these ideas is an interesting avenue 
+for future work.
+
 
 We have only a simple approach to sampling and clustering.
 We should also look at adaptive sampling and hierarchical clustering.
