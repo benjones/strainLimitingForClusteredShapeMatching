@@ -6,7 +6,7 @@
 	"alpha" : 1.0,
 	"omega" : 0.3,
 	"numConstraintIters" : 8,
-	"maxStretch" : 0.1,
+	"maxStretch" : 0.5,
 	"nClusters" : 40,
 	"springDamping": 0.1,
 	"toughness" : 10000.1,
@@ -19,14 +19,14 @@
 		{ 
 			"normal" : [1, 0, 0],
 			"offset" : 0.7,
-			"angularVelocity" : 0.2,
+			"angularVelocity" : 0.3,
          "width" : 1,
 			"lifetime" : 10.0
 		},
 		{ 
 			"normal" : [-1, 0, 0],
 			"offset" : 0.7,
-			"angularVelocity" : 0.2,
+			"angularVelocity" : 0.3,
          "width" : 1,
 			"lifetime" : 10.0
 		}
