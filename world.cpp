@@ -788,6 +788,7 @@ void World::timestep(){
 	  
 	  
 	  // plasticity
+	  cluster.FpNew = cluster.Fp;
 	  if (nu > 0.0) {
 		if (sigma(2) >= 1e-4) { // adam says: the second clause is a quick hack to avoid plasticity when sigma is degenerate
 		  Eigen::Vector3d FpHat = sigma;
@@ -802,8 +803,8 @@ void World::timestep(){
 			FpHat(1) = pow(FpHat(1), gamma);
 			FpHat(2) = pow(FpHat(2), gamma);
 			// update cluster.Fp
-			cluster.Fp = FpHat.asDiagonal() * V.transpose() * cluster.Fp * V.determinant();
-		  }
+			cluster.FpNew = FpHat.asDiagonal() * V.transpose() * cluster.Fp * V.determinant();
+		  } 
 		}
 		cluster.cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
 	  }
@@ -839,6 +840,10 @@ void World::timestep(){
   doFracture(std::move(potentialSplits));
   
   bounceOutOfPlanes();
+  for(auto&& en : benlib::enumerate(clusters)){
+	auto& cluster = en.second;
+	cluster.Fp = cluster.FpNew;
+  }
   elapsedTime += dt;
   //std::cout << "elapsed time: " << elapsedTime << std::endl;
   for(auto& c : clusters){
