@@ -20,7 +20,7 @@ class Cluster {
  public:
 	Eigen::Vector3d restCom;
   Eigen::Vector3d worldCom;
-  Eigen::Matrix3d aInv, Fp;
+  Eigen::Matrix3d aInv, Fp, FpNew;
 	std::vector<int> neighbors;
   double mass, width, renderWidth;
   double toughness;
