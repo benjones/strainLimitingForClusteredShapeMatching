@@ -12,6 +12,8 @@ bool TwistingPlane::outside(Particle& particle) const {
 
 
 void TwistingPlane::twistParticle(Particle& particle, double timeElapsed) const {
+   if (timeElapsed > lifetime) return;
+   //std::cout<<timeElapsed<<" "<<lifetime<<std::endl;
    if(outside(particle)){
       //will rotate around support point
       const double sos = normal.dot(normal);
@@ -49,7 +51,7 @@ void TwistingPlane::twistParticle(Particle& particle, double timeElapsed) const 
 
 void TwistingPlane::backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
    double w = -1.0*offset;
-
+   if (timeElapsed > lifetime) return;
    if (particle.position.dot(normal) < w) {
       //check to see if it's within bounds
       const double sos = normal.dot(normal);

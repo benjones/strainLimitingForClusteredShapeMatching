@@ -5,8 +5,8 @@
 class TwistingPlane{
 public:
 
-  TwistingPlane(Eigen::Vector3d _normal, double _offset, double _angularVelocity, double _width)
-	:normal(_normal.normalized()), offset(_offset), angularVelocity(_angularVelocity), width(_width)
+  TwistingPlane(Eigen::Vector3d _normal, double _offset, double _angularVelocity, double _width, double _lifetime)
+	:normal(_normal.normalized()), offset(_offset), angularVelocity(_angularVelocity), width(_width), lifetime(_lifetime)
   {}
 
   bool outside(Particle& particle) const;
@@ -17,4 +17,5 @@ public:
   double offset;
   double angularVelocity;
   double width;
+  double lifetime;
 };
