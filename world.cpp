@@ -364,7 +364,8 @@ void World::drawPlanes() const{
 	const auto i = pr.first + planes.size() + movingPlanes.size();
 	const auto& plane = pr.second;
 	glColor4d(0.5, i/totalCount, 0.5, 1);
-	drawTPlane(plane.normal, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
+	if (elapsedTime <= plane.lifetime)
+	  drawTPlane(plane.normal, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
   }
   glDepthMask(true);
 }
@@ -393,7 +394,8 @@ void World::drawPlanesPretty() const{
 	const auto& plane = pr.second;
    RGBColor rgb = HSLColor(0.25*acos(-1)*i/twistingPlanes.size()+0.5*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
-	drawTPlane(plane.normal, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
+	if (elapsedTime <= plane.lifetime)
+	  drawTPlane(plane.normal, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
   }
 
 
@@ -596,7 +598,8 @@ void World::loadFromJson(const std::string& _filename){
 	twistingPlanes.emplace_back(normal, 
 		twistingPlanesIn[i]["offset"].asDouble(),
 		twistingPlanesIn[i]["angularVelocity"].asDouble(),
-      twistingPlanesIn[i]["width"].asDouble());
+		twistingPlanesIn[i]["width"].asDouble(),
+		twistingPlanesIn[i].get("lifetime", std::numeric_limits<double>::max()).asDouble());
 
   }
   std::cout << twistingPlanes.size() << " twisting planes" << std::endl;
@@ -770,7 +773,7 @@ void World::timestep(){
 
 
 	  Eigen::Matrix3d T = U*V.transpose();
-	  if (nu > 0.0) T = T*cluster.Fp;
+	  if (nu > 0.0) T = T*cluster.Fp; // plasticity
 	  
 	  //auto pr = utils::polarDecomp(A);
 	  
@@ -844,6 +847,7 @@ void World::timestep(){
 	}
   }
   //printCOM();
+  //std::cout<<elapsedTime<<std::endl;
 }
 
 void World::bounceOutOfPlanes(){
@@ -1116,12 +1120,16 @@ void World::strainLimitingIteration(){
 	
 	Eigen::Matrix3d Apq = computeApq(c, init, worldCOM);
 	Eigen::Matrix3d A = Apq*c.aInv;
+	if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
 	auto pr = utils::polarDecomp(A);
-	
+
+	Eigen::Matrix3d T = pr.first;
+	if (nu > 0.0) T = T * c.Fp;
+
 	for(auto n : c.neighbors){
 	  auto &q = particles[n];
 	  Eigen::Vector3d rest = (q.restPosition - c.restCom);
-	  Eigen::Vector3d goal = pr.first*(rest) + worldCOM;
+	  Eigen::Vector3d goal = T*(rest) + worldCOM;
 	  double ratio = (goal-q.position).squaredNorm() / 
 		(c.width*c.width);
 	  
