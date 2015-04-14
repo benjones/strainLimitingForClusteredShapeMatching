@@ -9,7 +9,7 @@
 	"nClusters" : 20,
 	"springDamping": 0.1,
 	"toughness" : 1.05,//01,
-	"gravity" : [0, -5, 0],
+	"gravity" : [0, -9.81, 0],
 	"cylinders" : [
 		{
 			"normal" : [0, 0, 1],
