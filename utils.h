@@ -53,5 +53,49 @@ namespace utils{
 	}
   }
 
-  
+  std::pair<Eigen::Vector3d, Eigen::Vector3d>
+  getPlaneTangents(const Eigen::Vector3d& normal){
+	
+	const Eigen::Vector3d xVector{1,0,0};
+	Eigen::Vector3d span1 = (fabs(normal.dot(xVector)) < 0.9) ?
+	  normal.cross(xVector) :
+	  normal.cross(Eigen::Vector3d{0,1,0});
+	Eigen::Vector3d span2 = normal.cross(span1);
+	
+	span1.normalize();
+	span2.normalize();
+	
+	assert(fabs(normal.squaredNorm() - 1) < 0.01);
+	assert(fabs(span1.squaredNorm() - 1) < 0.01);
+	assert(fabs(span2.squaredNorm() - 1) < 0.01);
+	assert(fabs(normal.dot(span1)) < .01);
+	assert(fabs(normal.dot(span2)) < .01);
+	assert(fabs(span1.dot(span2)) < .01);
+	
+	return std::make_pair(span1, span2);
+  }
+
+
+
+  inline void drawCylinder(const Eigen::Vector3d& supportingPoint,
+	  const Eigen::Vector3d& normal,
+	  double radius){
+	
+	const double length = 10;
+	const int divisions = 10;
+	
+	const auto tangents = getPlaneTangents(normal);
+	
+	glBegin(GL_QUAD_STRIP);
+	for(int i = 0; i <= divisions; ++i){
+	  double theta = i*2.0*M_PI/divisions;
+	  Eigen::Vector3d offset = radius*(std::cos(theta)*tangents.first + std::sin(theta)*tangents.second);
+	  Eigen::Vector3d v1 = supportingPoint - length*normal + offset;
+	  Eigen::Vector3d v2 = supportingPoint + length*normal + offset;
+	  glVertex3dv(v1.data());
+	  glVertex3dv(v2.data());
+	}
+	glEnd();
+
+  }
 }
