@@ -714,7 +714,7 @@ void World::timestep(){
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
-	  if(sigma(0) > cluster.toughness){
+	  if(fabs(sigma(0) - 1.0) > cluster.toughness){
 		//if(cluster.renderWidth > toughness*cluster.width){ //doesn't improve anything
 		potentialSplits.emplace_back(en.first, 
 			//cluster.renderWidth - toughness*cluster.width, 
@@ -1188,6 +1188,10 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	assert(c.mass >= 0);
 	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
 	c.worldCom = computeNeighborhoodCOM(c);
+
+	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
+	if(!c.worldCom.allFinite()){std::cout << c.worldCom << std::endl;}
+
 	assert(c.restCom.allFinite());
 	assert(c.worldCom.allFinite());
 	c.width = 0.0;
@@ -1217,6 +1221,10 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-6 ? 1.0/solver.singularValues()(i) : 0;
 	}
 	c.aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
+	if(!c.aInv.allFinite()){
+	  std::cout << c.aInv << std::endl;
+	  std::cout << solver.singularValues() << std::endl;
+	}
 	assert(c.aInv.allFinite());
   }
 
@@ -1234,8 +1242,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   if(!potentialSplits.empty()){
 	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
   }
+  bool aCancel = false;
   for(auto &ps : potentialSplits){
-	if (++count > 10) break;
+	//if (++count > 10) break;
 	size_t cIndex = std::get<0>(ps);
 
 	auto worldCOM = clusters[cIndex].worldCom;
@@ -1252,8 +1261,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullV);
 	
 	Eigen::Vector3d sigma = solver.singularValues();
-	if(sigma(0) < clusters[cIndex].toughness){
-	  std::cout << "cancelled fracture with updated stuff" << std::endl;
+	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness){
+	  if(!aCancel){
+		aCancel = true;
+		std::cout << "cancelled fracture with updated stuff" << std::endl;
+	  }
 	  continue;
 	}
 	
@@ -1284,7 +1296,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
 	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
 	if(newSize == 0 || oldSize == 0){ continue;}
-	// if(oldSize > 20 && newSize > 20){
+	//if(oldSize < 4 || newSize < 4){ continue;}
 
 	//expected to be mostly in teh x direction for the cube example, and it was
 	//std::cout << "split direction: " << splitDirection << std::endl;
@@ -1306,11 +1318,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	clusters.push_back(newCluster);	  
 	
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size() -1});
-	std::cout << "numClusters: " << clusters.size() << std::endl;
+	//std::cout << "numClusters: " << clusters.size() << std::endl;
 	
-	std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
-		[](const Cluster& a, const Cluster& b){
-		  return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
+	//std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
+	//		[](const Cluster& a, const Cluster& b){
+	//		  return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
 	
 	
 	//split from other clusters
@@ -1344,7 +1356,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  }
 	}
 	updateClusterProperties(affectedClusters);
-	
+	//	for(auto& c : affectedClusters){
+	//	  clusters[c].toughness *= 0.995;
+	//	}
 	
 	//break;
 	

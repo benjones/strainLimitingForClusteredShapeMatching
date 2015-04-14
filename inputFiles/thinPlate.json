@@ -1,14 +1,14 @@
 {
-	"particleFiles" : [ "inputFiles/blue_noise/sheet-bn.txt"],
+	"particleFiles" : [ "inputFiles/blue_noise/sheetDense-bn.txt"],
 
-	"neighborRadius" : 0.08,
+	"neighborRadius" : 0.09,
 	"alpha" : 1.9,
 	"omega" : 0.3,
-	"numConstraintIters" : 8,
+	"numConstraintIters" : 4,
 	"maxStretch" : 0.1,
 	"nClusters" : 50,
 	"springDamping": 0.5,
-	"toughness" : 1.1,
+	"toughness" : 0.05,
 	"yield" : 0.2,
 	"nu" : 1.0,
 
@@ -29,7 +29,7 @@
 	"projectiles" : [
 		{
 			"start" : [0,  0, -0.9],
-			"velocity" : [0, 0, 0.4],
+			"velocity" : [0, 0, 0.3],
 			"radius" : 0.1
 		}
 	],
