@@ -729,6 +729,14 @@ inline double sqr (const double &x) {return x*x;}
 
 void World::timestep(){
 
+  for(auto& twistingPlane : twistingPlanes){
+	for(auto& p : particles){
+      if (twistingPlane.outside(p) && twistingPlane.lifetime < elapsedTime) 
+		p.outsideSomeMovingPlane = false;
+   }
+  }
+
+
   //scope block for profiler
   std::vector<FractureInfo> potentialSplits;
   {
@@ -815,10 +823,10 @@ void World::timestep(){
 	for(auto& p : particles){
 	  p.goalPosition /= p.numClusters;
 	  p.goalVelocity /= p.numClusters;
-     if (!p.outsideSomeMovingPlane) {
+	  if (!p.outsideSomeMovingPlane) {
         p.velocity += dt * gravity + (alpha/dt)*(p.goalPosition- p.position) + 
            springDamping*(p.goalVelocity - p.velocity); 
-     }
+	  }
 	  p.position += dt * p.velocity;
 	}
 	
