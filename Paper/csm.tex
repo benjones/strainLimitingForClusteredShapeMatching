@@ -360,24 +360,25 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
 \end{figure}
 
 We have used our method to animate a number of examples of ductile fracture.  Timing results
-taken on a Macbook Pro with a ???? processor 
+taken on a Macbook Pro with a 2.4GHz Intel i5 processor.
 are given in table~\tref{table:timing}.
 In all particle renderings, particle color is used to indicate the nearest cluster center.  
 We stress that clusters overlap and that particles typically belong to more than one cluster.
 
 \begin{table}[b!]
 \begin{center}
-\caption{Timing results in ms per frame taken on a Macbook Pro with a ???? processor.}
+\caption{Timing results in ms per frame taken on a Macbook Pro with a 2.4Ghz Intel i5 processor.}
 \label{table:timing}
-\begin{tabular}{|l|l|l|l|l|}
+\begin{tabular}{|l|l|l|l|l|l|}
 \hline
-example & dynamics & fracture & plasticity & total\\
+example & \#particles & dynamics & fracture & plasticity & total\\
 \hline
-armadillo &  &  &  &  \\
-twisted bar &  &  &  &  \\
-projectile &  &  &  &  \\
-broken heart &  &  &  &  \\
-swiss cheese &  &  &  &  \\
+armadillo & 20115 & 24  & $<$ 1 & 38 & 65\\
+twisted bar & 5317 & 7 &$<$ 1  & 0 & 7\\
+twisted bar with fracture & 5317 & 11  & $<$ 1 & 2.5 & 15 \\
+projectile & 5325 & 29 & $<$ 1 & 24 & 57\\
+broken heart & 20132 & 23 & $<$1 & 15 & 41\\
+swiss cheese & 25032 & 27 & $<$ 1 & 39 & 69 \\
 \hline
 \end{tabular}
 \end{center}

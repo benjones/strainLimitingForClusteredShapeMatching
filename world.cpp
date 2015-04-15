@@ -840,7 +840,7 @@ void World::timestep(){
   //scope block for profiler
   std::vector<FractureInfo> potentialSplits;
   {
-	auto timer = prof.timeName("shape matching");
+	auto timer = prof.timeName("dynamics");
 	for(auto& p : particles){
 	  p.oldPosition = p.position;
 	  p.goalPosition.setZero();
@@ -894,7 +894,8 @@ void World::timestep(){
 		particles[n].goalVelocity += clusterVelocity;
 	  }
 	  
-	  
+	  {
+	  auto timer = prof.timeName("plasticity");
 	  // plasticity
 	  cluster.FpNew = cluster.Fp;
 	  if (nu > 0.0) {
@@ -916,6 +917,7 @@ void World::timestep(){
 		}
 		cluster.cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
 	  }
+	  }
 	}
 	
 	
@@ -930,11 +932,6 @@ void World::timestep(){
 	  p.position += dt * p.velocity;
 	}
 	
-  }
-  
-  //scope block for profiler
-  {
-	auto timer = prof.timeName("strainLimiting");
 	for(auto iter : range(numConstraintIters)){
 	  (void)iter; //unused
 	  strainLimitingIteration();

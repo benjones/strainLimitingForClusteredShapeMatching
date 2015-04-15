@@ -51,10 +51,14 @@ int main(int argc, char** argv){
 
 
 void loop(SDL_Window* window, World& world){
-
+  
   auto context = SDL_GL_CreateContext(window);  
   int frame = 0;
 
+
+  benlib::Profiler totalProf;
+  {
+	auto totalTime  = totalProf.timeName("everything");
   //loop
   bool readyToExit = false;
 
@@ -135,13 +139,14 @@ void loop(SDL_Window* window, World& world){
 	world.saveParticleFile(std::string(fname));
 	if(frame > 600){break;}
 	*/
-
+	
    if(world.paused){
 	  //world.drawSingleCluster(window, frame);
 	  //SDL_Delay(300);
 	  world.drawPretty(window);
 	} else {
 	  world.timestep();
+	  auto renderTime = totalProf.timeName("render");
 	  world.drawPretty(window);
 
 	  if(dumpFrames){
@@ -151,10 +156,16 @@ void loop(SDL_Window* window, World& world){
 		}
 	  }
 	  ++frame;
+	  std::cout << frame << std::endl;
 	}
    
 
   }
+  }
   world. prof.dump<std::chrono::duration<double>>(std::cout);
+  
+  totalProf.dump<std::chrono::duration<double>>(std::cout);
+
+  std::cout << "total frames: " << frame << std::endl;
   SDL_GL_DeleteContext(context);
 }
