@@ -274,21 +274,21 @@ the decomposition in~\eref{eq:decomp}.
 \subsection{Fracture}
 \label{sec:Fracture}
 To model fracture, we allow shape matching clusters to split into two clusters.  Each timestep, for each cluster,
-we compare the largest singular value, $\Sigma_\max$, computed in~\eref{eq:decomp}, to a toughness, $\tau_c$, which
+we compare the largest singular value, $\Sigma_{\max}$, computed in~\eref{eq:decomp}, to a toughness, $\tau_c$, which
 can vary between clusters.  
-If $\Sigma_\max > \tau_c$ then the cluster is added to a priority queue with priority $\Sigma_\max - \tau_c$.  We also
-record the corresponding right singular vector $\B{V}_\max$.  At the end of the timestep, we iteratively remove
-clusters from the priority queue and, if the $\Sigma_\max$ still exceeds $\tau_c$, we split the cluster into two clusters
+If $\Sigma_{\max} > \tau_c$ then the cluster is added to a priority queue with priority $\Sigma_{\max} - \tau_c$.  We also
+record the corresponding right singular vector $\B{V}_{\max}$.  At the end of the timestep, we iteratively remove
+clusters from the priority queue and, if the $\Sigma_{\max}$ still exceeds $\tau_c$, we split the cluster into two clusters
 as follows.
 
 We assume that the fracture surface is defined by the plane that passes through the center of mass of the 
-cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_\max$.  Particles on the positive\adam{?}
+cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive\adam{?}
 side of this plane are removed from the cluster and added to a new cluster.  Additionally, we remove particles 
 from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
 That is if, for particle $p_i$,
 \begin{equation}
-\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_\max} \mathrel{!}=
-\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_\max}
+\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \mathrel{!}=
+\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}
 \end{equation}
 particle $p_i$ is removed from cluster $d$.  We then update the properties of the affected clusters.
 The plasticity variables, $\B{F}^p$ and $\alpha$, are copied from the fractured cluster to the new cluster.
@@ -299,7 +299,7 @@ through the pseudoinverse.  If, when computing the pseudoinverse, any of the sin
 we set $\B{F}_c^p = \B{I}$.  We also update particle-to-cluster maps and $n_i$ for affected particles.
 
 Because cluster membership may have changed due to the fracturing of a different cluster, we verify that 
-$\Sigma_\max > \tau_c$ before fracturing and also recompute $\B{V}_\max$.
+$\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.
 
 \subsection{Sampling and Clustering}
 
