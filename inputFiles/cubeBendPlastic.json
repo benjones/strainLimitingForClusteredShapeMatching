@@ -1,0 +1,39 @@
+{
+	"particleFiles" : [ "inputFiles/blue_noise/thinBox-bn.txt"],
+
+	"neighborRadius" : 0.15,
+	"alpha" : 1.0,
+	"omega" : 0.3,
+	"numConstraintIters" : 8,
+	"maxStretch" : 0.5,
+	"nClusters" : 40,
+	"springDamping": 0.1,
+	"toughness" : 100.1,
+	"planes" : [ 
+		[0, 1, 0, -2],
+		[1, 1, 0, -2],
+		[-1, 1, 0, -2]
+	],
+	"tiltingPlanes" : [
+		{ 
+			"normal" : [1, 0, 0],
+			"tilt" : [0, 0, -1],
+			"offset" : 0.7,
+			"angularVelocity" : 0.3,
+         "width" : 1,
+			"lifetime" : 10.0
+		},
+		{ 
+			"normal" : [-1, 0, 0],
+			"tilt" : [0, 0, 1],
+			"offset" : 0.7,
+			"angularVelocity" : 0.3,
+         "width" : 1,
+			"lifetime" : 10.0
+		}
+	],
+	"nu" : 1.0,
+	"yield" : 0.0,
+	"hardening" : 0.005,
+	"gravity" : [0, 0, 0]
+}
