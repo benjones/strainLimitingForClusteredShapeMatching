@@ -274,21 +274,21 @@ the decomposition in~\eref{eq:decomp}.
 \subsection{Fracture}
 \label{sec:Fracture}
 To model fracture, we allow shape matching clusters to split into two clusters.  Each timestep, for each cluster,
-we compare the largest singular value, $\Sigma_2$, computed in~\eref{eq:decomp}, to a toughness, $\tau_c$, which
+we compare the largest singular value, $\Sigma_{\max}$, computed in~\eref{eq:decomp}, to a toughness, $\tau_c$, which
 can vary between clusters.  
-If $\Sigma_2 > \tau_c$ then the cluster is added to a priority queue with priority $\Sigma_2 - \tau_c$.  We also
-record the corresponding right singular vector $\B{V}_2$.  At the end of the timestep, we iteratively remove
-clusters from the priority queue and, if the $\Sigma_2$ still exceeds $\tau_c$, we split the cluster into two clusters
+If $\Sigma_{\max} > \tau_c$ then the cluster is added to a priority queue with priority $\Sigma_{\max} - \tau_c$.  We also
+record the corresponding right singular vector $\B{V}_{\max}$.  At the end of the timestep, we iteratively remove
+clusters from the priority queue and, if the $\Sigma_{\max}$ still exceeds $\tau_c$, we split the cluster into two clusters
 as follows.
 
 We assume that the fracture surface is defined by the plane that passes through the center of mass of the 
-cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_2$.  Particles on the positive\adam{?}
+cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive\adam{?}
 side of this plane are removed from the cluster and added to a new cluster.  Additionally, we remove particles 
 from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
 That is if, for particle $p_i$,
 \begin{equation}
-\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_2} \mathrel{!}=
-\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_2}
+\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \mathrel{!}=
+\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}
 \end{equation}
 particle $p_i$ is removed from cluster $d$.  We then update the properties of the affected clusters.
 The plasticity variables, $\B{F}^p$ and $\alpha$, are copied from the fractured cluster to the new cluster.
@@ -299,7 +299,7 @@ through the pseudoinverse.  If, when computing the pseudoinverse, any of the sin
 we set $\B{F}_c^p = \B{I}$.  We also update particle-to-cluster maps and $n_i$ for affected particles.
 
 Because cluster membership may have changed due to the fracturing of a different cluster, we verify that 
-$\Sigma_2 > \tau_c$ before fracturing and also recompute $\B{V}_2$.
+$\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.
 
 \subsection{Sampling and Clustering}
 
@@ -346,31 +346,41 @@ We could compare our approaches to plasticity and fracture to Irving2004,Barteil
 \paragraph{Limitations and Future Work}
 Our approach has a number of limitations that provide ample potential future work in clustered shape matching.
 One limitation of our implementation is that we only handle simple collision geometry and do not handle self-collisions.
-More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman}.
-Handling self-collisions would require further research; the sphere-packing approach of someone and bin Zafar~\shortcite{}
+More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman:2003:NRB}.
+Handling self-collisions would require further research; the sphere-packing approach of Budsberg and colleagues~\shortcite{Budsberg:2014:EPD}
 seems particularly promising.  
 
-Like many approaches to fracture in computer animation, we do not have a good solution to generating fractured
-geometry.  Like many approaches, we can embed a high-resolution render mesh for unbreakable objects, but
-creating new geometry when fracture occurs is more difficult.  
-Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2014:ALS} to skin simulation particles.
+Like many fracture methods in computer animation, we do not have a good solution to generating fractured
+geometry.  Like previous work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
+render mesh for unbreakable objects, but creating new geometry when fracture occurs is more difficult.  
+Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2011:ALM} to skin the simulation particles.
 This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.
-One approach to generating fracture geometry
-is to simply render the simulation geometry and increase the resolution of
-the around the fracture~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The geometry can can later be 
+One approach to generating fracture geometry is to simply render the simulation geometry and increase the resolution 
+where fracture occurs~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The simulation geometry can can later be 
 coarsened to improve computational efficiency~\cite{Pfaff:2014:ATC}.  This approach leads to
-somewhat unpredictable costs and is, at present, too slow for interactive applications where shape matching excels.
+somewhat unpredictable costs and is, at present, too slow for the interactive applications where shape matching excels.
 Levine and colleagues~\shortcite{Levine:2014:APP} suggested a number of other techniques for generating fracture geometry
-from spring-mass systems that may be applicable in our interactive context.  Exploring these ideas is an interesting avenue 
+for spring-mass systems that may be applicable in our interactive context.  Exploring these ideas is an interesting avenue 
 for future work.
 
-
-We have only a simple approach to sampling and clustering.
-We should also look at adaptive sampling and hierarchical clustering.
+Our blue-noise sampling and k-means clustering improve upon the regular grids and
+randomized clusters of Bargteil and Jones~\shortcite{Bargteil:2014:SLF} and are effective for our purposes,
+but better approaches certainly exist.  In particular, it would be interesting to explore adaptive sampling
+so that computational resources can be focused on interesting areas of the object.  It would also be interesting
+to consider adaptive and hierarchical clustering techniques; the hierarchical lattices of Rivers and James~\cite{Rivers:2007:FFL}
+clearly improved performance and artistic directability.  Relatedly, we do not currently place any bounds on the minimum
+number of particles in a cluster.  Consequently our results contain many one-particle clusters, which results in a 
+``particle spray'' look that may be objectionable in some contexts.
 
 The biggest limitation of our approach is a lack of theoretical underpinnings for the clustered shape matching
-approach.  While this framework effective and useful, especially for interactive applications, convergence
-behavior is poorly understood.
+framework; we do not yet have any mathematical tools to analyze the approach.  We do not really understand
+how the method behaves as particle counts or timesteps decrease or as the cluster size or number of clusters change.
+This limitation does not mean the approach is not useful.  After all, the finite element method was in use
+for decades before a mathematical framework was developed to analyze its properties.  In a similar way,
+even though we do not have a deep understanding of the approach, the clustered shape-matching framework, with its
+relatively large particle-to-cluster ratio,
+is particularly useful for graphical applications, especially interactive applications, where visual detail
+and computational efficiency are of paramount importance.
 
 
 
