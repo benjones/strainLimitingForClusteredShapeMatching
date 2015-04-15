@@ -445,10 +445,26 @@ framework; we do not yet have any mathematical tools to analyze the approach.  W
 how the method behaves as particle counts or timesteps decrease or as the cluster size or number of clusters change.
 This limitation does not mean the approach is not useful.  After all, the finite element method was in use
 for decades before a mathematical framework was developed to analyze its properties.  In a similar way,
-even though we do not have a deep understanding of the approach, the clustered shape-matching framework, with its
-relatively large particle-to-cluster ratio,
-is particularly useful for graphical applications, especially interactive applications, where visual detail
-and computational efficiency are of paramount importance.
+%even though we do not have a deep understanding of the approach, 
+we believe the clustered shape-matching framework will prove extremely useful in practice while
+researchers develop mathematical tools for analysis. 
+%the clustered shape-matching framework, 
+%with its
+%relatively large particle-to-cluster ratio,
+%is particularly useful for graphical applications, especially interactive applications, 
+%where visual detail
+%and computational efficiency are of paramount importance.
+
+\paragraph{Conclusion} 
+One of the primary advantages of the clustered shape matching approach is that the number of degrees of freedom
+is much larger then the number of ``integration units''---clusters in this case.  The opposite is true of finite element
+methods with unstructured meshes where the number of tetrahedra is often considerably larger than the number of vertices.  
+For graphical applications visual detail, which correlates with the number of degrees of freedom, is of paramount importance
+and computation, which correlates with ``integration units,'' is often limited.  
+For these reasons, the clustered shape matching framework is extremely appealing for computer animation, 
+especially interactive animation.  The utility and versatility of this framework is greatly improved by our extensions 
+to the animation of ductile fracture.
+
 
 
 
