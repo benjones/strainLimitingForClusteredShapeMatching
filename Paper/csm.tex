@@ -337,6 +337,17 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < d.
 \josh{what else needs to be said here?}
 
 \section{Results and Discussion}
+
+The colorings indicate which cluster center a particle is closest to.
+
+Twisting bar with/without fracture.  The bar keeps some shape after the constraints are removed
+
+Swiss cheese and heart: complex geometry affects where the cracks form and how they propagate
+
+Armadillo/sheet: not sure what to say for them.  Interaction with projectiles I guess?
+
+Timing stuff: make a table shell and I can fill it in.  Probably makes sense to do average time/frame of simulation (shape matching/strain limiting), fracture, plasticity.
+
 One view of clustered shape matching is that there are far fewer integration units than degrees of freedom compared to
 fem.  This makes sense for computer graphics applications where degrees of freedom correspond lead to visual detail 
 while integrations units lead to computational cost.
@@ -344,6 +355,9 @@ while integrations units lead to computational cost.
 We could compare our approaches to plasticity and fracture to Irving2004,Barteil2007 and O'Brien1999. 
 
 \paragraph{Limitations and Future Work}
+
+\ben{limitation: variable framerate, fracture can slow down the simulation IMMENSELY in current implementation}
+
 Our approach has a number of limitations that provide ample potential future work in clustered shape matching.
 One limitation of our implementation is that we only handle simple collision geometry and do not handle self-collisions.
 More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman:2003:NRB}.
