@@ -180,6 +180,60 @@ int main(int argc, char** argv){
 
 	}
 
+	//twisting planes
+	for(auto i : range(root["twistingPlanes"].size())){
+	  auto& plane = root["twistingPlanes"][i];
+	  std::cout << "twisting plane: " << i << std::endl;
+	  double lifetime = plane.get("lifetime", 1e100).asDouble();
+	  double timeNow = frame*root.get("dt", 1.0/60.0).asDouble();
+	  std::cout << "lifetime: " << lifetime << " time now: " << timeNow << std::endl;
+	  if(timeNow < lifetime ){
+		std::cout << "active plane" << std::endl;
+		Eigen::Vector3d normal(plane["normal"][0].asDouble(),
+			plane["normal"][1].asDouble(),
+			plane["normal"][2].asDouble());
+		normal.normalize();
+		double offset = plane["offset"].asDouble();
+		double velocity = plane["velocity"].asDouble();
+		Eigen::Vector3d zAxis(0,0,1);
+		Eigen::Vector3d cp = zAxis.cross(normal);
+		
+		double width = plane["width"].asDouble();
+
+
+		outs << "<shape type=\"rectangle\" >\n<transform name=\"toWorld\">\n"
+			 << "<scale x=\"" << width << "\" y=\"" << width << "\" />\n";
+		if(cp.norm() > 1e-3){
+		  Eigen::Vector3d direction = cp.normalized();
+		  double angle = asin(std::max(-1.0, std::min(1.0, cp.norm())))*180.0/M_PI;
+		  outs << "<rotate x=\"" << direction[0] 
+			   << "\" y=\""  << direction[1]
+			   << "\" z=\""  << direction[2]  
+			   << "\" angle=\""  << angle << "\" />\n";
+		}
+		//do the time dependent rotation
+		double angVel = plane["angularVelocity"].asDouble();
+		outs << "<rotate x=\"" << normal.x() 
+			 << "\" y=\"" << normal.y()
+			 << "\" z=\"" << normal.z() 
+			 << "\" angle=\"" << timeNow*angVel*180/M_PI
+			 << "\" />\n";
+		Eigen::Vector3d supportingPoint = normal*offset;
+		outs << "<translate x=\"" << supportingPoint.x()
+			 << "\" y=\""  << supportingPoint.y()
+			 << "\" z=\""  << supportingPoint.z()
+			 << "\" />\n"
+			 << "</transform>\n"
+			 << "<bsdf type=\"thindielectric\"><srgb name=\"specularTransmittance\" value=\"#ff8888\" />\n"
+			 << "<srgb name=\"specularReflectance\" value=\"#333333\" />"
+			 << "</bsdf>\n</shape>\n";
+
+
+
+	  }
+	}
+
+
 	//projectiles
 	for(auto i : range(root["projectiles"].size())){
 	  auto& projectile = root["projectiles"][i];

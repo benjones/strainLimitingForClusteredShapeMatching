@@ -9,7 +9,7 @@
 	"maxStretch" : 0.5,
 	"nClusters" : 40,
 	"springDamping": 0.1,
-	"toughness" : 10000.1,
+	"toughness" : 0.01,
 	"twistingPlanes" : [
 		{ 
 			"normal" : [1, 0, 0],
