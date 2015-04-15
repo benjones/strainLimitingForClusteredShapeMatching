@@ -387,12 +387,12 @@ swiss cheese & 25032 & 27 & $<$ 1 & 39 & 69 \\
 \end{table*}
 
 In our first example, an armadillo is tortured by simultaneously pulling on and firing
-canonballs at its arms (see~\fref{fig:teaser}).
+cannonballs at its arms (see~\fref{fig:teaser}).
 Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
 plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture. 
-In our thrid example a projectile is fired through a thin sheet of material (see~\fref{fig:projectile}).  
+In our third example a projectile is fired through a thin sheet of material (see~\fref{fig:projectile}).  
 In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
-where the tear begins and how it propogates.  Similarly, in our final example the holes in a 
+where the tear begins and how it propagates.  Similarly, in our final example the holes in a 
 slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
 
 %Timing stuff: make a table shell and I can fill it in.  Probably makes sense to do average time/frame of simulation (shape matching/strain limiting), fracture, plasticity.
@@ -410,7 +410,7 @@ One limitation of our implementation is that we only handle simple collision geo
 More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman:2003:NRB}.
 Handling self-collisions would require further research; the sphere-packing approach of Budsberg and colleagues~\shortcite{Budsberg:2014:EPD}
 seems particularly promising.  
-Another limitation of our current implementation is that the computational cost is somewhat unpredictable; many fractures occuring at once
+Another limitation of our current implementation is that the computational cost is somewhat unpredictable; many fractures occurring at once
 can have a very significant impact on performance.  In the future it would be interesting to explore asynchronous fracturing
 where, instead of emptying the priority queue every timestep, it is processed as computational resources allow.
 
@@ -418,7 +418,8 @@ Like many fracture methods in computer animation, we do not have a good solution
 geometry.  Like previous work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
 render mesh for unbreakable objects, but creating new geometry when fracture occurs is more difficult.  
 Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2015:ALM} to skin the simulation particles.
-This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.
+This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.  
+Moreover, since we do not handle-self collisions, we can merge components that unexpectedly pass through each other.
 One approach to generating fracture geometry is to simply render the simulation geometry and increase the resolution 
 where fracture occurs~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The simulation geometry can can later be 
 coarsened to improve computational efficiency~\cite{Pfaff:2014:ATC}.  This approach leads to
