@@ -1,15 +1,15 @@
 {
 	"particleFiles" : [ "inputFiles/blue_noise/penguin.txt"],
 
-	"neighborRadius" : 0.5,
-	"alpha" : 0.5,
+	"neighborRadius" : 0.15,
+	"alpha" : 1.9,
 	"omega" : 0.3,
 	"numConstraintIters" : 5,
-	"maxStretch" : 0.1,
-	"nClusters" : 20,
+	"maxStretch" : 0.5,
+	"nClusters" : 40,
 	"springDamping": 0.1,
-	"toughness" : 1.05,//01,
-	"gravity" : [0, -9.81, 0],
+	"toughness" : 8.1,
+	"gravity" : [0, -6, 0],
 	"cylinders" : [
 		{
 			"normal" : [0, 0, 1],

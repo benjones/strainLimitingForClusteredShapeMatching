@@ -1,0 +1,46 @@
+{
+	"particleFiles" : [ "inputFiles/blue_noise/armadillo-20k-bn.txt"],
+
+	"neighborRadius" : 0.09,
+	"alpha" : 0.8,
+	"omega" : 0.3,
+	"numConstraintIters" : 4,
+	"maxStretch" : 0.5,
+	"nClusters" : 100,
+	"springDamping": 0.5,
+	"toughness" : 0.11,
+	"yield" : 0.05,
+	"nu" : 1.0,
+
+	"planes" : [ 
+	],
+	"movingPlanes" : [
+		{ 
+			"normal" : [1, 0.1, 0],
+			"offset" : 0.36,
+			"velocity" : 0.2
+		},
+		{ 
+			"normal" : [-1, 0.1, 0],
+			"offset" : 0.36,
+			"velocity" : 0.2
+		}
+	],
+	"projectiles" : 
+	[
+		{ 
+			"start" : [-0.25, 0.25, -2],
+			"velocity" : [ 0, 0, 2],
+			"radius" : 0.05,
+			"momentumScale" : 7.0
+		},
+		{ 
+			"start" : [0.25, 0.3, 2],
+			"velocity" : [ 0, 0, -2],
+			"radius" : 0.05,
+			"momentumScale" : 7.0
+		}
+
+	],
+	"gravity" : [0, 0, 0]
+ }

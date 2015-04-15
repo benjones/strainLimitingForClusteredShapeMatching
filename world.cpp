@@ -1495,6 +1495,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	// copy relevant variables
 	newCluster.Fp = clusters[cIndex].Fp; // plasticity
+	newCluster.FpNew = clusters[cIndex].FpNew;
 	newCluster.cstrain = clusters[cIndex].cstrain; // plasticity
 	newCluster.toughness = clusters[cIndex].toughness;
 	// we will want to copy toughness here as well...
@@ -1513,43 +1514,45 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//		  return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
 	
 	
-	//split from other clusters
-	std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
-	std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
-		std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
-	std::vector<size_t> affectedClusters; //keep sorted
-	for(auto& member : allParticles){
-	  auto& particle = particles[member];
-	  for(auto thisIndex : particle.clusters){
-		//insert into sorted array
-		auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
-		if(it == affectedClusters.end() || *it != thisIndex){
-		  affectedClusters.insert(it, thisIndex);
-		}
-
-		auto& thisCluster = clusters[thisIndex];
-		//auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
-		if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
-			((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
-		  //remove from cluster
-		  thisCluster.neighbors.erase(
-			  std::remove(thisCluster.neighbors.begin(),
-				  thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-		  //remove cluster from this
-		  particle.clusters.erase(
-			  std::remove(particle.clusters.begin(), particle.clusters.end(),
-				  thisIndex), particle.clusters.end());
+	{
+	  auto timerTwo = prof.timeName("propagate");
+	  //split from other clusters
+	  std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
+	  std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
+		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
+	  std::vector<size_t> affectedClusters; //keep sorted
+	  for(auto& member : allParticles){
+		auto& particle = particles[member];
+		for(auto thisIndex : particle.clusters){
+		  //insert into sorted array
+		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
+		  if(it == affectedClusters.end() || *it != thisIndex){
+			affectedClusters.insert(it, thisIndex);
+		  }
 		  
+		  auto& thisCluster = clusters[thisIndex];
+		  //auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
+		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
+			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
+			//remove from cluster
+			thisCluster.neighbors.erase(
+				std::remove(thisCluster.neighbors.begin(),
+					thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
+			//remove cluster from this
+			particle.clusters.erase(
+				std::remove(particle.clusters.begin(), particle.clusters.end(),
+					thisIndex), particle.clusters.end());
+			
+		  }
 		}
 	  }
-	}
-	updateClusterProperties(affectedClusters);
-	//	for(auto& c : affectedClusters){
-	//	  clusters[c].toughness *= 0.995;
+	  updateClusterProperties(affectedClusters);
+	  //	for(auto& c : affectedClusters){
+	  //	  clusters[c].toughness *= 0.995;
 	//	}
 	
 	//break;
-	
+	}
   }
 }	
 

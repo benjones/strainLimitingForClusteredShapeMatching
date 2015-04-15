@@ -61,8 +61,9 @@
 %%% the title and author information, and above the body of the content.
 
  \teaser{
-   %\includegraphics[height=1.5in]{Figures/}
+   \includegraphics[height=1.5in]{Figures/shapematching}
    \caption{}
+   \label{fig:teaser}
  }
 
 \maketitle
@@ -114,7 +115,8 @@ colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plastici
 yield stress, flow rate, and work hardening.  Inspired by the work of O'Brien and colleagues~\shortcite{Obrien:1999:GMA,Obrien:2002:GMA},
 we introduce a cluster-based fracture approach that splits individual clusters along the plane orthogonal to the direction the 
 cluster is most stretched.
-Taken together these contributions allow animation of ductile fracture in the clustered shape matching framework.
+Taken together these contributions allow animation of ductile fracture in the clustered shape matching framework, as demonstrated
+in~\fref{fig:teaser}.
 
 \section{Related Work}
 The geometrically motivated shape matching approach was introduced by \Mueller and 
@@ -345,18 +347,69 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
 %\josh{what else needs to be said here?}
 
 \section{Results and Discussion}
-One view of clustered shape matching is that there are far fewer integration units than degrees of freedom compared to
-fem.  This makes sense for computer graphics applications where degrees of freedom correspond lead to visual detail 
-while integrations units lead to computational cost.
+\begin{figure}[h!]
+\includegraphics[width=\linewidth]{Figures/shapematching.png}
+\caption{}
+\label{fig:twistedbar}
+\end{figure}
 
-We could compare our approaches to plasticity and fracture to Irving2004,Barteil2007 and O'Brien1999. 
+\begin{figure}
+\includegraphics[width=\linewidth]{Figures/shapematching.png}
+\caption{}
+\label{fig:projectile}
+\end{figure}
+
+We have used our method to animate a number of examples of ductile fracture.  Timing results
+taken on a Macbook Pro with a ???? processor 
+are given in table~\tref{table:timing}.
+In all particle renderings, particle color is used to indicate the nearest cluster center.  
+We stress that clusters overlap and that particles typically belong to more than one cluster.
+
+\begin{table}[b!]
+\begin{center}
+\caption{Timing results in ms per frame taken on a Macbook Pro with a ???? processor.}
+\label{table:timing}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+example & dynamics & fracture & plasticity & total\\
+\hline
+armadillo &  &  &  &  \\
+twisted bar &  &  &  &  \\
+projectile &  &  &  &  \\
+broken heart &  &  &  &  \\
+swiss cheese &  &  &  &  \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+In our first example, an armadillo is tortured by simultaneously pulling on and firing
+canonballs at its arms (see~\fref{fig:teaser}).
+Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
+plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture. 
+In our thrid example a projectile is fired through a thin sheet of material (see~\fref{fig:projectile}).  
+In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
+where the tear begins and how it propogates.  Similarly, in our final example the holes in a 
+slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
+
+%Timing stuff: make a table shell and I can fill it in.  Probably makes sense to do average time/frame of simulation (shape matching/strain limiting), fracture, plasticity.
+
+%One view of clustered shape matching is that there are far fewer integration units than degrees of freedom compared to
+%fem.  This makes sense for computer graphics applications where degrees of freedom correspond lead to visual detail 
+%while integrations units lead to computational cost.
+
+%We could compare our approaches to plasticity and fracture to Irving2004,Barteil2007 and O'Brien1999. 
 
 \paragraph{Limitations and Future Work}
+%\ben{limitation: variable framerate, fracture can slow down the simulation IMMENSELY in current implementation}
 Our approach has a number of limitations that provide ample potential for future work in clustered shape matching.
 One limitation of our implementation is that we only handle simple collision geometry and do not handle self-collisions.
 More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman:2003:NRB}.
 Handling self-collisions would require further research; the sphere-packing approach of Budsberg and colleagues~\shortcite{Budsberg:2014:EPD}
 seems particularly promising.  
+Another limitation of our current implementation is that the computational cost is somewhat unpredictable; many fractures occuring at once
+can have a very significant impact on performance.  In the future it would be interesting to explore asynchronous fracturing
+where, instead of emptying the priority queue every timestep, it is processed as computational resources allow.
 
 Like many fracture methods in computer animation, we do not have a good solution to generating fractured
 geometry.  Like previous work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
