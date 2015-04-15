@@ -2,10 +2,10 @@
 	//"particleFiles" : [ "inputFiles/thinBox.txt"],
 	"particleFiles" : [ "inputFiles/blue_noise/penguin.txt"],
 
-	"neighborRadius" : 0.05,
-	"alpha" : 0.5,
+	"neighborRadius" : 0.2,
+	"alpha" : 0.75,
 	"omega" : 0.3,
-	"numConstraintIters" : 5,
+	"numConstraintIters" : 8,
 	"maxStretch" : 0.5,
 	"nClusters" : 40,
 	"springDamping": 0.1,
@@ -15,8 +15,8 @@
 		[1, 1, 0, -2],
 		[-1, 1, 0, -2]
 	],
-	"nu" : 0.05,
-	"yield" : 0.0,
-	"hardening" : 0.1,
+	"nu" : 0.1,
+	"yield" : 1.0,
+	"hardening" : 0.15,
 	"gravity" : [0, -9.8, 0]
 }
