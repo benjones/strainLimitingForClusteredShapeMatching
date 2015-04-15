@@ -224,9 +224,9 @@ Hookean springs are then used to define forces that move the particles toward th
 
 \paragraph{Clustered Shape Matching}
 Handling multiple clusters is straightforward.  When computing a particle's contribution to 
-cluster quantities, we divide the particles mass by the number of clusters it belongs to,
+cluster quantities, we divide the particle's mass by the number of clusters it belongs to,
 essentially replacing $m_i$ with $m_i/n_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
-and when computing cluster mass and center-of-mass,
+and when computing cluster mass and center-of-mass.
 Specifically, if particle $p_i$ belongs
 to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$, is
 \begin{equation}
@@ -236,9 +236,9 @@ where $\mathcal{P}_c$ is the set of particles in cluster $c$.
 Furthermore, when computing the goal position, $\B{g}_i$, for a particle we perform a simple
 average of the goal positions given by each cluster it is a part of.  That is,
 \begin{equation}
-\B{g}_i = \frac{1}{n_i} \sum_c \B{g}_{ic},
+\B{g}_i = \frac{1}{n_i} \sum_c \B{g}_{i,c},
 \end{equation}
-where $\B{g}_{ic}$ is the goal position for particle $p_i$ in cluster $c$.
+where $\B{g}_{i,c}$ is the goal position for particle $p_i$ in cluster $c$.
 
 \paragraph{Strain Limiting}
 To maintain stability we adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
@@ -295,7 +295,7 @@ as follows.
 
 We assume that the fracture surface is defined by the plane that passes through the center of mass of the 
 cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive%\adam{?}
-side of this plane are removed from the cluster and added to a new cluster.  Additionally, we remove particles 
+ side of this plane are removed from the cluster and added to a new cluster.  Additionally, we remove particles 
 from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
 That is if, for particle $p_i$,
 \begin{equation}
