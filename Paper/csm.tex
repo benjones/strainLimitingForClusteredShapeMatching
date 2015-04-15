@@ -315,7 +315,7 @@ $\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.
 
 Both the distribution of particles that model and object as well as the
 clustering of particles affect the resulting simulation.  We
-experimented with both grid based and blue noise sampling and
+experimented with both grid-based and blue noise sampling and
 preferred the results from blue noise over the highly structured grid-based sampling.
 Our blue noise sampler is based on Bridson's fast Poisson disk
 sampling~\cite{Bridson:2007:FPD}.  In both cases, for objects whose
@@ -327,7 +327,7 @@ The selection of clusters affects the effective distribution of mass
 within the object.  Bargteil and Jones~\shortcite{Bargteil:2014:SLF}
 allowed the user to select a cluster width, $w$, and then
 chose cluster centers randomly from the simulation particles until every particle
-was in at least on cluster.  They complained that this approach led
+was in at least one cluster.  They complained that this approach led
 to a highly non-uniform distribution of mass over the object.  
 To mitigate this artifact, we use a variant of the
 well know $k$-means algorithm.  The user specifies both the
