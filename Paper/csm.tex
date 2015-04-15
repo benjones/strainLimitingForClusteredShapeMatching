@@ -129,10 +129,12 @@ which used a set of hierarchical lattices to define the shape matching clusters.
 of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
 simple fracture model that removed over-extended links in the lattice.  
 
-Since this time, the shape matching framework has been largely disregarded by the research community in favor of position-based
+Despite impressive results and substantial promise,
+the shape matching framework has been largely disregarded by the research community in favor of position-based
 dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
-the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching.
-We incorporate our ductile fracture approach into their framework.
+the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching
+and pointed out several advantages of shape matching over position-based dynamics.
+We incorporate our ductile fracture approach into their open-source framework.
 
 Ductile fracture is distinguished from brittle fracture by the inclusion of plastic deformation.  Materials undergoing ductile
 fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  Most
@@ -367,7 +369,7 @@ seems particularly promising.
 Like many fracture methods in computer animation, we do not have a good solution to generating fractured
 geometry.  Like previous work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
 render mesh for unbreakable objects, but creating new geometry when fracture occurs is more difficult.  
-Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2011:ALM} to skin the simulation particles.
+Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2015:ALM} to skin the simulation particles.
 This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.
 One approach to generating fracture geometry is to simply render the simulation geometry and increase the resolution 
 where fracture occurs~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The simulation geometry can can later be 
