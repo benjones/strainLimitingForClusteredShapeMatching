@@ -943,6 +943,21 @@ void World::timestep(){
   }
   
   doFracture(std::move(potentialSplits));
+
+  //cull small clusters
+  auto sizeBefore = clusters.size();
+  clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
+		  [](const Cluster& c){
+			return c.neighbors.size() < 4;
+		  }), 
+	  clusters.end());
+  if(clusters.size() != sizeBefore){
+	std::cout << "deleted " << sizeBefore - clusters.size() << " clusters" << std::endl;
+  }
+  updateClusterProperties(range(clusters.size()));
+
+
+
   
   bounceOutOfPlanes();
   for(auto&& en : benlib::enumerate(clusters)){

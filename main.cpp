@@ -156,7 +156,7 @@ void loop(SDL_Window* window, World& world){
 		}
 	  }
 	  ++frame;
-	  std::cout << frame << std::endl;
+	  if(frame % 60 == 0){std::cout << frame << std::endl;}
 	}
    
 
