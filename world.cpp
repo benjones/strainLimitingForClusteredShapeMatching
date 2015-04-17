@@ -921,17 +921,25 @@ void World::timestep(){
 	}
 	
 	
-
+	assertFinite();
+	
 	for(auto& p : particles){
-	  p.goalPosition /= p.numClusters;
-	  p.goalVelocity /= p.numClusters;
+	  if(p.numClusters > 0){
+		p.goalPosition /= p.numClusters;
+		p.goalVelocity /= p.numClusters;
+	  } else {
+		p.goalPosition = p.position;
+		p.goalVelocity = p.velocity;
+	  }
 	  if (!p.outsideSomeMovingPlane) {
-        p.velocity += dt * gravity + (alpha/dt)*(p.goalPosition- p.position) + 
-           springDamping*(p.goalVelocity - p.velocity); 
+		p.velocity += dt * gravity + (alpha/dt)*(p.goalPosition- p.position) + 
+		  springDamping*(p.goalVelocity - p.velocity); 
 	  }
 	  p.position += dt * p.velocity;
 	}
 	
+	assertFinite();
+
 	for(auto iter : range(numConstraintIters)){
 	  (void)iter; //unused
 	  strainLimitingIteration();
@@ -940,6 +948,8 @@ void World::timestep(){
 	  p.velocity = (1.0/dt)*(p.position - p.oldPosition);
 	}
 	
+	assertFinite();
+
   }
   
   doFracture(std::move(potentialSplits));
@@ -1314,8 +1324,12 @@ void World::strainLimitingIteration(){
   }
   
   for(auto& p : particles){
-		p.goalPosition /= p.numClusters;
-		p.position = omega*p.goalPosition + (1.0-omega)*p.position;
+	if(p.numClusters > 0){
+	  p.goalPosition /= p.numClusters;
+	} else {
+	  p.goalPosition = p.position;
+	}
+	p.position = omega*p.goalPosition + (1.0-omega)*p.position;
   }
 }
 

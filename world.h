@@ -22,6 +22,13 @@ public:
   
   void timestep();
 
+  void assertFinite() const {
+	for(auto& p : particles){
+	  assert(p.position.allFinite());
+	}
+  }
+
+
   using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
   void doFracture(std::vector<FractureInfo> potentialSplits);
 
