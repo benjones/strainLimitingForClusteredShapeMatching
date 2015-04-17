@@ -949,7 +949,7 @@ void World::timestep(){
 	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
 	bool updateCluster = false;
 	for(auto n : c.neighbors){
-	  if ((particles[n].position - worldCOM).norm() > gamma) {
+	  if ((particles[n].position - worldCOM).norm() > (1.0 + gamma) * (particles[n].restPosition - c.restCom).norm()) {
 		Particle &p = particles[n];
 		// delete particle
 		// remove from cluster
@@ -957,6 +957,7 @@ void World::timestep(){
 		//remove cluster from this particle
 		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
 		updateCluster = true;
+		std::cout<<"removed an outlier "<<(particles[n].position - worldCOM).norm()<<" > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()<<std::endl;
 	  }
 	} 
 	// could update the cluster, but see below...
