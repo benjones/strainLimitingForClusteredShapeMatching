@@ -943,6 +943,25 @@ void World::timestep(){
   }
   
   doFracture(std::move(potentialSplits));
+  ///*
+  for(auto&& en : benlib::enumerate(clusters)){
+	auto& c = en.second;
+	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
+	bool updateCluster = false;
+	for(auto n : c.neighbors){
+	  if ((particles[n].position - worldCOM).norm() > gamma) {
+		Particle &p = particles[n];
+		// delete particle
+		// remove from cluster
+		c.neighbors.erase(std::remove(c.neighbors.begin(), c.neighbors.end(), n), c.neighbors.end());
+		//remove cluster from this particle
+		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
+		updateCluster = true;
+	  }
+	} 
+	// could update the cluster, but see below...
+  }
+  //*/
 
   //cull small clusters
   auto sizeBefore = clusters.size();
@@ -1549,7 +1568,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			//remove from cluster
 			thisCluster.neighbors.erase(
 				std::remove(thisCluster.neighbors.begin(),
-					thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
+					//thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
+					thisCluster.neighbors.end(), member), thisCluster.neighbors.end());
 			//remove cluster from this
 			particle.clusters.erase(
 				std::remove(particle.clusters.begin(), particle.clusters.end(),
