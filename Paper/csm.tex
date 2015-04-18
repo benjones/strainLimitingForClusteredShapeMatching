@@ -311,7 +311,9 @@ through the pseudoinverse.  If, when computing the pseudoinverse, any of the sin
 we set $\B{F}_c^p = \B{I}$.  We also update particle-to-cluster maps and $n_i$ for affected particles.
 
 Because cluster membership may have changed due to the fracturing of a different cluster, we verify that 
-$\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.
+$\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.  \adam{Finally, we delete
+clusters that have less than four particles because $\B{A}_{rr}$ cannot be full rank and we remove from clusters
+``outlier'' particles, which, even after strain limiting, are still too far from the cluster center.}
 
 \subsection{Sampling and Clustering}
 
@@ -436,9 +438,10 @@ Changing the sampling over time as done by Pauly and colleagues~\shortcite{Pauly
 is also a promising avenue for future work, which may help address the geometric limitations discussed above.
 It would also be interesting
 to consider adaptive and hierarchical clustering techniques; the hierarchical lattices of Rivers and James~\cite{Rivers:2007:FFL}
-clearly improved performance and artistic directability.  Relatedly, we do not currently place any bounds on the minimum
-number of particles in a cluster.  Consequently our results contain many one-particle clusters, which results in a 
-``particle spray'' look that may be objectionable in some contexts.
+clearly improved performance and artistic directability.  
+%Relatedly, we do not currently place any bounds on the minimum
+%number of particles in a cluster.  Consequently our results contain many one-particle clusters, which results in a 
+%``particle spray'' look that may be objectionable in some contexts.
 
 The biggest limitation of our approach is a lack of theoretical underpinnings for the clustered shape matching
 framework; we do not yet have any mathematical tools to analyze the approach.  We do not really understand
