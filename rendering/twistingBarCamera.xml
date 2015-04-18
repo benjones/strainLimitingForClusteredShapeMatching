@@ -1,4 +1,4 @@
-<integrator type="path" />
+<integrator type="direct" />
 
 <sensor type="perspective">
     <float name="farClip" value="50"/>

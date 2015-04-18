@@ -1,7 +1,4 @@
-<integrator type="adaptive">
-<integer name="maxSampleFactor" value="8" />
-<integrator type="path" />
-</integrator>
+<integrator type="direct" />
 <sensor type="perspective">
     <float name="farClip" value="50"/>
     <float name="focusDistance" value="4.86293"/>
@@ -13,8 +10,8 @@
         <lookat target="0, 0, 0" origin="-2.0, 0, 4" up="0, 1, 0"/>
     </transform>
 
-    <sampler type="independent">
-        <integer name="sampleCount" value="80"/>
+    <sampler type="ldsampler">
+        <integer name="sampleCount" value="512"/>
     </sampler>
 
     <film type="hdrfilm">

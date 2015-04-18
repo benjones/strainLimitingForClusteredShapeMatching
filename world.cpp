@@ -953,7 +953,7 @@ void World::timestep(){
   }
   
   doFracture(std::move(potentialSplits));
-  ///*
+  // /*
   for(auto&& en : benlib::enumerate(clusters)){
 	auto& c = en.second;
 	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
