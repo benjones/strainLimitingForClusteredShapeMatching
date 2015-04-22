@@ -74,6 +74,8 @@ public:
 
   void bounceOutOfPlanes();
 
+  void selfCollisions();
+
   void solveConstraints();
   void updateNeighbors(size_t partIndex);
 
