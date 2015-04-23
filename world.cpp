@@ -1265,8 +1265,18 @@ void World::makeClusters(){
 			}
 		  }
 		}
+		double sum = 0.0;
+		for (auto k = 0; k < p.numClusters; k++) {
+		  sum += p.weights[k];
+		}
+		for (auto k = 0; k < p.numClusters; k++) {
+		  p.weights[k] = 1.0 / (p.weights[k];
+		}
+		
 	  }
 	  
+
+
 	  for (auto& c : clusters) {
 		double mass = sumMass(c.neighbors);
 		
