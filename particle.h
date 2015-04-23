@@ -14,6 +14,7 @@ public:
   size_t numClusters;
   bool outsideSomeMovingPlane;
   std::vector<int> clusters;
+  std::vector<double> weights;
 };
 
 class Cluster {

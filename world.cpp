@@ -1206,8 +1206,28 @@ void World::makeClusters(){
 	  c.restCom = particles[g() % particles.size()].restPosition;
 	  clusters.push_back(c);
 	}
-	// we'll use numClusters to keep track of the best cluster
-	for (auto& p : particles) p.numClusters = -1;
+
+	{
+	  for (auto& c : clusters) c.neighbors.clear();
+	  
+	  for (auto i=0; i<particles.size(); i++) {
+		auto& p = particles[i];
+		p.clusters.clear();
+		p.weights.clear();
+		int bestNorm = std::numeric_limits<double>::infinity();
+		for (auto j = 0; j<clusters.size(); j++) {
+		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
+		  if (newNorm < bestNorm) {
+			bestCluster = j;
+			bestNorm = newNorm;
+		  }
+		}
+		clusters[bestCluster].neighbors.push_back(i);
+		p.numClusters = 1;
+		p.clusters.push_back(bestCluster);
+		p.weights.push_back(1.0);
+	  }
+	}
 		
 	// kmeans loop
 	bool converged = false;
@@ -1219,18 +1239,32 @@ void World::makeClusters(){
 	  
 	  for (auto i=0; i<particles.size(); i++) {
 		auto& p = particles[i];
-		int bestCluster = 0;
-		double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
+		p.clusters.clear();
+		p.weights.clear();
+		p.numClusters = 0;
 		for (auto j = 0; j<clusters.size(); j++) {
-		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
-		  if (newNorm < bestNorm) {
-			bestCluster = j;
-			bestNorm = newNorm;
+		  double norm = (clusters[j].restCom - p.restPosition).squaredNorm();
+		  if (norm < neighborRadius) {
+			if (p.numClusters < clusterMax) {
+			  p.clusters.push_back(j);
+			  p.weights.push_back(norm);
+			  p.numClusters++;
+			} else {
+			  double maxNorm = norm; 
+			  int maxCluster = -1;
+			  for (auto k = 0; k < p.numClusters; k++) {
+				if (p.weights[k] > maxNorm) {
+				  maxCluster = k;
+				  maxNorm = p.weights[k];
+				}
+			  }
+			  if (maxCluster != -1) {
+				p.clusters[maxCluster] = j;
+				p.weights[maxCluster] = norm;
+			  }
+			}
 		  }
 		}
-		clusters[bestCluster].neighbors.push_back(i);
-		if (p.numClusters != bestCluster) converged = false;
-		p.numClusters = bestCluster;
 	  }
 	  
 	  for (auto& c : clusters) {
@@ -1239,6 +1273,7 @@ void World::makeClusters(){
 		if (mass > 1e-5) 
 		  c.restCom = sumRestCOM(c.neighbors, mass);
 	  }
+	  //if (p.numClusters != bestCluster) converged = false;
 	}
 	
 	// count numClusters and initialize neighborhoods
