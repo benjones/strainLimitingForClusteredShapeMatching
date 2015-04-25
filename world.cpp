@@ -960,12 +960,19 @@ void World::timestep(){
 	auto& c = en.second;
 	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
 	bool updateCluster = false;
-	for(auto n : c.neighbors){
-	  if ((particles[n].position - worldCOM).norm() > (1.0 + gamma) * (particles[n].restPosition - c.restCom).norm()) {
-		Particle &p = particles[n];
+	for(auto i=0; i<c.neighbors.size(); i++) {
+	  auto n = c.neighbors[i];
+	  auto &p = particles[n];
+	  if ((p.position - worldCOM).norm() > (1.0 + gamma) * (p.restPosition - c.restCom).norm()) {
+		// create duplicate particle
+		Particle q(p);
+		q.clusters.clear();
+		q.clusters.push_back(en.first);
+		particles.push_back(q);
+		c.neighbors[i] = particles.size()-1;
 		// delete particle
 		// remove from cluster
-		c.neighbors.erase(std::remove(c.neighbors.begin(), c.neighbors.end(), n), c.neighbors.end());
+		// c.neighbors.erase(std::remove(c.neighbors.begin(), c.neighbors.end(), n), c.neighbors.end());
 		//remove cluster from this particle
 		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
 		updateCluster = true;
@@ -1403,6 +1410,7 @@ void World::strainLimitingIteration(){
   }
 }
 
+// this will be wrong after particles are duplicated
 void World::printCOM() const{
   Eigen::Vector3d worldCOM = 
 	std::accumulate(particles.begin(), particles.end(),
@@ -1434,6 +1442,7 @@ Eigen::Vector3d World::computeNeighborhoodCOM(const Cluster& c) const {
   */
 }
 
+// adam says: this should take weights into account
 Eigen::Matrix3d World::computeApq(const Cluster& c, 
 								  const Eigen::Matrix3d& init,
 								  const Eigen::Vector3d& worldCOM) const{
@@ -1522,6 +1531,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	//assert(c.width >= 0);
 	
 	c.aInv.setZero();  
+	// adam says: this should take weights into account
 	c.aInv = 
 	  std::accumulate(c.neighbors.begin(), c.neighbors.end(),
 		  c.aInv,
