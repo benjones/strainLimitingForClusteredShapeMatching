@@ -892,7 +892,7 @@ void World::timestep(){
 		int &n = cluster.neighbors[i];
 		particles[n].goalPosition += 
 		  cluster.weights[i]*(T*(particles[n].restPosition - cluster.restCom) + worldCOM);
-		particles[n].goalVelocity += clusterVelocity;
+		particles[n].goalVelocity += cluster.weights[i]*clusterVelocity;
 	  }
 	  
 	  {
@@ -955,7 +955,7 @@ void World::timestep(){
   }
   
   doFracture(std::move(potentialSplits));
-  // /*
+   
   for(auto&& en : benlib::enumerate(clusters)){
 	auto& c = en.second;
 	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
@@ -974,7 +974,7 @@ void World::timestep(){
 	} 
 	// could update the cluster, but see below...
   }
-  //*/
+  
 
   //cull small clusters
   auto sizeBefore = clusters.size();
@@ -1457,7 +1457,7 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const 
 	std::vector<double>::const_iterator di = c.weights.begin();
 	for (; ii!=c.neighbors.end(); ii++, di++) {
 	  mass += (*di)*particles[*ii].mass;
-	  vel += (*di)*particles[*ii].velocity;
+	  vel += (*di)*particles[*ii].mass*particles[*ii].velocity;
 	}
 	return (vel / mass);
   }

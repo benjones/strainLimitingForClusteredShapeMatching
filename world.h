@@ -103,7 +103,7 @@ public:
 		  return acc + particles[index].mass;
 		});
   }
-  
+  /*  
   template <typename cont> 
   //weighted by # clusters stuff belongs to
   double sumWeightedMass(const cont& indices) const {
@@ -112,7 +112,7 @@ public:
 		  return acc + particles[index].mass/particles[index].numClusters;
 		});
   }
-
+  */
   //weighted by # clusters stuff belongs to
   double sumWeightedMass(const std::vector<int> &indices, const std::vector<double> &weights) const {
 	double mass = 0.0;
@@ -129,7 +129,7 @@ public:
 	std::vector<double>::const_iterator di = weights.begin();
 	for (; ii!=indices.end(); ii++, di++) {
 	  mass += (*di)*particles[*ii].mass;
-	  com += (*di)*particles[*ii].restPosition;
+	  com += (*di)*particles[*ii].mass*particles[*ii].restPosition;
 	}
 	return (com / mass);
   }
@@ -141,11 +141,11 @@ public:
 	std::vector<double>::const_iterator di = weights.begin();
 	for (; ii!=indices.end(); ii++, di++) {
 	  mass += (*di)*particles[*ii].mass;
-	  com += (*di)*particles[*ii].position;
+	  com += (*di)*particles[*ii].mass*particles[*ii].position;
 	}
 	return (com / mass);
   }
-
+  /*
   template <typename cont>
   Eigen::Vector3d sumRestCOM(const cont& indices, double totalMass) const{
 	return std::accumulate(indices.begin(), indices.end(),
@@ -179,7 +179,7 @@ public:
 			particles[index].position;
 		})/totalMass;
   }
-
+  */
 
   //compute the APQ matrix (see meuller 2005)
   Eigen::Matrix3d computeApq(const Cluster& c, 
