@@ -956,6 +956,7 @@ void World::timestep(){
   
   doFracture(std::move(potentialSplits));
    
+  /*
   for(auto&& en : benlib::enumerate(clusters)){
 	auto& c = en.second;
 	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
@@ -968,6 +969,7 @@ void World::timestep(){
 		Particle q(p);
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
+		q.numClusters = 1;
 		particles.push_back(q);
 		c.neighbors[i] = particles.size()-1;
 		// delete particle
@@ -980,7 +982,7 @@ void World::timestep(){
 	  }
 	} 
 	// could update the cluster, but see below...
-  }
+	}*/
   
 
   //cull small clusters
