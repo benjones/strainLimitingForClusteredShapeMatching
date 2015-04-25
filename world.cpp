@@ -1237,10 +1237,11 @@ void World::makeClusters(){
 	}
 	*/	
 	// fuzzy c-means loop
-	bool converged = false;
+  	bool converged = false;
 	int iters = 0;
 	double sqrNeighborRadius = neighborRadius*neighborRadius;
 	while (!converged) {
+	  std::cout<<iters<<std::endl;
 	  converged = true;
 	  iters++;
 	  
@@ -1253,7 +1254,9 @@ void World::makeClusters(){
 
 	  for (auto j = 0; j<clusters.size(); j++) {
 		Cluster &c = clusters[j];
+		int oldNeighbors = c.neighbors.size();
 		c.neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+		if (oldNeighbors != c.neighbors.size()) converged = false;
 		c.weights.resize(c.neighbors.size());
 		for (auto i=0; i<c.neighbors.size(); i++) {
 		  auto n = c.neighbors[i];
@@ -1267,8 +1270,7 @@ void World::makeClusters(){
 		}
 	  }
 
-	  for (auto c : clusters) {
-		double oldMass = c.mass;
+	  for (auto& c : clusters) {
 		c.mass = 0.0;
 		c.restCom = Eigen::Vector3d::Zero();
 		for (auto i=0; i<c.neighbors.size(); i++) {
@@ -1278,7 +1280,6 @@ void World::makeClusters(){
 		  c.restCom += c.weights[i] * p.mass * p.position;
 		  c.mass += c.weights[i] * p.mass;
 		}
-		if (oldMass != c.mass) converged = false;
 		c.restCom /= c.mass;
 	  }
 	} 
