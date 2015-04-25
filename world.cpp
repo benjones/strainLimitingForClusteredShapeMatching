@@ -1240,7 +1240,7 @@ void World::makeClusters(){
   	bool converged = false;
 	int iters = 0;
 	double sqrNeighborRadius = neighborRadius*neighborRadius;
-	while (!converged) {
+	while (!converged || iters < 5) {
 	  std::cout<<iters<<std::endl;
 	  converged = true;
 	  iters++;
