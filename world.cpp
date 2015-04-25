@@ -888,9 +888,10 @@ void World::timestep(){
 	  
 	  //auto pr = utils::polarDecomp(A);
 	  
-	  for(auto n : cluster.neighbors){
+	  for(int i=0; i<cluster.neighbors.size(); i++){
+		int &n = cluster.neighbors[i];
 		particles[n].goalPosition += 
-		  (T*(particles[n].restPosition - cluster.restCom) + worldCOM);
+		  cluster.weights[i]*(T*(particles[n].restPosition - cluster.restCom) + worldCOM);
 		particles[n].goalVelocity += clusterVelocity;
 	  }
 	  
@@ -925,8 +926,8 @@ void World::timestep(){
 	
 	for(auto& p : particles){
 	  if(p.numClusters > 0){
-		p.goalPosition /= p.numClusters;
-		p.goalVelocity /= p.numClusters;
+		//p.goalPosition /= p.numClusters;
+		//p.goalVelocity /= p.numClusters;
 	  } else {
 		p.goalPosition = p.position;
 		p.goalVelocity = p.velocity;
@@ -1168,6 +1169,9 @@ void World::move(bool forward){
   
 }
 
+inline double cube(double x) { return x*x*x;}
+//inline double poly6(double r, double h) {(r<h) ? return cube(h - r) : return 0.0;}
+  
 
 void World::makeClusters(){
   clusters.clear();
@@ -1207,13 +1211,16 @@ void World::makeClusters(){
 	  clusters.push_back(c);
 	}
 
+	/*
 	{
-	  for (auto& c : clusters) c.neighbors.clear();
+	  for (auto& c : clusters) {
+		c.neighbors.clear();
+		c.weights.clear();
+	  }
 	  
 	  for (auto i=0; i<particles.size(); i++) {
 		auto& p = particles[i];
 		p.clusters.clear();
-		p.weights.clear();
 		int bestNorm = std::numeric_limits<double>::infinity();
 		for (auto j = 0; j<clusters.size(); j++) {
 		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
@@ -1223,75 +1230,58 @@ void World::makeClusters(){
 		  }
 		}
 		clusters[bestCluster].neighbors.push_back(i);
+		clusters[bestCluster].weights.push_back(1.0);
 		p.numClusters = 1;
 		p.clusters.push_back(bestCluster);
-		p.weights.push_back(1.0);
 	  }
 	}
-		
-	// kmeans loop
+	*/	
+	// fuzzy c-means loop
 	bool converged = false;
 	int iters = 0;
+	double sqrNeighborRadius = neighborRadius*neighborRadius;
 	while (!converged) {
 	  converged = true;
 	  iters++;
-	  for (auto& c : clusters) c.neighbors.clear();
 	  
 	  for (auto i=0; i<particles.size(); i++) {
 		auto& p = particles[i];
 		p.clusters.clear();
-		p.weights.clear();
 		p.numClusters = 0;
-		for (auto j = 0; j<clusters.size(); j++) {
-		  double norm = (clusters[j].restCom - p.restPosition).squaredNorm();
-		  if (norm < neighborRadius) {
-			if (p.numClusters < clusterMax) {
-			  p.clusters.push_back(j);
-			  p.weights.push_back(norm);
-			  p.numClusters++;
-			} else {
-			  double maxNorm = norm; 
-			  int maxCluster = -1;
-			  for (auto k = 0; k < p.numClusters; k++) {
-				if (p.weights[k] > maxNorm) {
-				  maxCluster = k;
-				  maxNorm = p.weights[k];
-				}
-			  }
-			  if (maxCluster != -1) {
-				p.clusters[maxCluster] = j;
-				p.weights[maxCluster] = norm;
-			  }
-			}
-		  }
-		}
-		double sum = 0.0;
-		for (auto k = 0; k < p.numClusters; k++) {
-		  sum += p.weights[k];
-		}
-		for (auto k = 0; k < p.numClusters; k++) {
-		  p.weights[k] = 1.0 / (p.weights[k];
-		}
-		
+		p.totalweight = 0.0;
 	  }
-	  
 
-
-	  for (auto& c : clusters) {
-		double mass = sumMass(c.neighbors);
-		
-		if (mass > 1e-5) 
-		  c.restCom = sumRestCOM(c.neighbors, mass);
+	  for (auto j = 0; j<clusters.size(); j++) {
+		Cluster &c = clusters[j];
+		c.neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+		c.weights.resize(c.neighbors.size());
+		for (auto i=0; i<c.neighbors.size(); i++) {
+		  auto n = c.neighbors[i];
+		  Particle &p = particles[n];
+		  double norm = (c.restCom - p.restPosition).squaredNorm();
+		  double w = cube(sqrNeighborRadius-norm);
+		  c.weights[i] = w;
+		  p.totalweight += w;
+		  p.clusters.push_back(j);
+		  p.numClusters++;
+		}
 	  }
-	  //if (p.numClusters != bestCluster) converged = false;
-	}
-	
-	// count numClusters and initialize neighborhoods
-	for (auto& p : particles) p.numClusters = 0;
-	for (auto& c : clusters) {
-	  c.neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
-	  for(auto n : c.neighbors) ++(particles[n].numClusters);
-	}
+
+	  for (auto c : clusters) {
+		double oldMass = c.mass;
+		c.mass = 0.0;
+		c.restCom = Eigen::Vector3d::Zero();
+		for (auto i=0; i<c.neighbors.size(); i++) {
+		  auto n = c.neighbors[i];
+		  auto &p = particles[n];
+		  c.weights[i] /= p.totalweight;
+		  c.restCom += c.weights[i] * p.mass * p.position;
+		  c.mass += c.weights[i] * p.mass;
+		}
+		if (oldMass != c.mass) converged = false;
+		c.restCom /= c.mass;
+	  }
+	} 
 	std::cout<<"kmeans clustering converged in "<<iters<<std::endl;
   }
   
@@ -1380,7 +1370,9 @@ void World::strainLimitingIteration(){
 	Eigen::Matrix3d T = pr.first;
 	if (nu > 0.0) T = T * c.Fp;
 
-	for(auto n : c.neighbors){
+	for (int i=0; i<c.neighbors.size(); i++) {
+	  //for(auto n : c.neighbors){
+	  int &n = c.neighbors[i];
 	  auto &q = particles[n];
 	  Eigen::Vector3d rest = (q.restPosition - c.restCom);
 	  Eigen::Vector3d goal = T*(rest) + worldCOM;
@@ -1389,12 +1381,12 @@ void World::strainLimitingIteration(){
 	  
 	  if (ratio > gammaSquared) {
 		q.goalPosition += //(1.0/p.clusterMass)*
-		  (goal + 
-		   sqrt(gammaSquared/ratio) * 
-		   (q.position - goal));
+		  c.weights[i] * (goal + 
+			  sqrt(gammaSquared/ratio) * 
+			  (q.position - goal));
 	  } else {
 		q.goalPosition += //(1.0/p.clusterMass)*
-		  q.position;
+		  c.weights[i] * q.position;
 	  }
 	}
 	
@@ -1402,7 +1394,7 @@ void World::strainLimitingIteration(){
   
   for(auto& p : particles){
 	if(p.numClusters > 0){
-	  p.goalPosition /= p.numClusters;
+	  //p.goalPosition /= p.numClusters;
 	} else {
 	  p.goalPosition = p.position;
 	}
@@ -1429,13 +1421,16 @@ void World::printCOM() const{
 
 
 Eigen::Vector3d World::computeNeighborhoodCOM(const Cluster& c) const {
+  return sumWeightedWorldCOM(c.neighbors, c.weights);
   //positions weighted by (mass/numClusters)
+  /*
   return std::accumulate(c.neighbors.begin(), c.neighbors.end(),
 	  Eigen::Vector3d(0.0, 0.0, 0.0),
 	  [this](Eigen::Vector3d acc, int n){
 		return acc + (particles[n].mass/particles[n].numClusters)*
 		  particles[n].position;
-	  })/sumWeightedMass(c.neighbors);
+	  })/sumWeightedMass(c.neighbors, c.weights);
+  */
 }
 
 Eigen::Matrix3d World::computeApq(const Cluster& c, 
@@ -1454,6 +1449,19 @@ Eigen::Matrix3d World::computeApq(const Cluster& c,
 						 });
 } 	
 
+Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const std::vector<int> &indices, const std::vector<double> &weights) const {
+	double mass = 0.0;
+	Eigen::Vector3d vel = Eigen::Vector3d::Zero();
+	std::vector<int>::const_iterator ii = c.neighbors.begin();
+	std::vector<double>::const_iterator di = c.weights.begin();
+	for (; ii!=c.neighbors.end(); ii++, di++) {
+	  mass += (*di)*particles[*ii].mass;
+	  vel += (*di)*particles[*ii].velocity;
+	}
+	return (vel / mass);
+  }
+
+/*
 Eigen::Vector3d World::computeClusterVelocity(const Cluster& c) const {
   return 
 	std::accumulate(c.neighbors.begin(),
@@ -1471,7 +1479,7 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster& c) const {
 						particles[n].mass/particles[n].numClusters;
 					});
   
-}
+					}*/
 
 void World::countClusters(){
   for(auto& p : particles){
@@ -1495,9 +1503,9 @@ void World::updateClusterProperties(const Container& clusterIndices){
   for(auto cIndex : clusterIndices){
 	auto& c = clusters[cIndex];
 	//c.Fp.setIdentity(); // plasticity
-	c.mass = sumWeightedMass(c.neighbors);
+	c.mass = sumWeightedMass(c.neighbors, c.weights);
 	assert(c.mass >= 0);
-	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
+	c.restCom = sumWeightedRestCOM(c.neighbors, c.weights);
 	c.worldCom = computeNeighborhoodCOM(c);
 
 	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}

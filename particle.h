@@ -11,10 +11,10 @@ public:
 	goalPosition, 
 	goalVelocity;
   double mass; 
+  double totalweight;
   size_t numClusters;
   bool outsideSomeMovingPlane;
   std::vector<int> clusters;
-  std::vector<double> weights;
 };
 
 class Cluster {
@@ -23,6 +23,7 @@ class Cluster {
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
 	std::vector<int> neighbors;
+	std::vector<double> weights;
   double mass, width, renderWidth;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)

@@ -113,6 +113,39 @@ public:
 		});
   }
 
+  //weighted by # clusters stuff belongs to
+  double sumWeightedMass(const std::vector<int> &indices, const std::vector<double> &weights) const {
+	double mass = 0.0;
+	std::vector<int>::const_iterator ii = indices.begin();
+	std::vector<double>::const_iterator di = weights.begin();
+	for (; ii!=indices.end(); ii++, di++) mass += (*di)*particles[*ii].mass;
+	return mass;
+  }
+
+  Eigen::Vector3d sumWeightedRestCOM(const std::vector<int> &indices, const std::vector<double> &weights) const {
+	double mass = 0.0;
+	Eigen::Vector3d com = Eigen::Vector3d::Zero();
+	std::vector<int>::const_iterator ii = indices.begin();
+	std::vector<double>::const_iterator di = weights.begin();
+	for (; ii!=indices.end(); ii++, di++) {
+	  mass += (*di)*particles[*ii].mass;
+	  com += (*di)*particles[*ii].restPosition;
+	}
+	return (com / mass);
+  }
+
+  Eigen::Vector3d sumWeightedWorldCOM(const std::vector<int> &indices, const std::vector<double> &weights) const {
+	double mass = 0.0;
+	Eigen::Vector3d com = Eigen::Vector3d::Zero();
+	std::vector<int>::const_iterator ii = indices.begin();
+	std::vector<double>::const_iterator di = weights.begin();
+	for (; ii!=indices.end(); ii++, di++) {
+	  mass += (*di)*particles[*ii].mass;
+	  com += (*di)*particles[*ii].position;
+	}
+	return (com / mass);
+  }
+
   template <typename cont>
   Eigen::Vector3d sumRestCOM(const cont& indices, double totalMass) const{
 	return std::accumulate(indices.begin(), indices.end(),
