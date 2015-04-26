@@ -973,7 +973,7 @@ void World::timestep(){
 		q.mass = c.weights[i]*p.mass;
 		q.totalweight = c.weights[i];
 		double newMass = (1.0-c.weights[i])*p.mass;
-		if (newMass < 0.05*p.mass || q.mass < 0.05*p.mass) {
+		if (newMass < 0.1*p.mass || q.mass < 0.1*p.mass) {
 		  // in this case we should just delete the particle from the cluster and let the mass be lost...
 		  std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
 		  continue;
