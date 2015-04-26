@@ -963,19 +963,26 @@ void World::timestep(){
 	for(auto i=0; i<c.neighbors.size(); i++) {
 	  auto n = c.neighbors[i];
 	  auto &p = particles[n];
-	  if ((p.position - worldCOM).norm() > (1.0 + gamma) * (p.restPosition - c.restCom).norm()) {
+	  if ((p.position - worldCOM).norm() > (1.0 + gamma) * 1.0 * (p.restPosition - c.restCom).norm()) {
 		// create duplicate particle
 		double w = p.totalweight / (p.totalweight - c.weights[i]);
 		Particle q(p);
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
-		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
 		q.numClusters = 1;
-		p.numClusters--;
 		q.mass = c.weights[i]*p.mass;
-		p.mass = (1.0-c.weights[i])*p.mass;
 		q.totalweight = c.weights[i];
+		double newMass = (1.0-c.weights[i])*p.mass;
+		if (newMass < 0.05*p.mass || q.mass < 0.05*p.mass) {
+		  // in this case we should just delete the particle from the cluster and let the mass be lost...
+		  std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
+		  continue;
+		}
+		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
+		p.numClusters--;
+		p.mass = newMass;
 		p.totalweight -= c.weights[i];
+
 		particles.push_back(q);
 		c.neighbors[i] = particles.size()-1;
 		c.weights[i] = 1.0;
@@ -987,7 +994,7 @@ void World::timestep(){
 		  }
 		}
 		updateCluster = true;
-		std::cout<<"removed an outlier "<<(particles[n].position - worldCOM).norm()<<" > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()<<std::endl;
+		std::cout<<"removed an outlier "<<(particles[n].position - worldCOM).norm()<<" > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()<<" "<<newMass<<" "<<q.mass<<std::endl;
 	  }
 	} 
 	// could update the cluster, but see below...
