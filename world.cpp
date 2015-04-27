@@ -1628,21 +1628,39 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	
 
-	//auto& cluster = clusters[cIndex];	  
-	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
-	//ben says: when I push_back, the reference gets invalidated if the vector reallocates (which bit me).
 
 
 	//if(cluster.neighbors.size() < 10){ continue;}
 
+	auto& cluster = clusters[cIndex];	  
+	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
+	//ben says: when I push_back, the reference gets invalidated if the vector reallocates (which bit me).
+
+	//could be better to actually store them like this...
+	std::vector<std::pair<int, double> > neighborsAndWeights(cluster.neighbors.size());
+	for(auto i : range(cluster.neigbors.size())){
+	  neighborsAndWeights[i] = {cluster.neighbors[i], cluster.weights[i]};
+	}
+
+	auto it = std::partition(neighborsAndWeights.begin(), neighborsAndWeights.end(),
+		[&worldCom, &splitDirection, this](const std::pair<int, double>& a){
+		  return (worldCOM - particles[a.first].position).dot(splitDirection) > 0;
+		});
+
+	
+	/*
 	auto it = std::partition(clusters[cIndex].neighbors.begin(),
 		clusters[cIndex].neighbors.end(),
 		[&worldCOM, &splitDirection, this](int ind){
 		  //which side of the split is it on?
 		  return (worldCOM - particles[ind].position).dot(splitDirection) > 0;
 		});
-	auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
-	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
+	*/
+
+
+
+	auto oldSize = std::distance(neighborsAndWeights.begin(), it);
+	auto newSize = std::distance(it, neighborsAndWeights.end());
 	if(newSize == 0 || oldSize == 0){ continue;}
 	//if(oldSize < 4 || newSize < 4){ continue;}
 
@@ -1650,19 +1668,26 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//std::cout << "split direction: " << splitDirection << std::endl;
 	
 	//make a new cluster
+	cluster.neighbors.resize(oldSize);
+	cluster.weights.resize(oldSize);
+	for(auto i : range(oldSize)){
+	  cluster.neighbors[i] = neighborsAndWeights[i].first;
+	  cluster.weights[i] = neighborsAndWeights[i].second;
+	}
 	Cluster newCluster;
-	newCluster.neighbors.assign(it, clusters[cIndex].neighbors.end());
+	newCluster.neighbors.resize(newSize);
+	newCluster.weights.resize(newSize);
+	for(auto i : range(newSize)){
+	  newCluster.neighbors[i] = (it + i).first;
+	  newCluster.weights[i] = (it + i).second;
+	}
 
 	// copy relevant variables
-	newCluster.Fp = clusters[cIndex].Fp; // plasticity
-	newCluster.FpNew = clusters[cIndex].FpNew;
-	newCluster.cstrain = clusters[cIndex].cstrain; // plasticity
-	newCluster.toughness = clusters[cIndex].toughness;
-	// we will want to copy toughness here as well...
-	
-	//delete the particles from the old one
-	clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
-		clusters[cIndex].neighbors.end());
+	newCluster.Fp = cluster.Fp; // plasticity
+	newCluster.FpNew = cluster.FpNew;
+	newCluster.cstrain = cluster.cstrain; // plasticity
+	newCluster.toughness = cluster.toughness;
+
 	
 	clusters.push_back(newCluster);	  
 	
