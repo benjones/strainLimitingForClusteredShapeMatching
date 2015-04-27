@@ -1005,7 +1005,7 @@ void World::timestep(){
 		  (c.worldCom - particles[n].position).norm());
 	}
   }
-  //selfCollisions();
+  selfCollisions();
 
   //printCOM();
   //std::cout<<elapsedTime<<std::endl;
