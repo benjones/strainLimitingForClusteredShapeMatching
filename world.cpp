@@ -1638,12 +1638,12 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	//could be better to actually store them like this...
 	std::vector<std::pair<int, double> > neighborsAndWeights(cluster.neighbors.size());
-	for(auto i : range(cluster.neigbors.size())){
+	for(auto i : range(cluster.neighbors.size())){
 	  neighborsAndWeights[i] = {cluster.neighbors[i], cluster.weights[i]};
 	}
 
 	auto it = std::partition(neighborsAndWeights.begin(), neighborsAndWeights.end(),
-		[&worldCom, &splitDirection, this](const std::pair<int, double>& a){
+		[&worldCOM, &splitDirection, this](const std::pair<int, double>& a){
 		  return (worldCOM - particles[a.first].position).dot(splitDirection) > 0;
 		});
 
@@ -1678,8 +1678,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	newCluster.neighbors.resize(newSize);
 	newCluster.weights.resize(newSize);
 	for(auto i : range(newSize)){
-	  newCluster.neighbors[i] = (it + i).first;
-	  newCluster.weights[i] = (it + i).second;
+	  newCluster.neighbors[i] = (it + i)->first;
+	  newCluster.weights[i] = (it + i)->second;
 	}
 
 	// copy relevant variables
