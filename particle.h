@@ -16,10 +16,11 @@ public:
   bool outsideSomeMovingPlane;
   std::vector<int> clusters; 
   Particle() {};
-  Particle(const Particle &p) : position(p.position), velocity(p.velocity), restPosition(p.restPosition),
-	oldPosition(p.oldPosition), goalPosition(p.goalPosition), goalVelocity(p.goalVelocity), mass(p.mass),
-	totalweight(p.totalweight), numClusters(p.numClusters), outsideSomeMovingPlane(p.outsideSomeMovingPlane),
-	clusters(p.clusters){};
+  Particle(const Particle &p)  = default; //c++11 magic :)
+  //: position(p.position), velocity(p.velocity), restPosition(p.restPosition),
+  //	oldPosition(p.oldPosition), goalPosition(p.goalPosition), goalVelocity(p.goalVelocity), mass(p.mass),
+  //	totalweight(p.totalweight), numClusters(p.numClusters), outsideSomeMovingPlane(p.outsideSomeMovingPlane),
+  //	clusters(p.clusters){};
 };
 
 class Cluster {
