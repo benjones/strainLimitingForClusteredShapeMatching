@@ -34,4 +34,6 @@ class Cluster {
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
   Cluster() {Fp.setIdentity(); cstrain = 0.0;}
+  void updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix3d &U, const Eigen::Matrix3d &V, 
+	  double yield, double nu, double hardening);
 };

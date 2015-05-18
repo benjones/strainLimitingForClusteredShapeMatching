@@ -60,7 +60,7 @@ void World::draw(SDL_Window* window) const {
 	  auto i = pr.first;
 	  glPushMatrix();
 
-	  auto com = computeNeighborhoodCOM(c);
+	  auto com = sumWeightedWorldCOM(c.neighbors, c.weights);
 	  glTranslated(com.x(), com.y(), com.z());
 	  glColor4d(i/(2.0*clusters.size()), 1.0, 1.0, 0.3);
 	  utils::drawSphere(c.renderWidth, 10, 10);
@@ -150,7 +150,7 @@ void World::drawPretty(SDL_Window* window) const {
         if (which_cluster == -1 || i == which_cluster) {
            glPushMatrix();
 
-           auto com = computeNeighborhoodCOM(c);
+           auto com = sumWeightedWorldCOM(c.neighbors, c.weights);
            glTranslated(com.x(), com.y(), com.z());
            RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
            //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
@@ -320,7 +320,7 @@ void World::drawSingleCluster(SDL_Window* window, int frame) const {
 
   glPushMatrix();
 
-  auto com = computeNeighborhoodCOM(c);
+  auto com = sumWeightedWorldCOM(c.neighbors, c.weights);
   glTranslated(com.x(), com.y(), com.z());
   glColor4d(static_cast<double>(i)/clusters.size(), 0, 1.0, 0.3);
   utils::drawSphere(c.width, 10, 10);
@@ -851,7 +851,7 @@ void World::timestep(){
 	
 	for(auto&& en : benlib::enumerate(clusters)){
 	  auto& cluster = en.second;
-	  auto worldCOM = computeNeighborhoodCOM(cluster);
+	  auto worldCOM = sumWeightedWorldCOM(cluster.neighbors, cluster.weights);
 	  Eigen::Vector3d clusterVelocity = 
 		
 		computeClusterVelocity(cluster);
@@ -882,6 +882,10 @@ void World::timestep(){
 		//eigenvecs of S part of RS is V
 	  }
 
+	  {
+		auto timer = prof.timeName("plasticity");
+		cluster.updatePlasticity(sigma, U, V, yield, nu, hardening);
+	  }
 
 	  Eigen::Matrix3d T = U*V.transpose();
 	  if (nu > 0.0) T = T*cluster.Fp; // plasticity
@@ -895,30 +899,7 @@ void World::timestep(){
 		particles[n].goalVelocity += (cluster.weights[i]/particles[n].totalweight)*clusterVelocity;
 	  }
 	  
-	  {
-	  auto timer = prof.timeName("plasticity");
-	  // plasticity
-	  cluster.FpNew = cluster.Fp;
-	  if (nu > 0.0) {
-		if (sigma(2) >= 1e-4) { // adam says: the second clause is a quick hack to avoid plasticity when sigma is degenerate
-		  Eigen::Vector3d FpHat = sigma;
-		  //std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<" => ";
-		  FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
-		  //std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<std::endl;
-		  double norm = sqrt(sqr(FpHat(0)-1.0) + sqr(FpHat(1)-1.0) + sqr(FpHat(2)-1.0));
-		  double local_yield = yield + hardening * cluster.cstrain;
-		  if (norm > local_yield) {	
-			double gamma = std::min(1.0, nu * (norm - local_yield) / norm);
-			FpHat(0) = pow(FpHat(0), gamma);
-			FpHat(1) = pow(FpHat(1), gamma);
-			FpHat(2) = pow(FpHat(2), gamma);
-			// update cluster.Fp
-			cluster.FpNew = FpHat.asDiagonal() * V.transpose() * cluster.Fp * V.determinant();
-		  } 
-		}
-		cluster.cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
-	  }
-	  }
+
 	}
 	
 	
@@ -949,74 +930,48 @@ void World::timestep(){
 	for(auto& p : particles){
 	  p.velocity = (1.0/dt)*(p.position - p.oldPosition);
 	}
-	
 	assertFinite();
-
   }
   
   doFracture(std::move(potentialSplits));
+  splitOutliers();
+  cullSmallClusters();
+  removeLonelyParticles();
 
-  /*
+  updateClusterProperties(range(clusters.size()));
+
+  bounceOutOfPlanes();
+
   for(auto&& en : benlib::enumerate(clusters)){
-	auto& c = en.second;
-	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
-	bool updateCluster = false;
-	for(auto i=0; i<c.neighbors.size(); i++) {
-	  auto n = c.neighbors[i];
-	  auto &p = particles[n];
-	  if ((p.numClusters > 1) && ((p.position - worldCOM).norm() > (1.0 + gamma) * 1.0 * (p.restPosition - c.restCom).norm())) {
-		// create duplicate particle
-		double w = p.totalweight / (p.totalweight - (c.weights[i] * p.totalweight));
-		//if (w < 0) 
-		std::cout<<"(w < 0)"<<" "<<w<<" "<<p.totalweight<<" "<<c.weights[i]<<" "<<p.numClusters<<std::endl;
-		Particle q(p);
-		q.clusters.clear();
-		q.clusters.push_back(en.first);
-		q.numClusters = 1;
-		q.mass = c.weights[i]*p.mass;
-		q.totalweight = c.weights[i]*p.totalweight;
-		double newMass = (1.0-c.weights[i])*p.mass;
-		if (newMass < 0.1*p.mass || q.mass < 0.1*p.mass) {
-		  // in this case we should just delete the particle from the cluster and let the mass be lost...
-		  //std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
-		  continue;
-		}
-		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
-		p.numClusters--;
-		if (p.numClusters != p.clusters.size()) std::cout<<"thats bad"<<std::endl;
-		p.mass = newMass;
-		p.totalweight -= c.weights[i]*p.totalweight;
+	auto& cluster = en.second;
+	cluster.Fp = cluster.FpNew;
+  }
 
-		particles.push_back(q);
-		c.neighbors[i] = particles.size()-1;
-		c.weights[i] = 1.0;
-		for (auto d : p.clusters) {
-		  for (auto j=0; j<clusters[d].neighbors.size(); j++) {
-			if (clusters[d].neighbors[j] == n) {
-			  clusters[d].weights[j] *= w;
-			}
-		  }
-		}
-		updateCluster = true;
-		//std::cout<<"removed an outlier "<<(particles[n].position - worldCOM).norm()<<" > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()<<" "<<newMass<<" "<<q.mass<<std::endl;
-	  }
-	} 
-	// could update the cluster, but see below...
+  for(auto& c : clusters){
+	c.renderWidth = 0;
+	c.worldCom = sumWeightedWorldCOM(c.neighbors, c.weights);
+	for(auto& n : c.neighbors){
+	  c.renderWidth = std::max(c.renderWidth, 
+		  (c.worldCom - particles[n].position).norm());
 	}
-  */
-  
+  }
+
+  //selfCollisions();
+
+  elapsedTime += dt;
+  //std::cout << "elapsed time: " << elapsedTime << std::endl;
+}
+
+void World::splitOutliers() {
   for(auto&& en : benlib::enumerate(clusters)){
 	auto& c = en.second;
-	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
+	Eigen::Vector3d worldCOM = sumWeightedWorldCOM(c.neighbors, c.weights);
 	bool updateCluster = false;
 	for(auto i=0; i<c.neighbors.size(); i++) {
 	  auto n = c.neighbors[i];
 	  auto &p = particles[n];
 	  if ((p.numClusters > 1) && ((p.position - worldCOM).norm() > (1.0 + gamma) * 1.0 * (p.restPosition - c.restCom).norm())) {
 		// create duplicate particle
-		//double w = p.totalweight / (p.totalweight - (c.weights[i] * p.totalweight));
-		//if (w < 0) 
-		//std::cout<<"(w < 0)"<<" "<<w<<" "<<p.totalweight<<" "<<c.weights[i]<<" "<<p.numClusters<<std::endl;
 		Particle q(p);
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
@@ -1026,7 +981,6 @@ void World::timestep(){
 		double newMass = ((p.totalweight-c.weights[i])/p.totalweight) * p.mass;
 		if (newMass < 0.1*p.mass || q.mass < 0.1*p.mass) {
 		  // in this case we should just delete the particle from the cluster and let the mass be lost...
-		  //std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
 		  continue;
 		}
 		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
@@ -1037,58 +991,52 @@ void World::timestep(){
 
 		particles.push_back(q);
 		c.neighbors[i] = particles.size()-1;
-		//c.weights[i] = 1.0;
-		//for (auto d : p.clusters) {
-		// for (auto j=0; j<clusters[d].neighbors.size(); j++) {
-		//	if (clusters[d].neighbors[j] == n) {
-		//	  clusters[d].weights[j] *= w;
-		//	}
-		//  }
-		//}
 		updateCluster = true;
 		//std::cout<<"removed an outlier "<<(particles[n].position - worldCOM).norm()<<" > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()<<" "<<newMass<<" "<<q.mass<<std::endl;
 	  }
 	} 
 	// could update the cluster, but see below...
-	}
-  
+  }
+}
 
-  //cull small clusters
-  
+void World::cullSmallClusters() {
   auto sizeBefore = clusters.size();
   clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
 		  [](const Cluster& c){
-			return c.neighbors.size() < 4;
+			return (c.neighbors.size() < 4 || c.mass < 1e-2);
 		  }), 
 	  clusters.end());
   if(clusters.size() != sizeBefore){
 	std::cout << "deleted " << sizeBefore - clusters.size() << " clusters" << std::endl;
   }
 
-  updateClusterProperties(range(clusters.size()));
+}
 
-
-
-  
-  bounceOutOfPlanes();
-  for(auto&& en : benlib::enumerate(clusters)){
-	auto& cluster = en.second;
-	cluster.Fp = cluster.FpNew;
-  }
-  elapsedTime += dt;
-  //std::cout << "elapsed time: " << elapsedTime << std::endl;
-  for(auto& c : clusters){
-	c.renderWidth = 0;
-	c.worldCom = computeNeighborhoodCOM(c);
-	for(auto& n : c.neighbors){
-	  c.renderWidth = std::max(c.renderWidth, 
-		  (c.worldCom - particles[n].position).norm());
+void World::removeLonelyParticles() {
+  countClusters();
+  std::vector<int> mapping;
+  mapping.resize(particles.size());
+  int i1=0, i2=0;
+  for (auto &p : particles) {
+	if (p.numClusters > 0) {
+	  mapping[i1++] = i2++;
+	} else {
+	  mapping[i1++] = -1;
 	}
   }
-  //selfCollisions();
 
-  //printCOM();
-  //std::cout<<elapsedTime<<std::endl;
+  for (auto &c : clusters) {
+	for (auto &n : c.neighbors) {
+	  assert (mapping[n] != -1);
+	  n = mapping[n];
+	}
+  }
+  
+  particles.erase(std::remove_if(particles.begin(), particles.end(),
+  		  [](const Particle& p){
+  			return (p.numClusters == 0);
+  		  }), 
+  	  particles.end());
 }
 
 void World::bounceOutOfPlanes(){
@@ -1290,31 +1238,6 @@ void World::makeClusters(){
 	  clusters.push_back(c);
 	}
 
-	/*
-	{
-	  for (auto& c : clusters) {
-		c.neighbors.clear();
-		c.weights.clear();
-	  }
-	  
-	  for (auto i=0; i<particles.size(); i++) {
-		auto& p = particles[i];
-		p.clusters.clear();
-		int bestNorm = std::numeric_limits<double>::infinity();
-		for (auto j = 0; j<clusters.size(); j++) {
-		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
-		  if (newNorm < bestNorm) {
-			bestCluster = j;
-			bestNorm = newNorm;
-		  }
-		}
-		clusters[bestCluster].neighbors.push_back(i);
-		clusters[bestCluster].weights.push_back(1.0);
-		p.numClusters = 1;
-		p.clusters.push_back(bestCluster);
-	  }
-	}
-	*/	
 	// fuzzy c-means loop
   	bool converged = false;
 	int iters = 0;
@@ -1437,7 +1360,7 @@ void World::strainLimitingIteration(){
 		p.goalPosition.setZero();
   }
   for(auto& c : clusters){
-	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
+	Eigen::Vector3d worldCOM = sumWeightedWorldCOM(c.neighbors, c.weights);
 	Eigen::Matrix3d init; 
 	init.setZero();
 	
@@ -1500,19 +1423,6 @@ void World::printCOM() const{
 }
 
 
-Eigen::Vector3d World::computeNeighborhoodCOM(const Cluster& c) const {
-  return sumWeightedWorldCOM(c.neighbors, c.weights);
-  //positions weighted by (mass/numClusters)
-  /*
-  return std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-	  Eigen::Vector3d(0.0, 0.0, 0.0),
-	  [this](Eigen::Vector3d acc, int n){
-		return acc + (particles[n].mass/particles[n].numClusters)*
-		  particles[n].position;
-	  })/sumWeightedMass(c.neighbors, c.weights);
-  */
-}
-
 // adam says: this should take weights into account
 Eigen::Matrix3d World::computeApq(const Cluster& c, 
 								  const Eigen::Matrix3d& init,
@@ -1527,52 +1437,19 @@ Eigen::Matrix3d World::computeApq(const Cluster& c,
 	Apq += (c.weights[i]/particles[n].totalweight)*particles[n].mass * pj * qj.transpose();
   }
   return Apq;
-  /*
-  return std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-						 init,
-						 [this,&c, &worldCOM]
-						 (const Eigen::Matrix3d& acc, int n) -> 
-						 Eigen::Matrix3d{
-						   Eigen::Vector3d pj = particles[n].position - worldCOM;
-						   Eigen::Vector3d qj = particles[n].restPosition - c.restCom;
-						   //return acc + (particles[n].mass/particles[n].numClusters)*
-						   return acc + (particles[n].mass)*
-							 pj*qj.transpose();
-						 });
-  */
 } 	
 
 Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const std::vector<int> &indices, const std::vector<double> &weights) const {
-	double mass = 0.0;
-	Eigen::Vector3d vel = Eigen::Vector3d::Zero();
-	std::vector<int>::const_iterator ii = c.neighbors.begin();
-	std::vector<double>::const_iterator di = c.weights.begin();
-	for (; ii!=c.neighbors.end(); ii++, di++) {
-	  mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
-	  vel += ((*di)/particles[*ii].totalweight)*particles[*ii].mass*particles[*ii].velocity;
-	}
-	return (vel / mass);
+  double mass = 0.0;
+  Eigen::Vector3d vel = Eigen::Vector3d::Zero();
+  std::vector<int>::const_iterator ii = c.neighbors.begin();
+  std::vector<double>::const_iterator di = c.weights.begin();
+  for (; ii!=c.neighbors.end(); ii++, di++) {
+	mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
+	vel += ((*di)/particles[*ii].totalweight)*particles[*ii].mass*particles[*ii].velocity;
   }
-
-/*
-Eigen::Vector3d World::computeClusterVelocity(const Cluster& c) const {
-  return 
-	std::accumulate(c.neighbors.begin(),
-					c.neighbors.end(),
-					Eigen::Vector3d(0.0, 0.0, 0.0),
-					[this](Eigen::Vector3d acc, int n){
-					  return acc + (particles[n].mass/
-									particles[n].numClusters)*
-						particles[n].velocity;
-					})/
-	std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-					0.0,
-					[this](double acc, int n){
-					  return acc + 
-						particles[n].mass/particles[n].numClusters;
-					});
-  
-					}*/
+  return (vel / mass);
+}
 
 void World::countClusters(){
   for(auto& p : particles){
@@ -1592,6 +1469,8 @@ template <typename Container>
 void World::updateClusterProperties(const Container& clusterIndices){
   countClusters(); //TODO, just touch a subset...
 
+  for(auto& p : particles){assert(p.mass > 0.0);}
+
   // compute cluster mass, com, width, and aInv
   for(auto cIndex : clusterIndices){
 	auto& c = clusters[cIndex];
@@ -1602,7 +1481,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	}
 	assert(c.mass >= 0);
 	c.restCom = sumWeightedRestCOM(c.neighbors, c.weights);
-	c.worldCom = computeNeighborhoodCOM(c);
+	c.worldCom = sumWeightedWorldCOM(c.neighbors, c.weights);
 
 	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
 	if(!c.worldCom.allFinite()){std::cout << c.worldCom << std::endl;}
@@ -1618,18 +1497,6 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	
 	c.aInv.setZero();  
 	// adam says: this should take weights into account
-	/*
-	c.aInv = 
-	  std::accumulate(c.neighbors.begin(), c.neighbors.end(),
-		  c.aInv,
-		  [this, &c]
-		  (const Eigen::Matrix3d& acc, int n) -> 
-		  Eigen::Matrix3d {
-			Eigen::Vector3d qj = particles[n].restPosition - c.restCom;
-			return acc + (particles[n].mass)*
-			  qj*qj.transpose();
-		  });
-	*/
 	for (auto i=0; i<c.neighbors.size(); i++) {
 	  auto &n = c.neighbors[i];
 	  Eigen::Vector3d qj = particles[n].restPosition - c.restCom;
@@ -1701,10 +1568,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//clusters.erase(clusters.begin() + cIndex);
 	//updateClusterProperties();
 	//break;
-
-
-	
-
 
 
 	//if(cluster.neighbors.size() < 10){ continue;}
@@ -1815,7 +1678,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			  //std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
 			  continue;
 			}
-			std::cout<<" q: " <<q.totalweight<<std::endl;
+			//std::cout<<" q: " <<q.totalweight<<std::endl;
 			if (w < 1e-6) std::cout<<thisCluster.neighbors.size()<< " "<<i<<std::endl;
 
 			particle.clusters.erase(
@@ -1824,18 +1687,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			particle.numClusters--;
 			particle.mass = newMass;
 			particle.totalweight -= w;
-			std::cout<<" particle: " <<particle.totalweight<<std::endl;
+			//std::cout<<" particle: " <<particle.totalweight<<std::endl;
 			
 			particles.push_back(q);
 			thisCluster.neighbors[i] = particles.size()-1;
-
-
-			//remove from cluster
-		  //thisCluster.neighbors.erase(
-		  //	std::remove(thisCluster.neighbors.begin(),
-		  //		//thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-			//		thisCluster.neighbors.end(), member), thisCluster.neighbors.end());
-			//remove cluster from this
 		  }
 		}
 	  }
@@ -1850,222 +1705,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	
   }
 }	
-
-#if 0
-void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
-  auto timer = prof.timeName("fracture");
-  //do fracture
-  std::sort(potentialSplits.begin(), potentialSplits.end(),
-	  [](const FractureInfo& a, const FractureInfo& b){
-		return std::get<1>(a) < std::get<1>(b);
-	  });
-  int count = 0;
-  if(!potentialSplits.empty()){
-	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
-  }
-  bool aCancel = false;
-  for(auto &ps : potentialSplits){
-	//if (++count > 10) break;
-	size_t cIndex = std::get<0>(ps);
-
-	auto worldCOM = clusters[cIndex].worldCom;
-
-	//recompute A matrix:
-	Eigen::Matrix3d init;
-	init.setZero();
-
-	Eigen::Matrix3d Apq = computeApq(clusters[cIndex], init, worldCOM);
-	Eigen::Matrix3d A = Apq*clusters[cIndex].aInv;
-	if (nu > 0.0) A = A*clusters[cIndex].Fp.inverse(); // plasticity
-	
-	//do the SVD here so we can handle fracture stuff
-	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullV);
-	
-	Eigen::Vector3d sigma = solver.singularValues();
-	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness){
-	  if(!aCancel){
-		aCancel = true;
-		std::cout << "cancelled fracture with updated stuff" << std::endl;
-	  }
-	  continue;
-	}
-	
-	Eigen::Vector3d splitDirection = solver.matrixV().col(0);
-
-	//doesn't work... 
-	//just erase the cluster
-	//clusters.erase(clusters.begin() + cIndex);
-	//updateClusterProperties();
-	//break;
-
-
-	
-
-
-
-	//if(cluster.neighbors.size() < 10){ continue;}
-
-	auto& cluster = clusters[cIndex];	  
-	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
-	//ben says: when I push_back, the reference gets invalidated if the vector reallocates (which bit me).
-
-	//could be better to actually store them like this...
-	std::vector<std::pair<int, double> > neighborsAndWeights(cluster.neighbors.size());
-	for(auto i : range(cluster.neighbors.size())){
-	  neighborsAndWeights[i] = {cluster.neighbors[i], cluster.weights[i]};
-	}
-
-	auto it = std::partition(neighborsAndWeights.begin(), neighborsAndWeights.end(),
-		[&worldCOM, &splitDirection, this](const std::pair<int, double>& a){
-		  return (worldCOM - particles[a.first].position).dot(splitDirection) > 0;
-		});
-
-	
-	/*
-	auto it = std::partition(clusters[cIndex].neighbors.begin(),
-		clusters[cIndex].neighbors.end(),
-		[&worldCOM, &splitDirection, this](int ind){
-		  //which side of the split is it on?
-		  return (worldCOM - particles[ind].position).dot(splitDirection) > 0;
-		});
-	*/
-
-
-
-	auto oldSize = std::distance(neighborsAndWeights.begin(), it);
-	auto newSize = std::distance(it, neighborsAndWeights.end());
-	if(newSize == 0 || oldSize == 0){ continue;}
-	//if(oldSize < 4 || newSize < 4){ continue;}
-
-	//expected to be mostly in teh x direction for the cube example, and it was
-	//std::cout << "split direction: " << splitDirection << std::endl;
-	
-	//make a new cluster
-	cluster.neighbors.resize(oldSize);
-	cluster.weights.resize(oldSize);
-	for(auto i : range(oldSize)){
-	  cluster.neighbors[i] = neighborsAndWeights[i].first;
-	  cluster.weights[i] = neighborsAndWeights[i].second;
-	}
-	Cluster newCluster;
-	newCluster.neighbors.resize(newSize);
-	newCluster.weights.resize(newSize);
-	for(auto i : range(newSize)){
-	  newCluster.neighbors[i] = (it + i)->first;
-	  newCluster.weights[i] = (it + i)->second;
-	}
-
-	// copy relevant variables
-	newCluster.Fp = cluster.Fp; // plasticity
-	newCluster.FpNew = cluster.FpNew;
-	newCluster.cstrain = cluster.cstrain; // plasticity
-	newCluster.toughness = cluster.toughness;
-
-	
-	clusters.push_back(newCluster);	  
-	
-	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size() -1});
-	//std::cout << "numClusters: " << clusters.size() << std::endl;
-	
-	//std::cout << "min cluster size: " << std::min_element(clusters.begin(), clusters.end(),
-	//		[](const Cluster& a, const Cluster& b){
-	//		  return a.neighbors.size() < b.neighbors.size();})->neighbors.size() << std::endl;
-	
-	{
-	  auto timerTwo = prof.timeName("propagate");
-	  //split from other clusters
-	  std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
-	  std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
-		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
-	  std::vector<size_t> affectedClusters; //keep sorted
-	  for(auto& member : allParticles){
-		auto& particle = particles[member];
-		for(auto thisIndex : particle.clusters){
-		  //insert into sorted array
-		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
-		  if(it == affectedClusters.end() || *it != thisIndex){
-			affectedClusters.insert(it, thisIndex);
-		  }
-		  
-		  auto& thisCluster = clusters[thisIndex];
-		  //auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
-		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
-			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
-			particle.totalweight -= thisCluster.weights[member];
-			particle.numClusters--;
-			particle.mass *= (1.0 - thisCluster.weights[member]);
-			//remove from cluster
-			thisCluster.neighbors.erase(
-				std::remove(thisCluster.neighbors.begin(),
-					//thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-					thisCluster.neighbors.end(), member), thisCluster.neighbors.end());
-			thisCluster.weights.erase(
-				std::remove(thisCluster.neighbors.begin(),
-					//thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-					thisCluster.neighbors.end(), member), thisCluster.neighbors.end());
-			//remove cluster from this
-			particle.clusters.erase(
-				std::remove(particle.clusters.begin(), particle.clusters.end(),
-					thisIndex), particle.clusters.end());
-			
-		  }
-		}
-	  }
-	  updateClusterProperties(affectedClusters);
-	
-	  //	for(auto& c : affectedClusters){
-	  //	  clusters[c].toughness *= 0.995;
-	//	}
-	
-	//break;
-	}
-	/*
-	
-	{
-	  auto timerTwo = prof.timeName("propagate");
-	  //split from other clusters
-	  std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
-	  std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
-		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
-	  std::vector<size_t> affectedClusters; //keep sorted
-	  for(auto& member : allParticles){
-		auto& particle = particles[member];
-		for(auto thisIndex : particle.clusters){
-		  //insert into sorted array
-		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
-		  if(it == affectedClusters.end() || *it != thisIndex){
-			affectedClusters.insert(it, thisIndex);
-		  }
-		  
-		  auto& thisCluster = clusters[thisIndex];
-		  //auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
-		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
-			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
-			//remove from cluster
-			thisCluster.neighbors.erase(
-				std::remove(thisCluster.neighbors.begin(),
-					//thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-					thisCluster.neighbors.end(), member), thisCluster.neighbors.end());
-			//remove cluster from this
-			particle.clusters.erase(
-				std::remove(particle.clusters.begin(), particle.clusters.end(),
-					thisIndex), particle.clusters.end());
-			
-		  }
-		}
-	  }
-	  updateClusterProperties(affectedClusters);
-	
-	  //	for(auto& c : affectedClusters){
-	  //	  clusters[c].toughness *= 0.995;
-	//	}
-	
-	//break;
-	}
-	*/
-  }
-}	
-#endif
 
 void World::dumpParticlePositions(const std::string& filename) const{
   std::ofstream outs(filename, std::ios_base::binary | std::ios_base::out);

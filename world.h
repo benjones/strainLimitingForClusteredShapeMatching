@@ -31,7 +31,9 @@ public:
 
   using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
   void doFracture(std::vector<FractureInfo> potentialSplits);
-
+  void splitOutliers();
+  void cullSmallClusters();
+  void removeLonelyParticles();
 
   inline void restart(){ 
 	Eigen::Vector3d oldCameraPosition = cameraPosition;
