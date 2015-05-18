@@ -118,7 +118,7 @@ public:
 	double mass = 0.0;
 	std::vector<int>::const_iterator ii = indices.begin();
 	std::vector<double>::const_iterator di = weights.begin();
-	for (; ii!=indices.end(); ii++, di++) mass += (*di)*particles[*ii].mass;
+	for (; ii!=indices.end(); ii++, di++) mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
 	return mass;
   }
 
@@ -128,8 +128,8 @@ public:
 	std::vector<int>::const_iterator ii = indices.begin();
 	std::vector<double>::const_iterator di = weights.begin();
 	for (; ii!=indices.end(); ii++, di++) {
-	  mass += (*di)*particles[*ii].mass;
-	  com += (*di)*particles[*ii].mass*particles[*ii].restPosition;
+	  mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
+	  com += ((*di)/particles[*ii].totalweight)*particles[*ii].mass*particles[*ii].restPosition;
 	}
 	return (com / mass);
   }
@@ -140,8 +140,8 @@ public:
 	std::vector<int>::const_iterator ii = indices.begin();
 	std::vector<double>::const_iterator di = weights.begin();
 	for (; ii!=indices.end(); ii++, di++) {
-	  mass += (*di)*particles[*ii].mass;
-	  com += (*di)*particles[*ii].mass*particles[*ii].position;
+	  mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
+	  com += ((*di)/particles[*ii].totalweight)*particles[*ii].mass*particles[*ii].position;
 	}
 	return (com / mass);
   }
