@@ -81,7 +81,7 @@ public:
   void solveConstraints();
   void updateNeighbors(size_t partIndex);
 
-  void makeClusters();
+  bool makeClusters();
 
   void countClusters();
 
