@@ -3,6 +3,14 @@
 #include <Eigen/Dense>
 #include <utility>
 
+#ifdef __APPLE__
+//why, apple?   why????
+#include <OpenGL/glu.h>
+#else
+#include <gl/glu.h>
+#endif
+
+
 namespace utils{
 
   //R, S
@@ -53,8 +61,8 @@ namespace utils{
 	}
   }
 
-  std::pair<Eigen::Vector3d, Eigen::Vector3d>
-  getPlaneTangents(const Eigen::Vector3d& normal){
+  inline std::pair<Eigen::Vector3d, Eigen::Vector3d>
+	getPlaneTangents(const Eigen::Vector3d& normal){
 	
 	const Eigen::Vector3d xVector{1,0,0};
 	Eigen::Vector3d span1 = (fabs(normal.dot(xVector)) < 0.9) ?
