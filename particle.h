@@ -11,7 +11,7 @@ public:
 	goalPosition, 
 	goalVelocity;
   double mass; 
-  double totalweight; // only used for initialization
+  double totalweight; // sum of weights of this particle in all clusters
   size_t numClusters; // only used to determine singelton particles
   bool outsideSomeMovingPlane;
   std::vector<int> clusters; 
@@ -25,11 +25,10 @@ public:
 
 class Cluster {
  public:
-	Eigen::Vector3d restCom;
+  Eigen::Vector3d restCom;
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
-	std::vector<int> neighbors;
-	std::vector<double> weights;
+  std::vector<std::pair<int, double> > neighbors;
   double mass, width, renderWidth;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)

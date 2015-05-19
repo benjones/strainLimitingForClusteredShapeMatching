@@ -94,7 +94,6 @@ public:
 
   void printCOM() const;
   
-  Eigen::Vector3d computeNeighborhoodCOM(const Cluster& c) const;
   Eigen::Vector3d computeClusterVelocity(const Cluster& c) const;
   
   template <typename cont>
@@ -105,83 +104,39 @@ public:
 		  return acc + particles[index].mass;
 		});
   }
-  /*  
-  template <typename cont> 
-  //weighted by # clusters stuff belongs to
-  double sumWeightedMass(const cont& indices) const {
-	return std::accumulate(indices.begin(), indices.end(), 0.0,
-		[this](double acc, typename cont::value_type index){
-		  return acc + particles[index].mass/particles[index].numClusters;
-		});
-  }
-  */
-  //weighted by # clusters stuff belongs to
-  double sumWeightedMass(const std::vector<int> &indices, const std::vector<double> &weights) const {
+
+  double sumWeightedMass(const std::vector<std::pair<int,double> > &neighbors) const {
 	double mass = 0.0;
-	std::vector<int>::const_iterator ii = indices.begin();
-	std::vector<double>::const_iterator di = weights.begin();
-	for (; ii!=indices.end(); ii++, di++) mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
+	for (auto &n : neighbors) {
+	  auto &p = particles[n.first];
+	  mass += (n.second / p.totalweight) * p.mass;
+	}
 	return mass;
   }
 
-  Eigen::Vector3d sumWeightedRestCOM(const std::vector<int> &indices, const std::vector<double> &weights) const {
+  Eigen::Vector3d sumWeightedRestCOM(const std::vector<std::pair<int,double> > &neighbors) const {
 	double mass = 0.0;
 	Eigen::Vector3d com = Eigen::Vector3d::Zero();
-	std::vector<int>::const_iterator ii = indices.begin();
-	std::vector<double>::const_iterator di = weights.begin();
-	for (; ii!=indices.end(); ii++, di++) {
-	  mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
-	  com += ((*di)/particles[*ii].totalweight)*particles[*ii].mass*particles[*ii].restPosition;
+	for (auto &n : neighbors) {
+	  auto &p = particles[n.first];
+	  double w = (n.second / p.totalweight) * p.mass;
+	  mass += w;
+	  com += w * p.restPosition;
 	}
 	return (com / mass);
   }
 
-  Eigen::Vector3d sumWeightedWorldCOM(const std::vector<int> &indices, const std::vector<double> &weights) const {
+  Eigen::Vector3d sumWeightedWorldCOM(const std::vector<std::pair<int,double> > &neighbors) const {
 	double mass = 0.0;
 	Eigen::Vector3d com = Eigen::Vector3d::Zero();
-	std::vector<int>::const_iterator ii = indices.begin();
-	std::vector<double>::const_iterator di = weights.begin();
-	for (; ii!=indices.end(); ii++, di++) {
-	  mass += ((*di)/particles[*ii].totalweight)*particles[*ii].mass;
-	  com += ((*di)/particles[*ii].totalweight)*particles[*ii].mass*particles[*ii].position;
+	for (auto &n : neighbors) {
+	  auto &p = particles[n.first];
+	  double w = (n.second / p.totalweight) * p.mass;
+	  mass += w;
+	  com += w * p.position;
 	}
 	return (com / mass);
   }
-  /*
-  template <typename cont>
-  Eigen::Vector3d sumRestCOM(const cont& indices, double totalMass) const{
-	return std::accumulate(indices.begin(), indices.end(),
-		Eigen::Vector3d::Zero().eval(),
-		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
-		  return acc + particles[index].mass*
-			particles[index].restPosition;
-		})/totalMass;
-  }
-
-  template <typename cont>
-  Eigen::Vector3d sumWeightedRestCOM(const cont& indices, double totalMass) const{
-	return 
-	  std::accumulate(indices.begin(), indices.end(),
-		  Eigen::Vector3d::Zero().eval(),
-		  [this](const Eigen::Vector3d& acc, typename cont::value_type index){
-			return acc + (particles[index].mass/particles[index].numClusters)*
-			  particles[index].restPosition;
-		  }) /
-	  totalMass;
-  }
-
-
-
-  template <typename cont>
-  Eigen::Vector3d sumWorldCOM(const cont& indices, double totalMass) const{
-	return std::accumulate(indices.begin(), indices.end(),
-		Eigen::Vector3d::Zero().eval(),
-		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
-		  return acc + particles[index].mass*
-			particles[index].position;
-		})/totalMass;
-  }
-  */
 
   //compute the APQ matrix (see meuller 2005)
   Eigen::Matrix3d computeApq(const Cluster& c, 
