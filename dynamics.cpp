@@ -10,8 +10,6 @@ using benlib::enumerate;
 #include "range.hpp"
 using benlib::range;
 
-// cluster 34, particle 4754
-
 inline double sqr (const double &x) {return x*x;}
 
 void World::timestep(){
@@ -55,7 +53,6 @@ void World::timestep(){
 		
 
 	  Eigen::Matrix3d Apq = computeApq(cluster, init, cluster.worldCom);
-	  //Eigen::Matrix3d Apq = computeApq(cluster, init, worldCom);
 	  Eigen::Matrix3d A = Apq*cluster.aInv;
 	  if (nu > 0.0) A = A*cluster.Fp.inverse(); // plasticity
 	  
@@ -86,7 +83,6 @@ void World::timestep(){
 		auto &p = particles[n.first];
 		double w = n.second / p.totalweight;
 		p.goalPosition += w*(T*(p.restPosition - cluster.restCom) + cluster.worldCom);
-		//p.goalPosition += w*(T*(p.restPosition - cluster.restCom) + worldCom);
 		p.goalVelocity += w*clusterVelocity;
 	  }	  
 	}
@@ -122,7 +118,7 @@ void World::timestep(){
 	for (auto &c : clusters) c.worldCom = sumWeightedWorldCOM(c.neighbors);	
 	assertFinite();
   }
-  
+
   doFracture(std::move(potentialSplits));
   splitOutliers();
   cullSmallClusters();
@@ -263,7 +259,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	newCluster.cstrain = c.cstrain; // plasticity
 	newCluster.toughness = c.toughness;
 
-	
 	//delete the particles from the old one
 	c.neighbors.erase(c.neighbors.begin() + oldSize, c.neighbors.end());
 
@@ -306,18 +301,17 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			double newMass = ((particle.totalweight - w) / particle.totalweight) * particle.mass;
 			//if (newMass < 0.1*particle.mass || q.mass < 0.1*particle.mass) {
 			  // in this case we should just delete the particle from the cluster and let the mass be lost...
-			//std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
+			  //std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
 			  //continue;
 			//}
-			//std::cout<<" q: " <<q.totalweight<<std::endl;
 
-			particle.clusters.erase(
-				std::remove(particle.clusters.begin(), particle.clusters.end(),
-					thisIndex), particle.clusters.end());
+			// This seems like a good idea, but it invalidates the iterator to particle.clusters
+			//particle.clusters.erase(
+			//	std::remove(particle.clusters.begin(), particle.clusters.end(),
+			//		thisIndex), particle.clusters.end());
 			particle.numClusters--;
 			particle.mass = newMass;
 			particle.totalweight -= w;
-			//std::cout<<" particle: " <<particle.totalweight<<std::endl;
 			
 			particles.push_back(q);
 			thisCluster.neighbors[i].first = particles.size()-1;
@@ -342,23 +336,8 @@ void World::splitOutliers() {
 	bool updateCluster = false;
 	for(auto &n : c.neighbors) {
 	  auto &p = particles[n.first];
-	  //if (en.first == 34) std::cout<<n.first<<std::endl;
-	  /*
-	  if (en.first == 33 && n.first == 4757) {
-		std::cout<<"c.neighbors.size() = "<<c.neighbors.size()<<std::endl;
-		std::cout<<"p.numClusters = "<<p.numClusters<<std::endl;
-		std::cout<<"p.position = "<<p.position[0]<<" "<<p.position[1]<<" "<<p.position[2]<<std::endl;
-		std::cout<<"c.worldCom = "<<c.worldCom[0]<<" "<<c.worldCom[1]<<" "<<c.worldCom[2]<<std::endl;
-		std::cout<<"p.resposition = "<<p.restPosition[0]<<" "<<p.restPosition[1]<<" "<<p.restPosition[2]<<std::endl;
-		std::cout<<"c.restCom = "<<c.restCom[0]<<" "<<c.restCom[1]<<" "<<c.restCom[2]<<std::endl;
-		std::cout<<"world length = "<<(p.position - c.worldCom).norm()<<std::endl;
-		std::cout<<"rest length = "<<(p.restPosition - c.restCom).norm()<<std::endl;
-	  }
-	  */
-	  if ((p.numClusters > 1) && ((p.position - c.worldCom).norm() > (1.0 + gamma) * 1.0 * (p.restPosition - c.restCom).norm())) {
-		//if (n.first == 4757) {
-		//std::cout<<"splitting particle out of cluster "<<en.first<<std::endl;
-		//}
+	  if ((p.numClusters > 1) && ((p.position - c.worldCom).norm() > 
+			  (1.0 + gamma) * 1.0 * (p.restPosition - c.restCom).norm())) {
 		Particle q(p);
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
@@ -377,7 +356,6 @@ void World::splitOutliers() {
 		particles.push_back(q);
 		n.first = particles.size()-1;
 		updateCluster = true;
-		//std::cout<<"splitting outliers"<<std::endl;
 	  }
 	} 
   }
@@ -544,90 +522,96 @@ inline double cube(double x) { return x*x*x;}
 bool World::makeClusters(){
   clusters.clear();
 
-  if (nClusters) {
-	std::random_device rd;
-	std::mt19937 g(std::mt19937::default_seed);
-	// initialize cluster centers to random paricles
-	while (clusters.size() < nClusters) {
-	  Cluster c;
-	  c.restCom = particles[g() % particles.size()].restPosition;
-	  clusters.push_back(c);
-	}
+  std::random_device rd;
+  std::mt19937 g(std::mt19937::default_seed);
+  std::vector<bool> picked(particles.size());
+  for (auto &&p : picked) p = false;
 
-  	bool converged = false;
-	while (!converged) {
-	  converged = true;
-	  for (auto& c : clusters) c.neighbors.clear();
-	  
-	  for (auto i=0; i<particles.size(); i++) {
-		auto& p = particles[i];
-		int bestCluster = 0;
-		double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
-		for (auto j = 0; j<clusters.size(); j++) {
-		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
-		  if (newNorm < bestNorm) {
-			bestCluster = j;
-			bestNorm = newNorm;
-		  }
-		}
-		clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,1.0));
-		if (p.numClusters != bestCluster) converged = false;
-		p.numClusters = bestCluster;
-		p.totalweight = 1.0;
-	  }
-	  
-	  for (auto& c : clusters) {
-		c.restCom = sumWeightedRestCOM(c.neighbors);
-	  }
-	}
-
-
-	// fuzzy c-means loop
-	int iters = 0;
-	double sqrNeighborRadius = neighborRadius*neighborRadius;
-	while (!converged || iters < 5) {
-	  converged = true;
-	  iters++;
-	  
-	  for (auto i=0; i<particles.size(); i++) {
-		auto& p = particles[i];
-		p.clusters.clear();
-		p.numClusters = 0;
-		p.totalweight = 0.0;
-	  }
-
-	  for (auto j = 0; j<clusters.size(); j++) {
-		Cluster &c = clusters[j];
-		int oldNeighbors = c.neighbors.size();
-		std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
-		c.neighbors.resize(neighbors.size());
-		for(unsigned int i=0; i<neighbors.size(); i++) {
-		  auto n = neighbors[i];
-		  Particle &p = particles[n];
-		  double norm = (c.restCom - p.restPosition).squaredNorm();
-		  double w = 1e7*cube(sqrNeighborRadius-norm);
-		  c.neighbors[i] = std::pair<int, double>(n, w);
-		  p.totalweight += w;
-		  p.clusters.push_back(j);
-		  p.numClusters++;
-		}
-		if (oldNeighbors != c.neighbors.size()) converged = false;
-	  }
-
-	  for (auto& c : clusters) {
-		c.mass = 0.0;
-		c.restCom = Eigen::Vector3d::Zero();
-		for (auto &n : c.neighbors) {
-		  auto &p = particles[n.first];
-		  double w = n.second / p.totalweight;
-		  c.restCom += w * p.mass * p.position;
-		  c.mass += w * p.mass;
-		}
-		c.restCom /= c.mass;
-	  }
-	} 
-	std::cout<<"kmeans clustering converged in "<<iters<<std::endl;
+  // initialize cluster centers to random paricles
+  while (clusters.size() < nClusters) {
+	Cluster c;
+	int r = g() % particles.size();
+	if (picked[r]) continue;
+	picked[r] = true;
+	c.restCom = particles[r].restPosition;
+	clusters.push_back(c);
   }
+  
+  bool converged = false;
+  int iters = 0;
+  while (!converged) {
+	iters++;
+	converged = true;
+	for (auto& c : clusters) c.neighbors.clear();
+	
+	for (auto i=0; i<particles.size(); i++) {
+	  auto& p = particles[i];
+	  int bestCluster = 0;
+	  double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
+	  for (auto j = 0; j<clusters.size(); j++) {
+		double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
+		if (newNorm < bestNorm) {
+		  bestCluster = j;
+		  bestNorm = newNorm;
+		}
+	  }
+	  clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,1.0));
+	  if (p.numClusters != bestCluster) converged = false;
+	  p.numClusters = bestCluster;
+	  p.totalweight = 1.0;
+	}
+	
+	for (auto& c : clusters) {
+	  c.restCom = sumWeightedRestCOM(c.neighbors);
+	}
+  }
+  
+
+  // fuzzy c-means loop
+  iters = 0;
+  double sqrNeighborRadius = neighborRadius*neighborRadius;
+  while (!converged || iters < 5) {
+	converged = true;
+	iters++;
+	
+	for (auto i=0; i<particles.size(); i++) {
+	  auto& p = particles[i];
+	  p.clusters.clear();
+	  p.numClusters = 0;
+	  p.totalweight = 0.0;
+	}
+
+	for (auto j = 0; j<clusters.size(); j++) {
+	  Cluster &c = clusters[j];
+	  int oldNeighbors = c.neighbors.size();
+	  std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+	  c.neighbors.resize(neighbors.size());
+	  for(unsigned int i=0; i<neighbors.size(); i++) {
+		auto n = neighbors[i];
+		Particle &p = particles[n];
+		double norm = (c.restCom - p.restPosition).squaredNorm();
+		double w = 1e7*cube(sqrNeighborRadius-norm);
+		c.neighbors[i] = std::pair<int, double>(n, w);
+		p.totalweight += w;
+		p.clusters.push_back(j);
+		p.numClusters++;
+	  }
+	  if (oldNeighbors != c.neighbors.size()) converged = false;
+	}
+
+	for (auto& c : clusters) {
+	  c.mass = 0.0;
+	  c.restCom = Eigen::Vector3d::Zero();
+	  for (auto &n : c.neighbors) {
+		auto &p = particles[n.first];
+		double w = n.second / p.totalweight;
+		c.restCom += w * p.mass * p.position;
+		c.mass += w * p.mass;
+	  }
+	  c.restCom /= c.mass;
+	}
+  } 
+  std::cout<<"kmeans clustering converged in "<<iters<<std::endl;
   
   updateClusterProperties(benlib::range(clusters.size()));
   

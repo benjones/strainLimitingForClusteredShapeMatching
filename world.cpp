@@ -232,7 +232,7 @@ void World::loadFromJson(const std::string& _filename){
   restPositionGrid.numBuckets = 6;
   restPositionGrid.updateGrid(particles);
   
-  while (!makeClusters()) nClusters *= 1.25;
+  while (!makeClusters()) {nClusters *= 1.25; neighborRadius *= 1.25;}
   std::cout<<"nClusters = "<<nClusters<<std::endl;
 
   //apply initial rotation/scaling, etc
