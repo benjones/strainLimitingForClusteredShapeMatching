@@ -481,28 +481,38 @@ void World::bounceOutOfPlanes(){
   }
 }
 
+void World::buildClusterMaps() {
+  countClusters();
+  clusterCollisionMap.clear();
+  clusterCollisionMap.resize(clusters.size());
+  for (auto &p : particles) {
+	for (auto &c : p.clusters) {
+	  for (auto &d : p.clusters) {
+		if (std::find(clusterCollisionMap[c].begin(), clusterCollisionMap[c].end(), d) == clusterCollisionMap[c].end()) {
+		  clusterCollisionMap[c].push_back(d);
+		}
+	  }
+	}
+  }
+}
+
 void World::selfCollisions() {
+  buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;
 	for (auto && en2 : benlib::enumerate(clusters)) {
 	  if (en1.first == en2.first) continue;
+	  if (std::find(clusterCollisionMap[en1.first].begin(), clusterCollisionMap[en1.first].end(), en2.first) == clusterCollisionMap[en1.first].end()) continue;
 	  auto &d = en2.second;
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
 		for (auto& n : c.neighbors){
 		  auto &p = particles[n.first];
-		  if ((p.position - d.worldCom).squaredNorm() < 0.9*sqr(d.width)) {
+		  if ((p.position - d.worldCom).squaredNorm() < 0.5*sqr(d.width)) {
 			auto it = find(p.clusters.begin(), p.clusters.end(), en2.first);
 			if (it == p.clusters.end()) {
-			  //std::cout<<p.position<<std::endl<<d.worldCom<<std::endl<<d.width<<" ";
-			  //std::cout<<(p.position - d.worldCom).squaredNorm() << " "<<d.width*d.width<<" "<<neighborRadius<<std::endl<<std::endl<<std::endl;;
-			  //p.position = d.worldCom + d.width * (p.position - d.worldCom).normalized();
-			  //std::cout<<i<<" "<<en1.first<<" "<<en2.first<<" "<<(p.position - d.worldCom).norm()<<" "<<(p.restPosition - d.restCom).norm()<<std::endl;
-			  //for (auto &foo : d.neighbors) {
-			  //std::cout<<foo<<" ";
-			  //if (foo == i) std::cout<<"maps are bad"<<std::endl;
-			  //}
-			  //std::cout<<std::endl;
-			  p.position = d.worldCom + d.width * (p.position - d.worldCom).normalized();
+			  //std::cout<<"before: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
+			  p.position = 0.9*p.position + 0.1*(d.worldCom + d.width * (p.position - d.worldCom).normalized());
+			  //std::cout<<"after: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
 			}
 		  }
 		}

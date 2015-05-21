@@ -76,6 +76,8 @@ public:
 
   void bounceOutOfPlanes();
 
+  std::vector<std::vector<int> > clusterCollisionMap;
+  void buildClusterMaps();
   void selfCollisions();
 
   void solveConstraints();
