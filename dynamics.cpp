@@ -496,6 +496,10 @@ void World::buildClusterMaps() {
   }
 }
 
+Eigen::Vector3d CollisionGeometry::project(const Eigen::Vector3d &x) {
+  return x;
+}
+
 void World::selfCollisions() {
   buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
