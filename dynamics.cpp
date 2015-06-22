@@ -218,7 +218,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	if (nu > 0.0) A = A*clusters[cIndex].Fp.inverse(); // plasticity
 	
 	//do the SVD here so we can handle fracture stuff
-	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullV);
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	
 	Eigen::Vector3d sigma = solver.singularValues();
 	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness){
@@ -264,6 +264,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	clusters.push_back(newCluster);	  
 	
+	Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
+	if (nu > 0.0) T = (T*c.Fp).inverse(); // plasticity
+	// note to adam: I am pretty sure this is correct.  We also need to multiply the com vector by T
+
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
 	{
