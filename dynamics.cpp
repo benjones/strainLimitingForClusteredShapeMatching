@@ -44,9 +44,7 @@ void World::timestep(){
 	for(auto&& en : benlib::enumerate(clusters)){
 	  auto& cluster = en.second;
 	  cluster.worldCom = sumWeightedWorldCOM(cluster.neighbors);
-	  Eigen::Vector3d clusterVelocity = 
-		
-		computeClusterVelocity(cluster);
+	  Eigen::Vector3d clusterVelocity = computeClusterVelocity(cluster);
 	  
 	  Eigen::Matrix3d Apq = computeApq(cluster);
 	  Eigen::Matrix3d A = Apq*cluster.aInv;
@@ -122,7 +120,7 @@ void World::timestep(){
 
   updateClusterProperties(range(clusters.size()));
 
-  for (auto &c : clusters) updateWorldToRestTransform(c);
+  for (auto &c : clusters) updateTransforms(c);
   //selfCollisions();
 
   bounceOutOfPlanes();
@@ -262,9 +260,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	// note to adam: I am pretty sure this is correct.  We also need to multiply the com vector by T
 	Eigen::Vector3d n = T*splitDirection;
 	//we need to worry about signs at some point
-	//newCluster.cg(c.cg);
+	newCluster.cg = c.cg;
 	c.cg.addPlane(n, n.dot(c.restCom));
-	newCluster.cg.addPlane(-n, -n.dot(c.restCom));
+	newCluster.cg.addPlane(-n, -(n.dot(c.restCom)));
 	
 
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
@@ -725,7 +723,7 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const 
   return (vel / mass);
 }
 
-void World::updateWorldToRestTransform(Cluster& c) const{
+void World::updateTransforms(Cluster& c) const{
   Eigen::Matrix3d Apq = computeApq(c);
   Eigen::Matrix3d A = Apq*c.aInv;
   if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
@@ -734,6 +732,7 @@ void World::updateWorldToRestTransform(Cluster& c) const{
 
   Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
   if (nu > 0.0) T = T*c.Fp; // plasticity
+  c.restToWorldTransform = T;
   c.worldToRestTransform = T.inverse();
 } 	
 

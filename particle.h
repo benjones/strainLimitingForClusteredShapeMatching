@@ -29,10 +29,11 @@ class CollisionGeometry {
   double r;
   std::vector<std::pair<Eigen::Vector3d, double> > planes;
  public:
-  CollisionGeometry(){planes.clear();};
-  CollisionGeometry(const CollisionGeometry &cg) = default;
+  CollisionGeometry(){};
+  CollisionGeometry & operator= (const CollisionGeometry &that) {c = that.c; r = that.r; planes = that.planes; return *this;};
+  CollisionGeometry(const CollisionGeometry &that) = default;
   Eigen::Vector3d project(const Eigen::Vector3d &x);
-  void init (const Eigen::Vector3d &c, double r) { this->c = c; this->r = r; planes.clear();};
+  void init (const Eigen::Vector3d &c, double r) { this->c = c; this->r = r;};
   void addPlane(const Eigen::Vector3d &n, double offset) { planes.emplace_back(n, offset); };
 };
 
@@ -46,10 +47,11 @@ class Cluster {
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
   Cluster() {Fp.setIdentity(); cstrain = 0.0;}
+  Cluster(const Cluster &c) = default;
   void updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix3d &U, const Eigen::Matrix3d &V, 
 	  double yield, double nu, double hardening);
 
   CollisionGeometry cg;
-  Eigen::Matrix3d worldToRestTransform;
+  Eigen::Matrix3d worldToRestTransform, restToWorldTransform;
 };
 
