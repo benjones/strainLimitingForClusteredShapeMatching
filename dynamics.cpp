@@ -261,7 +261,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	T = T.inverse().eval();
 	// note to adam: I am pretty sure this is correct.  We also need to multiply the com vector by T
 	Eigen::Vector3d n = T*splitDirection;
+	//we need to worry about signs at some point
+	//newCluster.cg(c.cg);
 	c.cg.addPlane(n, n.dot(c.restCom));
+	newCluster.cg.addPlane(-n, -n.dot(c.restCom));
+	
 
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
@@ -627,7 +631,9 @@ bool World::makeClusters(){
   std::cout<<"kmeans clustering converged in "<<iters<<std::endl;
   
   updateClusterProperties(benlib::range(clusters.size()));
-  
+
+  for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
+
   for (auto& p : particles) {
 	if (p.numClusters == 0) {
 	  std::cout<<"Particle has no cluster"<<std::endl;
