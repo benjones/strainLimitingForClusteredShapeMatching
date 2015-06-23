@@ -498,11 +498,20 @@ void World::buildClusterMaps() {
   }
 }
 
-Eigen::Vector3d CollisionGeometry::project(const Eigen::Vector3d &x) {
-  return x;
+bool CollisionGeometry::project(Eigen::Vector3d &x) {
+  return false;
+}
+
+inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) {
+  return c.worldCom + c.restToWorldTransform * (x-c.restCom);
+}
+
+inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
+  return c.restCom + c.worldToRestTransform * (x-c.worldCom);
 }
 
 void World::selfCollisions() {
+  const double alpha = 0.5;
   buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;
@@ -513,12 +522,16 @@ void World::selfCollisions() {
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
 		for (auto& n : c.neighbors){
 		  auto &p = particles[n.first];
-		  if ((p.position - d.worldCom).squaredNorm() < 0.5*sqr(d.width)) {
+		  if ((p.position - d.worldCom).squaredNorm() < sqr(d.width)) {
 			auto it = find(p.clusters.begin(), p.clusters.end(), en2.first);
 			if (it == p.clusters.end()) {
-			  //std::cout<<"before: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
-			  p.position = 0.9*p.position + 0.1*(d.worldCom + d.width * (p.position - d.worldCom).normalized());
-			  //std::cout<<"after: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
+			  Eigen::Vector3d x = worldToRest(c, p.position);
+			  if (c.cg.project(x)) {
+				x = restToWorld(c, x);
+				//std::cout<<"before: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
+				p.position = alpha*x + (1.0-alpha)*p.position;
+				//std::cout<<"after: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
+			  }
 			}
 		  }
 		}

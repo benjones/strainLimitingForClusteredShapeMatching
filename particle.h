@@ -32,7 +32,7 @@ class CollisionGeometry {
   CollisionGeometry(){};
   CollisionGeometry & operator= (const CollisionGeometry &that) {c = that.c; r = that.r; planes = that.planes; return *this;};
   CollisionGeometry(const CollisionGeometry &that) = default;
-  Eigen::Vector3d project(const Eigen::Vector3d &x);
+  bool project(Eigen::Vector3d &x);
   void init (const Eigen::Vector3d &c, double r) { this->c = c; this->r = r;};
   void addPlane(const Eigen::Vector3d &n, double offset) { planes.emplace_back(n, offset); };
 };
