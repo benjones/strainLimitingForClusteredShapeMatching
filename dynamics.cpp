@@ -254,13 +254,14 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	clusters.push_back(newCluster);	  
 	
+	// Update Collision Geometry
+	newCluster.cg = c.cg;
 	Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
 	if (nu > 0.0) T = T*c.Fp; // plasticity
 	T = T.inverse().eval();
-	// note to adam: I am pretty sure this is correct.  We also need to multiply the com vector by T
 	Eigen::Vector3d n = T*splitDirection;
+
 	//we need to worry about signs at some point
-	newCluster.cg = c.cg;
 	c.cg.addPlane(n, n.dot(c.restCom));
 	newCluster.cg.addPlane(-n, -(n.dot(c.restCom)));
 	
@@ -711,7 +712,7 @@ Eigen::Matrix3d World::computeApq(const Cluster& c) const{
   return Apq;
 } 	
 
-Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const std::vector<int> &indices, const std::vector<double> &weights) const {
+Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {
   double mass = 0.0;
   Eigen::Vector3d vel = Eigen::Vector3d::Zero();
   for (auto &n : c.neighbors) {
@@ -724,14 +725,12 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const 
 }
 
 void World::updateTransforms(Cluster& c) const{
-  Eigen::Matrix3d Apq = computeApq(c);
-  Eigen::Matrix3d A = Apq*c.aInv;
-  if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
+  Eigen::Matrix3d A = computeApq(c)*c.aInv;
+  if (nu > 0.0) A = A*c.Fp.inverse(); 
 
-  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-  Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
-  if (nu > 0.0) T = T*c.Fp; // plasticity
+  auto pr = utils::polarDecomp(A);
+  Eigen::Matrix3d T = pr.first;
+  if (nu > 0.0) T = T*c.Fp; 
   c.restToWorldTransform = T;
   c.worldToRestTransform = T.inverse();
 } 	
