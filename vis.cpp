@@ -171,11 +171,7 @@ void World::drawPretty(SDL_Window* window) const {
   if (which_cluster != -1) {
      auto& c = clusters[which_cluster];
 
-	 Eigen::Matrix3d init;
-	 init.setZero();
-	 
-	 
-	 Eigen::Matrix3d Apq = computeApq(c, init, c.worldCom);
+	 Eigen::Matrix3d Apq = computeApq(c);
 	 Eigen::Matrix3d A = Apq*c.aInv;
 	 if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
 	 

@@ -48,11 +48,7 @@ void World::timestep(){
 		
 		computeClusterVelocity(cluster);
 	  
-	  Eigen::Matrix3d init;
-	  init.setZero();
-		
-
-	  Eigen::Matrix3d Apq = computeApq(cluster, init, cluster.worldCom);
+	  Eigen::Matrix3d Apq = computeApq(cluster);
 	  Eigen::Matrix3d A = Apq*cluster.aInv;
 	  if (nu > 0.0) A = A*cluster.Fp.inverse(); // plasticity
 	  
@@ -126,9 +122,10 @@ void World::timestep(){
 
   updateClusterProperties(range(clusters.size()));
 
-  bounceOutOfPlanes();
-
+  for (auto &c : clusters) updateWorldToRestTransform(c);
   //selfCollisions();
+
+  bounceOutOfPlanes();
 
   for(auto& c : clusters){
 	c.Fp = c.FpNew;
@@ -150,10 +147,8 @@ void World::strainLimitingIteration(){
   }
   for(auto& c : clusters){
 	c.worldCom = sumWeightedWorldCOM(c.neighbors);
-	Eigen::Matrix3d init; 
-	init.setZero();
 	
-	Eigen::Matrix3d Apq = computeApq(c, init, c.worldCom);
+	Eigen::Matrix3d Apq = computeApq(c);
 	Eigen::Matrix3d A = Apq*c.aInv;
 	if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
 	auto pr = utils::polarDecomp(A);
@@ -210,10 +205,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	auto worldCOM = clusters[cIndex].worldCom;
 
 	//recompute A matrix:
-	Eigen::Matrix3d init;
-	init.setZero();
-
-	Eigen::Matrix3d Apq = computeApq(clusters[cIndex], init, worldCOM);
+	Eigen::Matrix3d Apq = computeApq(clusters[cIndex]);
 	Eigen::Matrix3d A = Apq*clusters[cIndex].aInv;
 	if (nu > 0.0) A = A*clusters[cIndex].Fp.inverse(); // plasticity
 	
@@ -265,8 +257,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	clusters.push_back(newCluster);	  
 	
 	Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
-	if (nu > 0.0) T = (T*c.Fp).inverse(); // plasticity
+	if (nu > 0.0) T = T*c.Fp; // plasticity
+	T = T.inverse().eval();
 	// note to adam: I am pretty sure this is correct.  We also need to multiply the com vector by T
+	Eigen::Vector3d n = T*splitDirection;
+	c.cg.addPlane(n, n.dot(c.restCom));
 
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
@@ -700,14 +695,12 @@ bool World::makeClusters(){
 // UTILS
 ///////////////////////////////////////////
 
-Eigen::Matrix3d World::computeApq(const Cluster& c, 
-								  const Eigen::Matrix3d& init,
-								  const Eigen::Vector3d& worldCOM) const{
+Eigen::Matrix3d World::computeApq(const Cluster& c) const{
   Eigen::Matrix3d Apq;
   Apq.setZero();
   for (auto &n : c.neighbors) {
 	auto &p = particles[n.first];
-	Eigen::Vector3d pj = p.position - worldCOM;
+	Eigen::Vector3d pj = p.position - c.worldCom;
 	Eigen::Vector3d qj = p.restPosition - c.restCom;
 	Apq += (n.second/p.totalweight)*p.mass * pj * qj.transpose();
   }
@@ -725,6 +718,18 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {//(const 
   }
   return (vel / mass);
 }
+
+void World::updateWorldToRestTransform(Cluster& c) const{
+  Eigen::Matrix3d Apq = computeApq(c);
+  Eigen::Matrix3d A = Apq*c.aInv;
+  if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
+
+  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+  Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
+  if (nu > 0.0) T = T*c.Fp; // plasticity
+  c.worldToRestTransform = T.inverse();
+} 	
 
 void World::countClusters(){
   for(auto& p : particles){

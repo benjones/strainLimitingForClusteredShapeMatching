@@ -141,9 +141,8 @@ public:
   }
 
   //compute the APQ matrix (see meuller 2005)
-  Eigen::Matrix3d computeApq(const Cluster& c, 
-							 const Eigen::Matrix3d& init,
-							 const Eigen::Vector3d& worldCOM) const;
+  Eigen::Matrix3d computeApq(const Cluster& c) const;
+  void updateWorldToRestTransform(Cluster& c) const;
   
   inline Eigen::Vector3d getMomentum(){
 	return std::accumulate(particles.begin(), particles.end(),

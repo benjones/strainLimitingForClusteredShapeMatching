@@ -29,24 +29,27 @@ class CollisionGeometry {
   double r;
   std::vector<std::pair<Eigen::Vector3d, double> > planes;
  public:
- CollisionGeometry(const Eigen::Vector3d _c, double _r) : c(_c), r(_r){};
+  CollisionGeometry(){planes.clear();};
   CollisionGeometry(const CollisionGeometry &cg) = default;
   Eigen::Vector3d project(const Eigen::Vector3d &x);
-  void addPlane(const Eigen::Vector3d &n, double &offset) { planes.emplace_back(n, offset); };
+  void init (const Eigen::Vector3d &c, double r) { this->c = c; this->r = r;};
+  void addPlane(const Eigen::Vector3d &n, double offset) { planes.emplace_back(n, offset); };
 };
 
 class Cluster {
  public:
   Eigen::Vector3d restCom;
   Eigen::Vector3d worldCom;
-  Eigen::Matrix3d aInv, Fp, FpNew, R;
+  Eigen::Matrix3d aInv, Fp, FpNew;
   std::vector<std::pair<int, double> > neighbors;
   double mass, width, renderWidth;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
-  Cluster() {Fp.setIdentity(); cstrain = 0.0; cg = NULL;}
+  Cluster() {Fp.setIdentity(); cstrain = 0.0;}
   void updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix3d &U, const Eigen::Matrix3d &V, 
 	  double yield, double nu, double hardening);
-  CollisionGeometry *cg;
+
+  CollisionGeometry cg;
+  Eigen::Matrix3d worldToRestTransform;
 };
 

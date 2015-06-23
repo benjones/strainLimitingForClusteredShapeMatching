@@ -25,3 +25,4 @@ void Cluster::updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix
 	cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
   }
 }
+
