@@ -962,7 +962,7 @@ void World::timestep(){
 	if(c.neighbors.size() < 2){ continue; } //don't cull ouliers from single particle clusters
 	for(auto n : c.neighbors){
 	  if ((particles[n].position - worldCOM).norm() > 
-		  (1.0 + gamma) * (particles[n].restPosition - c.restCom).norm()) {
+		  (1.0 + gamma) * 2.0*(particles[n].restPosition - c.restCom).norm()) {
 		Particle &p = particles[n];
 		Particle q(p);
 		q.clusters.clear();

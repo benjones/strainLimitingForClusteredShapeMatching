@@ -1,18 +1,18 @@
-<integrator type="path" />
+<integrator type="direct" />
 
 <sensor type="perspective">
     <float name="farClip" value="50"/>
     <float name="focusDistance" value="4.86293"/>
-    <float name="fov" value="25"/>
+    <float name="fov" value="20"/>
     <string name="fovAxis" value="x"/>
     <float name="nearClip" value="0.0205208"/>
     <transform name="toWorld">
 
-        <lookat target="0, 0, 0" origin="0, 0, -8" up="0, 1, 0"/>
+        <lookat target="0, 0, 0" origin="0, 0, -12" up="0, 1, 0"/>
     </transform>
 
     <sampler type="independent">
-        <integer name="sampleCount" value="2048"/>
+        <integer name="sampleCount" value="128"/>
     </sampler>
 
     <film type="hdrfilm">

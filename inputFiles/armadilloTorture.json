@@ -3,13 +3,13 @@
 
 	"neighborRadius" : 0.09,
 	"alpha" : 0.6,
-	"omega" : 0.3,
+	"omega" : 0.4,
 	"numConstraintIters" : 4,
-	"maxStretch" : 0.5,
+	"maxStretch" : 0.6,
 	"nClusters" : 100,
 	"springDamping": 0.5,
-	"toughness" : 0.18,
-	"yield" : 0.05,
+	"toughness" : 0.2,
+	"yield" : 0.07,
 	"nu" : 1.0,
 
 	"planes" : [ 
