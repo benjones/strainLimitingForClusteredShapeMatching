@@ -499,7 +499,26 @@ void World::buildClusterMaps() {
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
-  return false;
+  Eigen::Vector3d y;
+  double n;
+  Eigen::Vector3d d = x - c;
+  double m = d.norm();
+  if (m >= r) return false;
+
+  y = c + (r/m)*d;
+  n = r-m;
+
+  for (auto &p : planes) {
+	m = p.first.dot(x);
+	if (m >= p.second) return false;
+	if (p.second - m < n) {
+	  n = p.second - m;
+	  y = x + (p.second-m)*p.first;
+	}
+  }
+
+  x = y;
+  return true;
 }
 
 inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) {
