@@ -958,16 +958,39 @@ void World::timestep(){
 	auto& c = en.second;
 	Eigen::Vector3d worldCOM = computeNeighborhoodCOM(c);
 	bool updateCluster = false;
+	if(c.neighbors.size() < 2){ continue; } //don't cull ouliers from single particle clusters
 	for(auto n : c.neighbors){
-	  if ((particles[n].position - worldCOM).norm() > (1.0 + gamma) * (particles[n].restPosition - c.restCom).norm()) {
+	  if ((particles[n].position - worldCOM).norm() > 
+		  (1.0 + gamma) * (particles[n].restPosition - c.restCom).norm()) {
 		Particle &p = particles[n];
+		Particle q(p);
+		q.clusters.clear();
+		q.clusters.push_back(en.first);
+		q.numClusters = 1;
+		q.mass = (1.0/p.numClusters)*p.mass;
+
 		// delete particle
 		// remove from cluster
 		c.neighbors.erase(std::remove(c.neighbors.begin(), c.neighbors.end(), n), c.neighbors.end());
 		//remove cluster from this particle
 		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
+		--p.numClusters;
+		
 		updateCluster = true;
-		std::cout<<"removed an outlier "<<(particles[n].position - worldCOM).norm()<<" > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()<<std::endl;
+		std::cout<<"removed an outlier "
+				 << (particles[n].position - worldCOM).norm()
+				 << " > "<< (1.0+gamma) * (particles[n].restPosition - c.restCom).norm()
+				 << std::endl;
+
+		double massEps = 0.05;
+		if(q.mass > massEps*p.mass && q.mass < (1.0 - massEps)*p.mass){
+		  
+		  std::cout << "old mass: " << p.mass << " old nclusters: " << p.numClusters << std::endl;
+		  p.mass -= q.mass;
+		  std::cout << "new masses: " << p.mass << " " << q.mass << std::endl;
+		  particles.push_back(q);
+		  c.neighbors.push_back(particles.size() -1); //add q to c
+		}
 	  }
 	} 
 	// could update the cluster, but see below...
@@ -1505,21 +1528,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	
 	Eigen::Vector3d splitDirection = solver.matrixV().col(0);
 
-	//doesn't work... 
-	//just erase the cluster
-	//clusters.erase(clusters.begin() + cIndex);
-	//updateClusterProperties();
-	//break;
-
-
-	
-
 	//auto& cluster = clusters[cIndex];	  
 	// adam says: why is this a bad idea?  clusters[cIndex] is ugly and shows up a lot.
 	//ben says: when I push_back, the reference gets invalidated if the vector reallocates (which bit me).
 
-
-	//if(cluster.neighbors.size() < 10){ continue;}
 
 	auto it = std::partition(clusters[cIndex].neighbors.begin(),
 		clusters[cIndex].neighbors.end(),
@@ -1530,10 +1542,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	auto oldSize = std::distance(clusters[cIndex].neighbors.begin(), it);
 	auto newSize = std::distance(it, clusters[cIndex].neighbors.end());
 	if(newSize == 0 || oldSize == 0){ continue;}
-	//if(oldSize < 4 || newSize < 4){ continue;}
 
-	//expected to be mostly in teh x direction for the cube example, and it was
-	//std::cout << "split direction: " << splitDirection << std::endl;
 	
 	//make a new cluster
 	Cluster newCluster;
@@ -1547,7 +1556,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	// we will want to copy toughness here as well...
 	
 	//delete the particles from the old one
-	clusters[cIndex].neighbors.erase(clusters[cIndex].neighbors.begin() + oldSize, 
+	clusters[cIndex].neighbors.erase(
+		clusters[cIndex].neighbors.begin() + oldSize, 
 		clusters[cIndex].neighbors.end());
 	
 	clusters.push_back(newCluster);	  
@@ -1565,10 +1575,26 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  //split from other clusters
 	  std::vector<int> allParticles(clusters[cIndex].neighbors.size() + newCluster.neighbors.size());
 	  std::copy(newCluster.neighbors.begin(), newCluster.neighbors.end(),
-		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), allParticles.begin()));
+		  std::copy(clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end(), 
+			  allParticles.begin()));
+	  
+	  //just to be safe, unique it
+	  std::sort(allParticles.begin(), allParticles.end());
+	  allParticles.erase(
+		  std::unique(allParticles.begin(), allParticles.end()),
+		  allParticles.end());
+
 	  std::vector<size_t> affectedClusters; //keep sorted
 	  for(auto& member : allParticles){
 		auto& particle = particles[member];
+
+		bool newParticleCreated = false;
+		
+		size_t newParticleIndex;
+
+		size_t oldClusterCount = 0;
+		size_t newClusterCount = 0;
+		
 		for(auto thisIndex : particle.clusters){
 		  //insert into sorted array
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
@@ -1580,19 +1606,50 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  //auto thisClusterCOM = computeNeighborhoodCOM(thisCluster);
 		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
 			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
+			
+			++newClusterCount;
+
 			//remove from cluster
 			thisCluster.neighbors.erase(
 				std::remove(thisCluster.neighbors.begin(),
-					//thisCluster.neighbors.end(), thisIndex), thisCluster.neighbors.end());
-					thisCluster.neighbors.end(), member), thisCluster.neighbors.end());
+					thisCluster.neighbors.end(), 
+					member), 
+				thisCluster.neighbors.end());
+			
 			//remove cluster from this
 			particle.clusters.erase(
-				std::remove(particle.clusters.begin(), particle.clusters.end(),
-					thisIndex), particle.clusters.end());
+				std::remove(particle.clusters.begin(), 
+					particle.clusters.end(),
+					thisIndex), 
+				particle.clusters.end());
+
+			if(!newParticleCreated){
+			  //halve the mass and copy it
+			  newParticleCreated = true;
+			  //particle.mass /= 2;
+			  newParticleIndex = particles.size();
+			  Particle copiedParticle(particle);
+			  copiedParticle.clusters.clear(); //start with nothing
+			  particles.push_back(copiedParticle);
+			}
 			
+			//and put a copy of the particle in that cluster
+			thisCluster.neighbors.push_back(newParticleIndex);
+			particles[newParticleIndex].clusters.push_back(thisIndex);
+			
+		  } else {
+			oldClusterCount++;
 		  }
 		}
+		if(newParticleCreated){
+		  double oldRatio = static_cast<double>(oldClusterCount)/(oldClusterCount + newClusterCount);
+		  std::cout << "oldRatio: " << oldRatio << std::endl;
+		  particles[member].mass *= oldRatio;
+		  particles.back().mass *= (1.0 - oldRatio);
+		}
+		
 	  }
+
 	  updateClusterProperties(affectedClusters);
 	  //	for(auto& c : affectedClusters){
 	  //	  clusters[c].toughness *= 0.995;
