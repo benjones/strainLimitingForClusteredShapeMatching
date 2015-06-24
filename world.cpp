@@ -944,6 +944,7 @@ void World::timestep(){
 	  (void)iter; //unused
 	  strainLimitingIteration();
 	}
+
 	for(auto& p : particles){
 	  p.velocity = (1.0/dt)*(p.position - p.oldPosition);
 	}
@@ -1027,6 +1028,8 @@ void World::timestep(){
 		  (c.worldCom - particles[n].position).norm());
 	}
   }
+  //selfCollisions();
+
   //printCOM();
   //std::cout<<elapsedTime<<std::endl;
 }
@@ -1124,6 +1127,35 @@ void World::bounceOutOfPlanes(){
   }
 }
 
+void World::selfCollisions() {
+  for (auto && en1 : benlib::enumerate(clusters)) {
+	auto &c = en1.second;
+	for (auto && en2 : benlib::enumerate(clusters)) {
+	  if (en1.first == en2.first) continue;
+	  auto &d = en2.second;
+	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
+		for (auto& i : c.neighbors){
+		  auto &p = particles[i];
+		  if ((p.position - d.worldCom).squaredNorm() < 0.9*sqr(d.width)) {
+			auto it = find(p.clusters.begin(), p.clusters.end(), en2.first);
+			if (it == p.clusters.end()) {
+			  //std::cout<<p.position<<std::endl<<d.worldCom<<std::endl<<d.width<<" ";
+			  //std::cout<<(p.position - d.worldCom).squaredNorm() << " "<<d.width*d.width<<" "<<neighborRadius<<std::endl<<std::endl<<std::endl;;
+			  //p.position = d.worldCom + d.width * (p.position - d.worldCom).normalized();
+			  std::cout<<i<<" "<<en1.first<<" "<<en2.first<<" "<<(p.position - d.worldCom).norm()<<" "<<(p.restPosition - d.restCom).norm()<<std::endl;
+			  //for (auto &foo : d.neighbors) {
+			  //std::cout<<foo<<" ";
+			  //if (foo == i) std::cout<<"maps are bad"<<std::endl;
+			  //}
+			  std::cout<<std::endl;
+			  p.position = d.worldCom + d.width * (p.position - d.worldCom).normalized();
+			}
+		  }
+		}
+	  }
+	}
+  }
+}
 
 void World::zoom(int amount){
   if(amount < -1){
@@ -1230,7 +1262,7 @@ void World::makeClusters(){
 		if (mass > 1e-5) 
 		  c.restCom = sumRestCOM(c.neighbors, mass);
 	  }
-	}	
+	}
 	
 	// count numClusters and initialize neighborhoods
 	for (auto& p : particles) p.numClusters = 0;
