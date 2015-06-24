@@ -113,15 +113,22 @@ void World::timestep(){
 	assertFinite();
   }
 
+  std::cout<<"doFracture"<<std::endl;
   doFracture(std::move(potentialSplits));
+  std::cout<<"splitoutliers"<<std::endl;
   splitOutliers();
+  std::cout<<"cullsmallclusters"<<std::endl;
   cullSmallClusters();
+  std::cout<<"removelonelyparticles"<<std::endl;
   removeLonelyParticles();
+  std::cout<<"updateClusterProperties"<<std::endl;
 
   updateClusterProperties(range(clusters.size()));
 
+  std::cout<<"updateTransforms"<<std::endl;
   for (auto &c : clusters) updateTransforms(c);
-  //selfCollisions();
+  std::cout<<"selfCollisions"<<std::endl;
+  selfCollisions();
 
   bounceOutOfPlanes();
 
@@ -252,8 +259,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//delete the particles from the old one
 	c.neighbors.erase(c.neighbors.begin() + oldSize, c.neighbors.end());
 
-	clusters.push_back(newCluster);	  
-	
 	// Update Collision Geometry
 	newCluster.cg = c.cg;
 	Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
@@ -265,6 +270,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	c.cg.addPlane(n, n.dot(c.restCom));
 	newCluster.cg.addPlane(-n, -(n.dot(c.restCom)));
 	
+	clusters.push_back(newCluster);	  
 
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
@@ -339,7 +345,7 @@ void World::splitOutliers() {
 	for(auto &n : c.neighbors) {
 	  auto &p = particles[n.first];
 	  if ((p.numClusters > 1) && ((p.position - c.worldCom).norm() > 
-			  (1.0 + gamma) * 1.0 * (p.restPosition - c.restCom).norm())) {
+			  (1.0 + gamma) * 2.0 * (p.restPosition - c.restCom).norm())) {
 		Particle q(p);
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
@@ -499,6 +505,7 @@ void World::buildClusterMaps() {
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
+  return false;
   Eigen::Vector3d y;
   double n;
   Eigen::Vector3d d = x - c;
@@ -536,17 +543,19 @@ void World::selfCollisions() {
 	auto &c = en1.second;
 	for (auto && en2 : benlib::enumerate(clusters)) {
 	  if (en1.first == en2.first) continue;
-	  if (std::find(clusterCollisionMap[en1.first].begin(), clusterCollisionMap[en1.first].end(), en2.first) == clusterCollisionMap[en1.first].end()) continue;
+	  // 6/24: I think the old == was a bug here
+	  if (std::find(clusterCollisionMap[en1.first].begin(), clusterCollisionMap[en1.first].end(), en2.first) != clusterCollisionMap[en1.first].end()) continue;
 	  auto &d = en2.second;
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
 		for (auto& n : c.neighbors){
 		  auto &p = particles[n.first];
 		  if ((p.position - d.worldCom).squaredNorm() < sqr(d.width)) {
+			// these next two lines look unnecessary with clustermaps
 			auto it = find(p.clusters.begin(), p.clusters.end(), en2.first);
 			if (it == p.clusters.end()) {
-			  Eigen::Vector3d x = worldToRest(c, p.position);
-			  if (c.cg.project(x)) {
-				x = restToWorld(c, x);
+			  Eigen::Vector3d x = worldToRest(d, p.position);
+			  if (d.cg.project(x)) {
+				x = restToWorld(d, x);
 				//std::cout<<"before: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
 				p.position = alpha*x + (1.0-alpha)*p.position;
 				//std::cout<<"after: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;

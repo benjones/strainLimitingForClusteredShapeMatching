@@ -30,7 +30,7 @@ class CollisionGeometry {
   std::vector<std::pair<Eigen::Vector3d, double> > planes;
  public:
   CollisionGeometry(){};
-  CollisionGeometry & operator= (const CollisionGeometry &that) {c = that.c; r = that.r; planes = that.planes; return *this;};
+  CollisionGeometry & operator= (const CollisionGeometry &that);
   CollisionGeometry(const CollisionGeometry &that) = default;
   bool project(Eigen::Vector3d &x);
   void init (const Eigen::Vector3d &c, double r) { this->c = c; this->r = r;};
