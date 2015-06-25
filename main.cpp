@@ -95,6 +95,8 @@ void loop(SDL_Window* window, World& world){
 		  world.drawClusters = !world.drawClusters;
       } else if(event.key.keysym.sym == SDLK_f){
 		  world.drawFracturePlanes = !world.drawFracturePlanes;
+      } else if(event.key.keysym.sym == SDLK_j){
+		  world.joshDebugFlag = !world.joshDebugFlag;
       } else if(event.key.keysym.sym == SDLK_v){
 		  world.drawColoredParticles = !world.drawColoredParticles;
       } else if(event.key.keysym.sym == SDLK_t){

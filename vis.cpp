@@ -182,7 +182,7 @@ void World::drawPretty(SDL_Window* window) const {
            if (cg.planes.size() > 0) {
               auto com = sumWeightedWorldCOM(c.neighbors);
               //JAL wonders why the above seems to work better?
-              //Eigen::Vector3d com = c.worldCom - c.restCom;
+              //com = c.worldCom - c.restCom;
               
               Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
               //push the rotation
@@ -191,12 +191,15 @@ void World::drawPretty(SDL_Window* window) const {
               gl_rot.block<3,1>(0,3) << com;
               glMultMatrixd(gl_rot.data());
 
-              for (auto &p : cg.planes) {
-                 utils::drawPlane(p.first, p.second, 0.2);
-              }
-
               RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
-              glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+              for (auto &p : cg.planes) {
+                 glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+                 if (joshDebugFlag) {
+                    utils::drawPlane(p.first, p.second, 0.2);
+                 } else {
+                    utils::drawPlane(p.first, -p.second, 0.2);
+                 }
+              }
            }
            glPopMatrix();
         }

@@ -194,6 +194,7 @@ public:
   bool drawClusters = true;
   bool drawFracturePlanes = true;
   bool drawColoredParticles = false;
+  bool joshDebugFlag = false;
   bool colorByToughness = false;
   bool dragWithPlanes = true;
   bool paused = false;
