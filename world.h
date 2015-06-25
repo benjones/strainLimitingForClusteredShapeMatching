@@ -193,6 +193,7 @@ public:
   int maxNumClusters;
 
   bool drawClusters = false;
+  bool drawFracturePlanes = true;
   bool drawColoredParticles = true;
   bool colorByToughness = false;
   bool dragWithPlanes = true;

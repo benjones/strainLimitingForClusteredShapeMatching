@@ -167,6 +167,31 @@ void World::drawPretty(SDL_Window* window) const {
   glEnable(GL_DEPTH_TEST);
 
 
+  glDisable(GL_DEPTH_TEST);
+  //draw fracture planes 
+  glMatrixMode(GL_MODELVIEW);
+  if(drawFracturePlanes){
+     for(auto&& pr : benlib::enumerate(clusters)){
+        auto& c = pr.second;
+        const auto i = pr.first;
+        if (which_cluster == -1 || i == which_cluster) {
+           glPushMatrix();
+
+           auto& cg = c.cg;
+
+           Eigen::Matrix4d gl_trans = Eigen::Matrix4d::Identity();
+           gl_trans.block<3,3>(0,0) << c.restToWorldTransform;
+           if (cg.planes.size() > 0) {
+              std::cout << gl_trans << std::endl;
+           }
+
+           RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
+           glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+           glPopMatrix();
+        }
+     }
+  }
+  glEnable(GL_DEPTH_TEST);
 
   if (which_cluster != -1) {
      auto& c = clusters[which_cluster];
