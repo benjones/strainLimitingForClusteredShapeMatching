@@ -65,7 +65,6 @@ public:
   void drawSingleCluster(SDL_Window* window, int frame) const;
   void drawPlanes() const;
   void drawPlanesPretty() const;
-  void drawPlane(const Eigen::Vector3d& normal, double offset) const;
   void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
   void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;
   void zoom(int amount);
@@ -192,9 +191,9 @@ public:
   double toughness;
   int maxNumClusters;
 
-  bool drawClusters = false;
+  bool drawClusters = true;
   bool drawFracturePlanes = true;
-  bool drawColoredParticles = true;
+  bool drawColoredParticles = false;
   bool colorByToughness = false;
   bool dragWithPlanes = true;
   bool paused = false;

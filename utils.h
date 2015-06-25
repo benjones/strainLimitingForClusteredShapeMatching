@@ -106,4 +106,33 @@ namespace utils{
 	glEnd();
 
   }
+  
+  inline void drawPlane(const Eigen::Vector3d& normal, double offset, double size) {
+     Eigen::Vector3d tangent1, tangent2;
+
+     tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
+     if(tangent1.isZero(1e-3)){
+        tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
+        if(tangent1.isZero(1e-3)){
+           tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
+        }
+     }
+     tangent1.normalize();
+
+     tangent2 = normal.cross(tangent1);
+     tangent2.normalize(); //probably not necessary
+
+     const double sos = normal.dot(normal);
+     const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
+        normal.y()*offset/sos,
+        normal.z()*offset/sos};
+
+     glBegin(GL_QUADS);
+     glNormal3dv(normal.data());
+     glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
+     glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
+     glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
+     glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
+     glEnd();
+  }
 }

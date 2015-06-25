@@ -179,19 +179,31 @@ void World::drawPretty(SDL_Window* window) const {
 
            auto& cg = c.cg;
 
-           Eigen::Matrix4d gl_trans = Eigen::Matrix4d::Identity();
-           gl_trans.block<3,3>(0,0) << c.restToWorldTransform;
            if (cg.planes.size() > 0) {
-              std::cout << gl_trans << std::endl;
-           }
+              auto com = sumWeightedWorldCOM(c.neighbors);
+              //JAL wonders why the above seems to work better?
+              //Eigen::Vector3d com = c.worldCom - c.restCom;
+              
+              Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
+              //push the rotation
+              gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
+              //push the translation
+              gl_rot.block<3,1>(0,3) << com;
+              glMultMatrixd(gl_rot.data());
 
-           RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
-           glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+              for (auto &p : cg.planes) {
+                 utils::drawPlane(p.first, p.second, 0.2);
+              }
+
+              RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
+              glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+           }
            glPopMatrix();
         }
      }
   }
   glEnable(GL_DEPTH_TEST);
+
 
   if (which_cluster != -1) {
      auto& c = clusters[which_cluster];
@@ -371,14 +383,14 @@ void World::drawPlanes() const{
 	glColor4d(0.5, static_cast<double>(i)/totalCount,
 			  0.5, 1);
 
-	drawPlane(plane.head(3), plane.w());
+   utils::drawPlane(plane.head(3), plane.w(),100);
   }
   glDepthMask(false);
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first + planes.size();
 	const auto& plane = pr.second;
 	glColor4d(0.5, i/totalCount, 0.5, 1);
-	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+   utils::drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity,100);
   }
   for(auto&& pr : enumerate(twistingPlanes)){
 	const auto i = pr.first + planes.size() + movingPlanes.size();
@@ -408,14 +420,14 @@ void World::drawPlanesPretty() const{
    RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
 
-	drawPlane(plane.head(3), plane.w());
+   utils::drawPlane(plane.head(3), plane.w(),100);
   }
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first; 
 	const auto& plane = pr.second;
    RGBColor rgb = HSLColor(0.25*acos(-1)*i/movingPlanes.size()+1.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
-	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+   utils::drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity,100);
   }
   for(auto&& pr : enumerate(twistingPlanes)){
 	const auto i = pr.first; 
@@ -433,44 +445,9 @@ void World::drawPlanesPretty() const{
 	if (elapsedTime <= plane.lifetime)
 	  drawTiltPlane(plane.normal, plane.tilt, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
   }
-
-
-
 }
 
 
-void World::drawPlane(const Eigen::Vector3d& normal, double offset) const{
-	Eigen::Vector3d tangent1, tangent2;
-	
-	tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
-	if(tangent1.isZero(1e-3)){
-	  tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
-	  if(tangent1.isZero(1e-3)){
-		tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
-	  }
-	}
-	tangent1.normalize();
-
-	tangent2 = normal.cross(tangent1);
-	tangent2.normalize(); //probably not necessary
-	
-	const double sos = normal.dot(normal);
-	const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
-		normal.y()*offset/sos,
-		normal.z()*offset/sos};
-
-
-	
-	const double size = 100;
-	glBegin(GL_QUADS);
-	glNormal3dv(normal.data());
-	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
-	glEnd();
-
-}
 
 void World::drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const{
 	Eigen::Vector3d tangent1, tangent2;
