@@ -192,8 +192,8 @@ public:
   double toughness;
   int maxNumClusters;
 
-  bool drawClusters = true;
-  bool drawColoredParticles = false;
+  bool drawClusters = false;
+  bool drawColoredParticles = true;
   bool colorByToughness = false;
   bool dragWithPlanes = true;
   bool paused = false;
