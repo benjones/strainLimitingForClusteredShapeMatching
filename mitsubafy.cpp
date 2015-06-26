@@ -299,8 +299,8 @@ int main(int argc, char** argv){
 	  outs << "<shape type=\"obj\" >\n"
 		   << "<string name=\"filename\" value=\""
 		   << objName << "\" />\n"
-		   << "<bsdf type=\"diffuse\"><srgb name=\"reflectance\" value=\"#33ee33\" /></bsdf>\n"
-		//		   << "<bsdf type=\"roughplastic\"><float name=\"alpha\" value=\"0.3\" /><spectrum name=\"specularReflectance\" value=\"0.2\" /><rgb name=\"diffuseReflectance\" value=\"#FFFFA4\" /></bsdf>\n"
+		//<< "<bsdf type=\"diffuse\"><srgb name=\"reflectance\" value=\"#33ee33\" /></bsdf>\n"
+		   << "<bsdf type=\"roughplastic\"><float name=\"alpha\" value=\"0.3\" /><spectrum name=\"specularReflectance\" value=\"0.2\" /><rgb name=\"diffuseReflectance\" value=\"#FFFFA4\" /></bsdf>\n"
 		   << "</shape>\n";
 	}
 	outs << mitsubaFooter << std::endl;

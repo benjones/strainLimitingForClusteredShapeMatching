@@ -1478,8 +1478,8 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	c.restCom = sumWeightedRestCOM(c.neighbors, c.mass);
 	c.worldCom = computeNeighborhoodCOM(c);
 
-	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
-	if(!c.worldCom.allFinite()){std::cout << c.worldCom << std::endl;}
+	if(!c.restCom.allFinite()){std::cout << "bad rest com: " << c.restCom << std::endl;}
+	if(!c.worldCom.allFinite()){std::cout << "bad world com: " << c.worldCom << std::endl;}
 
 	assert(c.restCom.allFinite());
 	assert(c.worldCom.allFinite());
@@ -1511,6 +1511,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	}
 	c.aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
 	if(!c.aInv.allFinite()){
+	  std::cout << "not-finite inverse :(" << std::endl;
 	  std::cout << c.aInv << std::endl;
 	  std::cout << solver.singularValues() << std::endl;
 	}
@@ -1619,14 +1620,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  std::vector<size_t> affectedClusters; //keep sorted
 	  for(auto& member : allParticles){
 		auto& particle = particles[member];
-
-		bool newParticleCreated = false;
 		
-		size_t newParticleIndex;
+		std::vector<int> oldClusters, newClusters;
 
-		size_t oldClusterCount = 0;
-		size_t newClusterCount = 0;
-		
 		for(auto thisIndex : particle.clusters){
 		  //insert into sorted array
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
@@ -1639,45 +1635,41 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
 			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 			
-			++newClusterCount;
-
-			//remove from cluster
-			thisCluster.neighbors.erase(
-				std::remove(thisCluster.neighbors.begin(),
-					thisCluster.neighbors.end(), 
-					member), 
-				thisCluster.neighbors.end());
-			
-			//remove cluster from this
-			particle.clusters.erase(
-				std::remove(particle.clusters.begin(), 
-					particle.clusters.end(),
-					thisIndex), 
-				particle.clusters.end());
-
-			if(!newParticleCreated){
-			  //halve the mass and copy it
-			  newParticleCreated = true;
-			  //particle.mass /= 2;
-			  newParticleIndex = particles.size();
-			  Particle copiedParticle(particle);
-			  copiedParticle.clusters.clear(); //start with nothing
-			  particles.push_back(copiedParticle);
-			}
-			
-			//and put a copy of the particle in that cluster
-			thisCluster.neighbors.push_back(newParticleIndex);
-			particles[newParticleIndex].clusters.push_back(thisIndex);
-			
+			newClusters.push_back(thisIndex);
 		  } else {
-			oldClusterCount++;
+			oldClusters.push_back(thisIndex);
 		  }
 		}
-		if(newParticleCreated){
-		  double oldRatio = static_cast<double>(oldClusterCount)/(oldClusterCount + newClusterCount);
-		  std::cout << "oldRatio: " << oldRatio << std::endl;
-		  particles[member].mass *= oldRatio;
-		  particles.back().mass *= (1.0 - oldRatio);
+		if(!oldClusters.empty() && !newClusters.empty()){
+		  //make a new particle, and do erasing stuff
+		  
+		  Particle copiedParticle(particle);
+		  copiedParticle.clusters.assign(newClusters.begin(), newClusters.end());
+		  auto newParticleIndex = particles.size();
+		  //remove the old particle and add the new one
+		  for(auto newClusterIndex : newClusters){
+
+			clusters[newClusterIndex].neighbors.push_back(newParticleIndex);
+
+			//remove the old particle index from the cluster
+			clusters[newClusterIndex].neighbors.erase(
+				std::remove(clusters[newClusterIndex].neighbors.begin(),
+					clusters[newClusterIndex].neighbors.end(),
+					member));
+
+		  }
+
+		  double massRatio = static_cast<double>(oldClusters.size())/
+			(oldClusters.size() + newClusters.size());
+
+		  copiedParticle.mass *= (1.0 - massRatio);
+		  particles[member].mass *= massRatio;
+
+		  particles.push_back(copiedParticle);
+
+		  assert(particles[member].mass > 0);
+		  assert(particles.back().mass > 0);
+		  
 		}
 		
 	  }
