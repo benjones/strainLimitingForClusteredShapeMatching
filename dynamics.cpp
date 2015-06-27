@@ -505,7 +505,7 @@ void World::buildClusterMaps() {
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
-  //return false;
+  return false;
   Eigen::Vector3d y;
   double n;
   Eigen::Vector3d d = x - c;
