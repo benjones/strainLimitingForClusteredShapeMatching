@@ -113,21 +113,21 @@ void World::timestep(){
 	assertFinite();
   }
 
-  std::cout<<"doFracture"<<std::endl;
+  //std::cout<<"doFracture"<<std::endl;
   doFracture(std::move(potentialSplits));
-  std::cout<<"splitoutliers"<<std::endl;
+  //std::cout<<"splitoutliers"<<std::endl;
   splitOutliers();
-  std::cout<<"cullsmallclusters"<<std::endl;
+  //std::cout<<"cullsmallclusters"<<std::endl;
   cullSmallClusters();
-  std::cout<<"removelonelyparticles"<<std::endl;
+  //std::cout<<"removelonelyparticles"<<std::endl;
   removeLonelyParticles();
-  std::cout<<"updateClusterProperties"<<std::endl;
+  //std::cout<<"updateClusterProperties"<<std::endl;
 
   updateClusterProperties(range(clusters.size()));
 
-  std::cout<<"updateTransforms"<<std::endl;
+  //std::cout<<"updateTransforms"<<std::endl;
   for (auto &c : clusters) updateTransforms(c);
-  std::cout<<"selfCollisions"<<std::endl;
+  //std::cout<<"selfCollisions"<<std::endl;
   selfCollisions();
 
   bounceOutOfPlanes();
@@ -267,8 +267,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::Vector3d n = T*splitDirection;
 
 	//we need to worry about signs at some point
-	c.cg.addPlane(n, n.dot(c.restCom));
-	newCluster.cg.addPlane(-n, -(n.dot(c.restCom)));
+	c.cg.addPlane(n, -(n.dot(c.restCom)));
+	newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
 	
 	clusters.push_back(newCluster);	  
 
@@ -505,7 +505,7 @@ void World::buildClusterMaps() {
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
-  return false;
+  //return false;
   Eigen::Vector3d y;
   double n;
   Eigen::Vector3d d = x - c;
@@ -516,11 +516,11 @@ bool CollisionGeometry::project(Eigen::Vector3d &x) {
   n = r-m;
 
   for (auto &p : planes) {
-	m = p.first.dot(x);
-	if (m >= p.second) return false;
-	if (p.second - m < n) {
-	  n = p.second - m;
-	  y = x + (p.second-m)*p.first;
+	m = p.first.dot(x) - p.second;
+	if (m >= 0.0) return false;
+	if (-m < n) {
+	  n = -m;
+	  y = x - m*p.first;
 	}
   }
 
