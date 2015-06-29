@@ -148,8 +148,8 @@ void World::drawPretty(SDL_Window* window) const {
 
            auto com = sumWeightedWorldCOM(c.neighbors);
            if (joshDebugFlag) {
-           auto& cg = c.cg;
-           com = cg.c + (c.worldCom - c.restCom);
+            auto& cg = c.cg;
+            com = cg.c + (c.worldCom - c.restCom);
            }
               
            glTranslated(com.x(), com.y(), com.z());
