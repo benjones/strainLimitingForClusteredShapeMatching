@@ -147,6 +147,11 @@ void World::drawPretty(SDL_Window* window) const {
            glPushMatrix();
 
            auto com = sumWeightedWorldCOM(c.neighbors);
+           if (joshDebugFlag) {
+           auto& cg = c.cg;
+           com = cg.c + (c.worldCom - c.restCom);
+           }
+              
            glTranslated(com.x(), com.y(), com.z());
            RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
            //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
@@ -182,7 +187,9 @@ void World::drawPretty(SDL_Window* window) const {
            if (cg.planes.size() > 0) {
               auto com = sumWeightedWorldCOM(c.neighbors);
               //JAL wonders why the above seems to work better?
-              //com = c.worldCom - c.restCom;
+              if (joshDebugFlag) {
+                 com = cg.c + (c.worldCom - c.restCom);
+              }
               
               Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
               //push the rotation
@@ -194,11 +201,11 @@ void World::drawPretty(SDL_Window* window) const {
               RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
               for (auto &p : cg.planes) {
                  glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-                 if (joshDebugFlag) {
-                    utils::drawPlane(p.first, p.second, 0.2);
-                 } else {
+                 //if (joshDebugFlag) {
+                 //   utils::drawPlane(p.first, p.second, 0.2);
+                 //} else {
                     utils::drawPlane(p.first, -p.second, 0.2);
-                 }
+                 //}
               }
            }
            glPopMatrix();

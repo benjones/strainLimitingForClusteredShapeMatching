@@ -97,6 +97,7 @@ void loop(SDL_Window* window, World& world){
 		  world.drawFracturePlanes = !world.drawFracturePlanes;
       } else if(event.key.keysym.sym == SDLK_j){
 		  world.joshDebugFlag = !world.joshDebugFlag;
+        std::cout << "Josh Debug Flag set to: " << world.joshDebugFlag << std::endl;
       } else if(event.key.keysym.sym == SDLK_v){
 		  world.drawColoredParticles = !world.drawColoredParticles;
       } else if(event.key.keysym.sym == SDLK_t){

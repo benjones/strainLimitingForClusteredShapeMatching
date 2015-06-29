@@ -25,7 +25,6 @@ public:
 
 class CollisionGeometry {
  private:
-  Eigen::Vector3d c;
   double r;
  public:
   CollisionGeometry(){};
@@ -36,6 +35,7 @@ class CollisionGeometry {
   void addPlane(const Eigen::Vector3d &n, double offset) { planes.emplace_back(n, offset); };
   
   std::vector<std::pair<Eigen::Vector3d, double> > planes;
+  Eigen::Vector3d c;
 };
 
 class Cluster {
