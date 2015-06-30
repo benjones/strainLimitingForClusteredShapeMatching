@@ -151,4 +151,10 @@ namespace utils{
      glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
      glEnd();
   }
+
+  template <typename Cont, typename Value>
+  bool containsValue(const Cont& container, const Value& value){
+	return std::find(container.begin(), container.end(), value) != container.end();
+  }
+  
 }

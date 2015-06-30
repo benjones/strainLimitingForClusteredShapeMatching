@@ -515,7 +515,7 @@ void World::buildClusterMaps() {
 	for (auto &c : p.clusters) {
 	  for (auto &d : p.clusters) {
 		if (c == d) continue;
-		if (std::find(clusterCollisionMap[c].begin(), clusterCollisionMap[c].end(), d) == clusterCollisionMap[c].end()) {
+		if (!utils::containsValue(clusterCollisionMap[c], d)){
 		  clusterCollisionMap[c].push_back(d);
 		}
 	  }
@@ -577,7 +577,8 @@ void World::selfCollisions() {
 	for (auto && en2 : benlib::enumerate(clusters)) {
 	  if (en1.first == en2.first) continue;
 	  // 6/24: I think the old == was a bug here
-	  if (std::find(clusterCollisionMap[en1.first].begin(), clusterCollisionMap[en1.first].end(), en2.first) != clusterCollisionMap[en1.first].end()) continue;
+	  // 6/29, this helper function should be easier to use than raw std::find --Ben
+	  if( utils::containsValue(clusterCollisionMap[en1.first], en2.first)){ continue; }
 	  auto &d = en2.second;
 	  if (d.neighbors.size() < 10) continue;
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
