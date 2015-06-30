@@ -167,15 +167,51 @@ void World::drawPretty(SDL_Window* window) const {
   glEnable(GL_DEPTH_TEST);
 
 
+  glDisable(GL_DEPTH_TEST);
+  //draw fracture planes 
+  glMatrixMode(GL_MODELVIEW);
+  if(drawFracturePlanes){
+     for(auto&& pr : benlib::enumerate(clusters)){
+        auto& c = pr.second;
+        const auto i = pr.first;
+        if (which_cluster == -1 || i == which_cluster) {
+           glPushMatrix();
+
+           auto& cg = c.cg;
+
+           if (cg.planes.size() > 0) {
+              auto com = sumWeightedWorldCOM(c.neighbors);
+              //JAL wonders why the above seems to work better?
+              //com = c.worldCom - c.restCom;
+              
+              Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
+              //push the rotation
+              gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
+              //push the translation
+              gl_rot.block<3,1>(0,3) << com;
+              glMultMatrixd(gl_rot.data());
+
+              RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
+              for (auto &p : cg.planes) {
+                 glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
+                 if (joshDebugFlag) {
+                    utils::drawPlane(p.first, p.second, 0.2);
+                 } else {
+                    utils::drawPlane(p.first, -p.second, 0.2);
+                 }
+              }
+           }
+           glPopMatrix();
+        }
+     }
+  }
+  glEnable(GL_DEPTH_TEST);
+
 
   if (which_cluster != -1) {
      auto& c = clusters[which_cluster];
 
-	 Eigen::Matrix3d init;
-	 init.setZero();
-	 
-	 
-	 Eigen::Matrix3d Apq = computeApq(c, init, c.worldCom);
+	 Eigen::Matrix3d Apq = computeApq(c);
 	 Eigen::Matrix3d A = Apq*c.aInv;
 	 if (nu > 0.0) A = A*c.Fp.inverse(); // plasticity
 	 
@@ -350,14 +386,14 @@ void World::drawPlanes() const{
 	glColor4d(0.5, static_cast<double>(i)/totalCount,
 			  0.5, 1);
 
-	drawPlane(plane.head(3), plane.w());
+   utils::drawPlane(plane.head(3), plane.w(),100);
   }
   glDepthMask(false);
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first + planes.size();
 	const auto& plane = pr.second;
 	glColor4d(0.5, i/totalCount, 0.5, 1);
-	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+   utils::drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity,100);
   }
   for(auto&& pr : enumerate(twistingPlanes)){
 	const auto i = pr.first + planes.size() + movingPlanes.size();
@@ -387,14 +423,14 @@ void World::drawPlanesPretty() const{
    RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
 
-	drawPlane(plane.head(3), plane.w());
+   utils::drawPlane(plane.head(3), plane.w(),100);
   }
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first; 
 	const auto& plane = pr.second;
    RGBColor rgb = HSLColor(0.25*acos(-1)*i/movingPlanes.size()+1.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
-	drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity);
+   utils::drawPlane(plane.normal, plane.offset + elapsedTime*plane.velocity,100);
   }
   for(auto&& pr : enumerate(twistingPlanes)){
 	const auto i = pr.first; 
@@ -412,44 +448,9 @@ void World::drawPlanesPretty() const{
 	if (elapsedTime <= plane.lifetime)
 	  drawTiltPlane(plane.normal, plane.tilt, plane.offset, elapsedTime*plane.angularVelocity, plane.width);
   }
-
-
-
 }
 
 
-void World::drawPlane(const Eigen::Vector3d& normal, double offset) const{
-	Eigen::Vector3d tangent1, tangent2;
-	
-	tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
-	if(tangent1.isZero(1e-3)){
-	  tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
-	  if(tangent1.isZero(1e-3)){
-		tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
-	  }
-	}
-	tangent1.normalize();
-
-	tangent2 = normal.cross(tangent1);
-	tangent2.normalize(); //probably not necessary
-	
-	const double sos = normal.dot(normal);
-	const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
-		normal.y()*offset/sos,
-		normal.z()*offset/sos};
-
-
-	
-	const double size = 100;
-	glBegin(GL_QUADS);
-	glNormal3dv(normal.data());
-	glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
-	glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
-	glEnd();
-
-}
 
 void World::drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const{
 	Eigen::Vector3d tangent1, tangent2;

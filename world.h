@@ -65,7 +65,6 @@ public:
   void drawSingleCluster(SDL_Window* window, int frame) const;
   void drawPlanes() const;
   void drawPlanesPretty() const;
-  void drawPlane(const Eigen::Vector3d& normal, double offset) const;
   void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
   void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;
   void zoom(int amount);
@@ -141,9 +140,8 @@ public:
   }
 
   //compute the APQ matrix (see meuller 2005)
-  Eigen::Matrix3d computeApq(const Cluster& c, 
-							 const Eigen::Matrix3d& init,
-							 const Eigen::Vector3d& worldCOM) const;
+  Eigen::Matrix3d computeApq(const Cluster& c) const;
+  void updateTransforms(Cluster& c) const;
   
   inline Eigen::Vector3d getMomentum(){
 	return std::accumulate(particles.begin(), particles.end(),
@@ -194,7 +192,9 @@ public:
   int maxNumClusters;
 
   bool drawClusters = true;
+  bool drawFracturePlanes = true;
   bool drawColoredParticles = false;
+  bool joshDebugFlag = false;
   bool colorByToughness = false;
   bool dragWithPlanes = true;
   bool paused = false;

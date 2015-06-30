@@ -25,3 +25,12 @@ void Cluster::updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix
 	cstrain += sqrt(sqr(sigma(0)-1.0) + sqr(sigma(1)-1.0) + sqr(sigma(2)-1.0));
   }
 }
+
+CollisionGeometry & CollisionGeometry::operator= (const CollisionGeometry &that) {
+  c = that.c; 
+  r = that.r; 
+  planes = that.planes;
+  //for (auto &p : that.planes) 
+  //planes.push_back(std::pair<Eigen::Vector3d, double>(p.first, p.second));
+  return *this;
+};

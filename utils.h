@@ -25,12 +25,15 @@ namespace utils{
 	Eigen::Matrix3d V = solver.matrixV();
 	Eigen::Vector3d sigma = solver.singularValues();
 	
-	if(sigma.prod() < 0){
+        Eigen::Matrix3d Q = U*V.transpose();
+	if(Q.determinant() < 0)
+        {
 	  sigma(2) *= -1;
 	  V.col(2) *= -1;
+          Q = U*V.transpose();
 	}
 
-	return std::make_pair(U*V.transpose(), V*sigma.asDiagonal()*V.transpose());
+        return std::make_pair(Q, V*sigma.asDiagonal()*V.transpose());
   }
 
 
@@ -107,7 +110,6 @@ namespace utils{
 
   }
 
-
   template <typename Cont, typename Value>
   void actuallyErase(Cont& container, const Value& value){
 	container.erase(std::remove(container.begin(), container.end(), value),
@@ -121,4 +123,32 @@ namespace utils{
 		container.end());
   }
 
+  inline void drawPlane(const Eigen::Vector3d& normal, double offset, double size) {
+     Eigen::Vector3d tangent1, tangent2;
+
+     tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
+     if(tangent1.isZero(1e-3)){
+        tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
+        if(tangent1.isZero(1e-3)){
+           tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
+        }
+     }
+     tangent1.normalize();
+
+     tangent2 = normal.cross(tangent1);
+     tangent2.normalize(); //probably not necessary
+
+     const double sos = normal.dot(normal);
+     const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
+        normal.y()*offset/sos,
+        normal.z()*offset/sos};
+
+     glBegin(GL_QUADS);
+     glNormal3dv(normal.data());
+     glVertex3dv((supportPoint + size*(tangent1 + tangent2)).eval().data());
+     glVertex3dv((supportPoint + size*(-tangent1 + tangent2)).eval().data());
+     glVertex3dv((supportPoint + size*(-tangent1 - tangent2)).eval().data());
+     glVertex3dv((supportPoint + size*(tangent1  - tangent2)).eval().data());
+     glEnd();
+  }
 }
