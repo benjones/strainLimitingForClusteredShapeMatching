@@ -1,6 +1,8 @@
 {
 	"particleFiles" : [ "inputFiles/blue_noise/armadillo-20k-bn.txt"],
-
+	
+	//"dt" : 0.00833333333,
+	
 	"neighborRadius" : 0.09,
 	"alpha" : 0.6,
 	"omega" : 0.4,
@@ -8,9 +10,9 @@
 	"maxStretch" : 0.6,
 	"nClusters" : 100,
 	"springDamping": 0.5,
-	"toughness" : 0.2,
-	"yield" : 0.07,
-	"nu" : 1.0,
+	"toughness" : 0.25,
+	"yield" : 8e-2,
+	"nu" : 0.1,
 
 	"planes" : [ 
 	],
