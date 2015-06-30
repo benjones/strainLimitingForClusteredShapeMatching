@@ -9,7 +9,7 @@
 	"maxStretch" : 0.5,
 	"nClusters" : 40,
 	"springDamping": 0.1,
-	"toughness" : 0.06,
+	"toughness" : 0.07,
 	"twistingPlanes" : [
 		{ 
 			"normal" : [1, 0, 0],
@@ -26,8 +26,8 @@
 			"lifetime" : 10.0
 		}
 	],
-	"nu" : 1.0,
-	"yield" : 0.01,
+	"nu" : 0.1,
+	"yield" : 0.02,
 	"hardening" : 0.005,
 	"gravity" : [0, 0, 0]
 }
