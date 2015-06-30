@@ -261,10 +261,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 	// Update Collision Geometry
 	newCluster.cg = c.cg;
-	Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
-	if (nu > 0.0) T = T*c.Fp; // plasticity
-	T = T.inverse().eval();
-	Eigen::Vector3d n = T*splitDirection;
+	//Eigen::Matrix3d T = solver.matrixU()*solver.matrixV().transpose();
+	//if (nu > 0.0) T = T*c.Fp; // plasticity
+	//T = T.inverse().eval();
+	//Eigen::Vector3d n = T*splitDirection;
+	Eigen::Vector3d n = A.inverse()*splitDirection;
 
 	//we need to worry about signs at some point
 	c.cg.addPlane(n, -(n.dot(c.restCom)));
@@ -282,6 +283,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  for (auto &n : newCluster.neighbors) allParticles.push_back(n.first);
 
 	  std::vector<size_t> affectedClusters; //keep sorted
+
+	  // Adam found a segfault from an invalidated iterator here on 6/29 and applied a "quick fix" since Ben was going to redo this logic anyway.
+	  std::vector<Particle> newParticles;
 	  for(auto& member : allParticles){
 		auto& particle = particles[member];
 		for(auto thisIndex : particle.clusters){
@@ -292,6 +296,17 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		  
 		  auto& thisCluster = clusters[thisIndex];
+
+		  if (thisIndex >= clusters.size()) {
+			std::cout<<particle.clusters.size()<<std::endl;
+			std::cout<<thisIndex<<">="<<clusters.size()<<std::endl<<member<<" "<<particles.size()<<std::endl;
+			for (auto foo : particle.clusters) {
+			  std::cout<<foo<<" ";
+			}
+			std::cout<<std::endl;
+		  }
+		  assert(thisIndex < clusters.size());
+
 		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
 			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 			unsigned int i = 0;
@@ -321,11 +336,12 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			particle.mass = newMass;
 			particle.totalweight -= w;
 			
-			particles.push_back(q);
-			thisCluster.neighbors[i].first = particles.size()-1;
+			newParticles.push_back(q);
+			thisCluster.neighbors[i].first = particles.size()+newParticles.size()-1;
 		  }
 		}
 	  }
+	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
 	
 	  //	for(auto& c : affectedClusters){
@@ -496,6 +512,7 @@ void World::buildClusterMaps() {
   for (auto &p : particles) {
 	for (auto &c : p.clusters) {
 	  for (auto &d : p.clusters) {
+		if (c == d) continue;
 		if (std::find(clusterCollisionMap[c].begin(), clusterCollisionMap[c].end(), d) == clusterCollisionMap[c].end()) {
 		  clusterCollisionMap[c].push_back(d);
 		}
@@ -517,23 +534,36 @@ bool CollisionGeometry::project(Eigen::Vector3d &x) {
 
   for (auto &p : planes) {
 	m = p.first.dot(x) - p.second;
-	if (m >= 0.0) return false;
-	if (-m < n) {
-	  n = -m;
-	  y = x - m*p.first;
-	}
+  	if (m >= 0.0) return false;
+  	if (-m < n) {
+  	  n = -m;
+  	  y = x - m*p.first;
+  	}
   }
-
+  //std::cout<<x(0)<<" "<<x(1)<<" "<<x(2)<<" projected to "<<y(0)<<" "<<y(1)<<" "<<y(2)<<std::endl;
   x = y;
   return true;
 }
 
-inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) {
-  return c.worldCom + c.restToWorldTransform * (x-c.restCom);
+inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) { 
+  assert(x.allFinite());
+  Eigen::Vector3d y = c.worldCom + c.restToWorldTransform * (x-c.restCom);
+  assert(y.allFinite());
+  return y;
 }
 
+
 inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
-  return c.restCom + c.worldToRestTransform * (x-c.worldCom);
+  assert(x.allFinite());
+  Eigen::Vector3d y = c.restCom + c.worldToRestTransform * (x-c.worldCom);
+  if (!y.allFinite()) {
+	std::cout<<x<<std::endl;
+	std::cout<<y<<std::endl;
+	std::cout<<c.worldToRestTransform<<std::endl;
+	std::cout<<c.neighbors.size()<<std::endl;
+  }
+  assert(y.allFinite());
+  return y;
 }
 
 void World::selfCollisions() {
@@ -541,11 +571,13 @@ void World::selfCollisions() {
   buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;
+	if (c.neighbors.size() < 10) continue;
 	for (auto && en2 : benlib::enumerate(clusters)) {
 	  if (en1.first == en2.first) continue;
 	  // 6/24: I think the old == was a bug here
 	  if (std::find(clusterCollisionMap[en1.first].begin(), clusterCollisionMap[en1.first].end(), en2.first) != clusterCollisionMap[en1.first].end()) continue;
 	  auto &d = en2.second;
+	  if (d.neighbors.size() < 10) continue;
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
 		for (auto& n : c.neighbors){
 		  auto &p = particles[n.first];
@@ -555,6 +587,11 @@ void World::selfCollisions() {
 			if (it == p.clusters.end()) {
 			  Eigen::Vector3d x = worldToRest(d, p.position);
 			  if (d.cg.project(x)) {
+				//std::cout<<en1.first<<" "<<en2.first<<" "<<n.first<<std::endl;
+				//for (auto foo : clusterCollisionMap[en1.first]) std::cout<<foo<<" ";
+				//std::cout<<std::endl;
+				//for (auto foo : clusterCollisionMap[en2.first]) std::cout<<foo<<" ";
+				//std::cout<<std::endl;
 				x = restToWorld(d, x);
 				//std::cout<<"before: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
 				p.position = alpha*x + (1.0-alpha)*p.position;
@@ -769,11 +806,11 @@ void World::updateTransforms(Cluster& c) const{
   Eigen::Matrix3d A = computeApq(c)*c.aInv;
   if (nu > 0.0) A = A*c.Fp.inverse(); 
 
-  auto pr = utils::polarDecomp(A);
-  Eigen::Matrix3d T = pr.first;
-  if (nu > 0.0) T = T*c.Fp; 
-  c.restToWorldTransform = T;
-  c.worldToRestTransform = T.inverse();
+  //auto pr = utils::polarDecomp(A);
+  //Eigen::Matrix3d T = pr.first;
+  //if (nu > 0.0) T = T*c.Fp; 
+  c.restToWorldTransform = A;
+  c.worldToRestTransform = A.inverse();
 } 	
 
 void World::countClusters(){
