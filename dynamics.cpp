@@ -265,7 +265,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//if (nu > 0.0) T = T*c.Fp; // plasticity
 	//T = T.inverse().eval();
 	//Eigen::Vector3d n = T*splitDirection;
-	Eigen::Vector3d n = A.inverse()*splitDirection;
+	Eigen::Vector3d n = (A.inverse()*splitDirection).normalized();
 
 	//we need to worry about signs at some point
 	c.cg.addPlane(n, -(n.dot(c.restCom)));
@@ -524,7 +524,7 @@ void World::buildClusterMaps() {
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
-  return false;
+  //return false;
   Eigen::Vector3d y;
   double n;
   Eigen::Vector3d d = x - c;
@@ -542,7 +542,8 @@ bool CollisionGeometry::project(Eigen::Vector3d &x) {
   	  y = x - m*p.first;
   	}
   }
-  //std::cout<<x(0)<<" "<<x(1)<<" "<<x(2)<<" projected to "<<y(0)<<" "<<y(1)<<" "<<y(2)<<std::endl;
+
+  assert((x-y).norm() <= n+1e-4);
   x = y;
   return true;
 }
@@ -569,7 +570,7 @@ inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
 }
 
 void World::selfCollisions() {
-  const double alpha = 0.5;
+  const double alpha = 0.0;
   buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;
