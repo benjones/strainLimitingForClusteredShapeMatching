@@ -106,4 +106,19 @@ namespace utils{
 	glEnd();
 
   }
+
+
+  template <typename Cont, typename Value>
+  void actuallyErase(Cont& container, const Value& value){
+	container.erase(std::remove(container.begin(), container.end(), value),
+		container.end());
+  }
+
+  template <typename Cont, typename Pred>
+  void actuallyEraseIf(Cont& container, Pred&& predicate){
+	container.erase(
+		std::remove_if(container.begin(), container.end(), std::forward<Pred>(predicate)),
+		container.end());
+  }
+
 }

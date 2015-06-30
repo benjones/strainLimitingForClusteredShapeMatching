@@ -208,7 +208,7 @@ namespace benlib{
 
 	using value_type = T;
 	using reference = value_type&;
-	using const_refernce = const reference;
+	using const_refernce = typename std::add_const<reference>::type ;
 
 	
 	using iterator = PreallocVectorIterator<value_type, 

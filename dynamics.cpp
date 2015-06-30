@@ -348,7 +348,9 @@ void World::splitOutliers() {
 		//if (newMass < 0.1*p.mass || q.mass < 0.1*p.mass) {
 		//continue;
 		//}
-		p.clusters.erase(std::remove(p.clusters.begin(), p.clusters.end(), en.first), p.clusters.end());
+
+		utils::actuallyErase(p.clusters, en.first);
+
 		p.numClusters--;
 		p.mass = newMass;
 		p.totalweight -= n.second;
@@ -372,11 +374,12 @@ void World::cullSmallClusters() {
 	}
   }
 
-  clusters.erase(std::remove_if(clusters.begin(), clusters.end(),
-		  [](const Cluster& c){
-			return (c.neighbors.size() < 4 || c.mass < 1e-4);
-		  }), 
-	  clusters.end());
+
+  utils::actuallyEraseIf(clusters,
+	  [](const Cluster& c){
+		return (c.neighbors.size() < 4 || c.mass < 1e-4);
+	  }); 
+
   if(clusters.size() != sizeBefore){
 	std::cout << "deleted " << sizeBefore - clusters.size() << " clusters" << std::endl;
   }
@@ -402,11 +405,10 @@ void World::removeLonelyParticles() {
 	}
   }
   
-  particles.erase(std::remove_if(particles.begin(), particles.end(),
-  		  [](const Particle& p){
-  			return (p.numClusters == 0);
-  		  }), 
-  	  particles.end());
+  utils::actuallyEraseIf(particles,
+	  [](const Particle& p){
+		return (p.numClusters == 0);
+	  });
 }
 
 /////////////////////////////////////
