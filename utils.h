@@ -25,12 +25,15 @@ namespace utils{
 	Eigen::Matrix3d V = solver.matrixV();
 	Eigen::Vector3d sigma = solver.singularValues();
 	
-	if(sigma.prod() < 0){
+        Eigen::Matrix3d Q = U*V.transpose();
+	if(Q.determinant() < 0)
+        {
 	  sigma(2) *= -1;
 	  V.col(2) *= -1;
+          Q = U*V.transpose();
 	}
 
-	return std::make_pair(U*V.transpose(), V*sigma.asDiagonal()*V.transpose());
+        return std::make_pair(Q, V*sigma.asDiagonal()*V.transpose());
   }
 
 
