@@ -19,6 +19,7 @@ public:
   Particle(const Particle &p)  = default; //c++11 magic :)
   short flags;
   static const short SPLIT = 1;
+  int id;
   //: position(p.position), velocity(p.velocity), restPosition(p.restPosition),
   //	oldPosition(p.oldPosition), goalPosition(p.goalPosition), goalVelocity(p.goalVelocity), mass(p.mass),
   //	totalweight(p.totalweight), numClusters(p.numClusters), outsideSomeMovingPlane(p.outsideSomeMovingPlane),
@@ -27,9 +28,9 @@ public:
 
 class CollisionGeometry {
  private:
+ public:
   Eigen::Vector3d c;
   double r;
- public:
   CollisionGeometry(){};
   CollisionGeometry & operator= (const CollisionGeometry &that);
   CollisionGeometry(const CollisionGeometry &that) = default;

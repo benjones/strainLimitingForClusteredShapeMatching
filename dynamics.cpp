@@ -515,11 +515,18 @@ void World::bounceOutOfPlanes(){
 
 void World::buildClusterMaps() {
   countClusters();
+  std::vector<std::vector<int > > idToClusters;
+  idToClusters.resize(particles.size());
+  for (auto &p : particles) {
+	idToClusters[p.id].insert(idToClusters[p.id].end(), p.clusters.begin(), p.clusters.end());
+  }
+
   clusterCollisionMap.clear();
   clusterCollisionMap.resize(clusters.size());
-  for (auto &p : particles) {
-	for (auto &c : p.clusters) {
-	  for (auto &d : p.clusters) {
+
+  for (auto &i : idToClusters) {
+	for (auto &c : i) {
+	  for (auto &d : i) {
 		if (c == d) continue;
 		if (!utils::containsValue(clusterCollisionMap[c], d)){
 		  clusterCollisionMap[c].push_back(d);
@@ -527,6 +534,16 @@ void World::buildClusterMaps() {
 	  }
 	}
   }
+	//for (auto &p : particles) {
+	//for (auto &c : p.clusters) {
+	//	  for (auto &d : p.clusters) {
+	//		if (c == d) continue;
+	//		if (!utils::containsValue(clusterCollisionMap[c], d)){
+	//		  clusterCollisionMap[c].push_back(d);
+	//		}
+	//	  }
+	//	}
+	// }
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
@@ -591,7 +608,7 @@ void World::selfCollisions() {
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
 		for (auto& n : c.neighbors){
 		  auto &p = particles[n.first];
-		  if (p.flags & Particle::SPLIT) continue;
+		  //if (p.flags & Particle::SPLIT) continue;
 		  if ((p.position - d.worldCom).squaredNorm() < sqr(d.width)) {
 			// these next two lines look unnecessary with clustermaps
 			auto it = find(p.clusters.begin(), p.clusters.end(), en2.first);
@@ -604,9 +621,11 @@ void World::selfCollisions() {
 				//for (auto foo : clusterCollisionMap[en2.first]) std::cout<<foo<<" ";
 				//std::cout<<std::endl;
 				x = restToWorld(d, x);
+				Eigen::Vector3d y = d.worldCom + d.width * (p.position - d.worldCom).normalized();
+				if ((x-p.position).squaredNorm() > (y-p.position).squaredNorm()) {x=y;}
 				//if ((x-p.position).norm() > (p.position-d.worldCom).norm()) {
 				if ((x-p.position).norm() > d.width) {
-				  std::cout<<"--------------------------"<<(x-p.position).norm()<<" "<<d.width<<std::endl;
+				  std::cout<<"--------------------------"<<(x-p.position).norm()<<" "<<d.width<<" "<<d.cg.r<<std::endl;
 				  std::cout<<d.worldCom(0)<<" "<<d.worldCom(1)<<" "<<d.worldCom(2)<<std::endl;
 				  std::cout<<p.position(0)<<" "<<p.position(1)<<" "<<p.position(2)<<std::endl;
 				  std::cout<<x(0)<<" "<<x(1)<<" "<<x(2)<<std::endl;

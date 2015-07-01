@@ -205,6 +205,7 @@ void World::loadFromJson(const std::string& _filename){
 
   double mass = root.get("mass", 0.1).asDouble();
   for(auto& p : particles){ p.mass = mass;}
+  for(int i=0; i<(int)particles.size(); i++) particles[i].id = i;
 
   for(auto& p : particles){ p.outsideSomeMovingPlane = false;}
 
