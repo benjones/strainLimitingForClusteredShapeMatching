@@ -265,7 +265,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	//if (nu > 0.0) T = T*c.Fp; // plasticity
 	//T = T.inverse().eval();
 	//Eigen::Vector3d n = T*splitDirection;
-	Eigen::Vector3d n = (A.inverse()*splitDirection).normalized();
+	//we should be transforming from world to rest, so we shouldn't include plasticity
+	Eigen::Vector3d n = ((Apq*clusters[cIndex].aInv).inverse()*splitDirection).normalized();
 
 	//we need to worry about signs at some point
 	c.cg.addPlane(n, -(n.dot(c.restCom)));
@@ -335,7 +336,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			particle.numClusters--;
 			particle.mass = newMass;
 			particle.totalweight -= w;
-			
+			particle.flags |= Particle::SPLIT;
+			q.flags |= Particle::SPLIT;
+
 			newParticles.push_back(q);
 			thisCluster.neighbors[i].first = particles.size()+newParticles.size()-1;
 		  }
@@ -378,6 +381,9 @@ void World::splitOutliers() {
 		p.numClusters--;
 		p.mass = newMass;
 		p.totalweight -= n.second;
+
+		p.flags |= Particle::SPLIT;
+		q.flags |= Particle::SPLIT;
 
 		particles.push_back(q);
 		n.first = particles.size()-1;
@@ -570,7 +576,7 @@ inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
 }
 
 void World::selfCollisions() {
-  const double alpha = 0.0;
+  const double alpha = 0.5;
   buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;
@@ -585,6 +591,7 @@ void World::selfCollisions() {
 	  if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
 		for (auto& n : c.neighbors){
 		  auto &p = particles[n.first];
+		  if (p.flags & Particle::SPLIT) continue;
 		  if ((p.position - d.worldCom).squaredNorm() < sqr(d.width)) {
 			// these next two lines look unnecessary with clustermaps
 			auto it = find(p.clusters.begin(), p.clusters.end(), en2.first);
@@ -597,6 +604,13 @@ void World::selfCollisions() {
 				//for (auto foo : clusterCollisionMap[en2.first]) std::cout<<foo<<" ";
 				//std::cout<<std::endl;
 				x = restToWorld(d, x);
+				//if ((x-p.position).norm() > (p.position-d.worldCom).norm()) {
+				if ((x-p.position).norm() > d.width) {
+				  std::cout<<"--------------------------"<<(x-p.position).norm()<<" "<<d.width<<std::endl;
+				  std::cout<<d.worldCom(0)<<" "<<d.worldCom(1)<<" "<<d.worldCom(2)<<std::endl;
+				  std::cout<<p.position(0)<<" "<<p.position(1)<<" "<<p.position(2)<<std::endl;
+				  std::cout<<x(0)<<" "<<x(1)<<" "<<x(2)<<std::endl;
+				}
 				//std::cout<<"before: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
 				p.position = alpha*x + (1.0-alpha)*p.position;
 				//std::cout<<"after: "<<(p.position - d.worldCom).norm()<<" "<<d.width<<std::endl;
@@ -808,7 +822,7 @@ Eigen::Vector3d World::computeClusterVelocity(const Cluster &c) const {
 
 void World::updateTransforms(Cluster& c) const{
   Eigen::Matrix3d A = computeApq(c)*c.aInv;
-  if (nu > 0.0) A = A*c.Fp.inverse(); 
+  //if (nu > 0.0) A = A*c.Fp.inverse(); 
 
   //auto pr = utils::polarDecomp(A);
   //Eigen::Matrix3d T = pr.first;
