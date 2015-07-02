@@ -364,7 +364,7 @@ void World::splitOutliers() {
 	for(auto &n : c.neighbors) {
 	  auto &p = particles[n.first];
 	  if ((p.numClusters > 1) && ((p.position - c.worldCom).norm() > 
-			  (1.0 + gamma) * 2.0 * (p.restPosition - c.restCom).norm())) {
+			  (1.0 + gamma) * outlierThreshold * (p.restPosition - c.restCom).norm())) {
 		Particle q(p);
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
@@ -593,7 +593,7 @@ inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
 }
 
 void World::selfCollisions() {
-  const double alpha = 0.5;
+  const double alpha = collisionRestitution;
   buildClusterMaps();
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;

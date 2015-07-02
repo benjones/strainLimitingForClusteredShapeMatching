@@ -114,7 +114,8 @@ void World::loadFromJson(const std::string& _filename){
   nu = root.get("nu", 0.0).asDouble();
   hardening = root.get("hardening", 0.0).asDouble();
   
-
+  collisionRestitution = root.get("collisionRestitution", 0.5).asDouble();
+  outlierThreshold = root.get("outlierThreshold", 2.0).asDouble();
 
   auto& gravityIn = root["gravity"];
   if(!gravityIn.isNull() && gravityIn.isArray() && gravityIn.size() == 3){

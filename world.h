@@ -196,6 +196,8 @@ public:
   double yield, nu, hardening; // plasticity parameters
   double toughness;
   int maxNumClusters;
+  double collisionRestitution;
+  double outlierThreshold;
 
   bool drawClusters = true;
   bool drawFracturePlanes = true;
