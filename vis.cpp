@@ -147,7 +147,7 @@ void World::drawPretty(SDL_Window* window) const {
            glPushMatrix();
 
            auto com = sumWeightedWorldCOM(c.neighbors);
-           glTranslated(com.x(), com.y(), com.z());
+           glTranslated(com.x()+c.cg.c.x()-c.restCom.x(), com.y()+c.cg.c.y()-c.restCom.y(), com.z()+c.cg.c.z()-c.restCom.z());
            RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
            //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
            if (colorByToughness) {
@@ -159,7 +159,8 @@ void World::drawPretty(SDL_Window* window) const {
               }
            }
            glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-           utils::drawSphere(c.renderWidth, 10, 10);
+           //utils::drawSphere(c.renderWidth, 10, 10);
+           utils::drawSphere(c.cg.r, 10, 10);
            glPopMatrix();
         }
      }
@@ -183,22 +184,24 @@ void World::drawPretty(SDL_Window* window) const {
               auto com = sumWeightedWorldCOM(c.neighbors);
               //JAL wonders why the above seems to work better?
               //com = c.worldCom - c.restCom;
-              
-              Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
+              //com = c.worldCom - c.cg.c;
+              glTranslated(c.worldCom(0), c.worldCom(1), c.worldCom(2)); 
+			  Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
               //push the rotation
               gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
               //push the translation
-              gl_rot.block<3,1>(0,3) << com;
+              //gl_rot.block<3,1>(0,3) << com;
               glMultMatrixd(gl_rot.data());
+              glTranslated(-c.restCom(0), -c.restCom(1), -c.restCom(2));
 
               RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
               for (auto &p : cg.planes) {
                  glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-                 if (joshDebugFlag) {
-                    utils::drawPlane(p.first, p.second, 0.2);
-                 } else {
-                    utils::drawPlane(p.first, -p.second, 0.2);
-                 }
+                 //if (joshDebugFlag) {
+				   utils::drawPlane(p.first, p.second, 0.2, c.cg.c);
+				   //} else {
+				   //utils::drawPlane(p.first, -p.second, 0.2);
+				   //}
               }
            }
            glPopMatrix();
