@@ -701,7 +701,7 @@ bool World::makeClusters(){
   // fuzzy c-means loop
   iters = 0;
   double sqrNeighborRadius = neighborRadius*neighborRadius;
-  while (!converged || iters < 5) {
+  while ((!converged || iters < 5) && iters < 100) {
 	converged = true;
 	iters++;
 	
@@ -729,6 +729,23 @@ bool World::makeClusters(){
 	  }
 	  if (oldNeighbors != c.neighbors.size()) converged = false;
 	}
+	
+	for (int i = 0; i<particles.size(); i++) {
+	  auto& p = particles[i];
+	  if (p.numClusters > 0) continue;
+	  int bestCluster = 0;
+	  double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
+	  for (auto j = 0; j<clusters.size(); j++) {
+		double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
+		if (newNorm < bestNorm) {
+		  bestCluster = j;
+		  bestNorm = newNorm;
+		}
+	  }
+	  clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,1.0));
+	  p.totalweight = 1.0;
+	  converged = false;
+	}
 
 	for (auto& c : clusters) {
 	  c.mass = 0.0;
@@ -742,12 +759,8 @@ bool World::makeClusters(){
 	  c.restCom /= c.mass;
 	}
   } 
-  std::cout<<"kmeans clustering converged in "<<iters<<std::endl;
+  std::cout<<"Fuzzy c-means clustering ran "<<iters<<" iterations."<<std::endl;
   
-  updateClusterProperties(benlib::range(clusters.size()));
-
-  for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
-
   for (auto& p : particles) {
 	if (p.numClusters == 0) {
 	  std::cout<<"Particle has no cluster"<<std::endl;
@@ -755,6 +768,11 @@ bool World::makeClusters(){
 	  exit(0);
 	}
   }
+
+  updateClusterProperties(benlib::range(clusters.size()));
+
+  for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
+
   for (auto& c : clusters) {
 	if (c.mass < 1e-5) {
 	  std::cout<<"Cluster has mass "<<c.mass<<" and position: "<<c.restCom<<std::endl;
