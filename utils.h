@@ -40,7 +40,7 @@ namespace utils{
 
   inline void drawSphere(double r, int lats, int longs) {
 	int i, j;
-	for(i = 0; i <= lats; i++) {
+	for(i = 1; i <= lats; i++) {
 	  double lat0 = M_PI * (-0.5 + (double) (i - 1) / lats);
 	  double z0  = sin(lat0);
 	  double zr0 =  cos(lat0);

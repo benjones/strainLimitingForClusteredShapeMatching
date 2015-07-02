@@ -116,13 +116,68 @@ void World::drawPretty(SDL_Window* window) const {
 			cameraUp.x(), cameraUp.y(), cameraUp.z());
 
 
-
-  drawPlanesPretty();
-  
   glEnable (GL_BLEND);
   glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  if(!particles.empty()){						
+     glPointSize(10);
 
+     if (!drawColoredParticles) {
+        glColor4d(1,1,1,0.95);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(3, GL_DOUBLE,
+              sizeof(Particle),
+              &(particles[0].position));
+        glDrawArrays(GL_POINTS, 0, particles.size());
+     } else {
+        glBegin(GL_POINTS);
+        for(auto& p : particles) {
+           //find nearest cluster
+
+           int min_cluster = p.clusters[0];
+           auto com = clusters[min_cluster].worldCom;//computeNeighborhoodCOM(clusters[min_cluster]);
+           Eigen::Vector3d dir = p.position - com;
+           double min_sqdist = dir.squaredNorm();
+           for (auto& cInd : p.clusters) {
+              com = clusters[cInd].worldCom;//computeNeighborhoodCOM(clusters[cInd]);
+              dir = p.position - com;
+              double dist = dir.squaredNorm();
+              if (dist < min_sqdist) {
+                 min_sqdist = dist;
+                 min_cluster = cInd;
+              }
+           }
+
+           RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
+           //RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
+           if ((which_cluster == -1 || min_cluster == which_cluster) &&
+                 clusters[min_cluster].neighbors.size() > 1) {
+              //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
+              glColor4d(rgb.r, rgb.g, rgb.b, 0.95);
+           } else {
+              glColor4d(1,1,1,0.95);
+           }
+           //glPushMatrix();
+           //glTranslated(p.position[0], p.position[1], p.position[2]);
+           //utils::drawSphere(0.01, 4, 4);
+           glVertex3dv(p.position.data());
+           //glPopMatrix();
+        }
+        glEnd();
+     }
+
+     /*
+     glPointSize(3);
+     glColor3f(0,0,1);
+     glVertexPointer(3, GL_DOUBLE, sizeof(Particle),
+     &(particles[0].goalPosition));
+     glDrawArrays(GL_POINTS, 0, particles.size());
+     */
+  }
+
+
+  drawPlanesPretty();
+  
   auto max_t = 0.0;
   if (colorByToughness) {
      for(auto&& pr : benlib::enumerate(clusters)){
@@ -136,18 +191,24 @@ void World::drawPretty(SDL_Window* window) const {
   }
 
 
-  glDisable(GL_DEPTH_TEST);
-  //draw clusters
-  glMatrixMode(GL_MODELVIEW);
+  //draw cluster spheres
   if(drawClusters){
+     glEnable(GL_CULL_FACE);
+     glCullFace(GL_BACK);
+     glMatrixMode(GL_MODELVIEW);
      for(auto&& pr : benlib::enumerate(clusters)){
         auto& c = pr.second;
         const auto i = pr.first;
         if (which_cluster == -1 || i == which_cluster) {
            glPushMatrix();
-
-           auto com = sumWeightedWorldCOM(c.neighbors);
-           glTranslated(com.x()+c.cg.c.x()-c.restCom.x(), com.y()+c.cg.c.y()-c.restCom.y(), com.z()+c.cg.c.z()-c.restCom.z());
+           //logic:
+           //c.cg.c = original COM of cluster
+           //c.worldCom = current COM in world space
+           //c.restCom = current COM in rest space
+           //c.worldCom - c.restCom = translation of center of mass rest to world
+           //trans = location of c in world.
+           auto trans = c.cg.c + c.worldCom - c.restCom;
+           glTranslated(trans(0), trans(1), trans(2));
            RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
            //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
            if (colorByToughness) {
@@ -158,20 +219,19 @@ void World::drawPretty(SDL_Window* window) const {
                  rgb = RGBColor(1.0-factor, factor, factor);
               }
            }
-           glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-           //utils::drawSphere(c.renderWidth, 10, 10);
+           glColor4d(rgb.r, rgb.g, rgb.b, 0.6);
            utils::drawSphere(c.cg.r, 10, 10);
            glPopMatrix();
         }
      }
+     glDisable(GL_CULL_FACE);
   }
-  glEnable(GL_DEPTH_TEST);
 
-
-  glDisable(GL_DEPTH_TEST);
   //draw fracture planes 
   glMatrixMode(GL_MODELVIEW);
   if(drawFracturePlanes){
+     glPolygonMode(GL_FRONT, GL_FILL);
+     glPolygonMode(GL_BACK, GL_LINE);
      for(auto&& pr : benlib::enumerate(clusters)){
         auto& c = pr.second;
         const auto i = pr.first;
@@ -181,34 +241,31 @@ void World::drawPretty(SDL_Window* window) const {
            auto& cg = c.cg;
 
            if (cg.planes.size() > 0) {
-              auto com = sumWeightedWorldCOM(c.neighbors);
-              //JAL wonders why the above seems to work better?
-              //com = c.worldCom - c.restCom;
-              //com = c.worldCom - c.cg.c;
+              //step 3, translate from rest space origin to world 
               glTranslated(c.worldCom(0), c.worldCom(1), c.worldCom(2)); 
-			  Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
-              //push the rotation
+
+              //step 2, rotate about rest-to-world transform
+              Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
+              //push the rotation onto a 4x4 glMatrix
               gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
-              //push the translation
-              //gl_rot.block<3,1>(0,3) << com;
               glMultMatrixd(gl_rot.data());
+
+              //step 1, translate rest com to origin
               glTranslated(-c.restCom(0), -c.restCom(1), -c.restCom(2));
 
               RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
               for (auto &p : cg.planes) {
-                 glColor4d(rgb.r, rgb.g, rgb.b, 0.3);
-                 //if (joshDebugFlag) {
-				   utils::drawPlane(p.first, p.second, 0.2, c.cg.c);
-				   //} else {
-				   //utils::drawPlane(p.first, -p.second, 0.2);
-				   //}
+                 glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
+                 //if rest com translated to origin (step 1 above) 
+                 ////then we project from c.cg.c to make support point
+                 utils::drawPlane(p.first, p.second, 0.2, c.cg.c);
               }
            }
            glPopMatrix();
         }
      }
+     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   }
-  glEnable(GL_DEPTH_TEST);
 
 
   if (which_cluster != -1) {
@@ -241,64 +298,6 @@ void World::drawPretty(SDL_Window* window) const {
   }
 
   
-  if(!particles.empty()){						
-     //	glDisable(GL_DEPTH_TEST);
-     glPointSize(10);
-
-     if (!drawColoredParticles) {
-        glColor4d(1,1,1,0.8);
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glVertexPointer(3, GL_DOUBLE,
-              sizeof(Particle),
-              &(particles[0].position));
-        glDrawArrays(GL_POINTS, 0, particles.size());
-     } else {
-        glBegin(GL_POINTS);
-        for(auto& p : particles) {
-           //find nearest cluster
-
-           int min_cluster = p.clusters[0];
-           auto com = clusters[min_cluster].worldCom;//computeNeighborhoodCOM(clusters[min_cluster]);
-           Eigen::Vector3d dir = p.position - com;
-           double min_sqdist = dir.squaredNorm();
-           for (auto& cInd : p.clusters) {
-			 com = clusters[cInd].worldCom;//computeNeighborhoodCOM(clusters[cInd]);
-              dir = p.position - com;
-              double dist = dir.squaredNorm();
-              if (dist < min_sqdist) {
-                 min_sqdist = dist;
-                 min_cluster = cInd;
-              }
-           }
-
-           RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
-           //RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
-           if ((which_cluster == -1 || min_cluster == which_cluster) &&
-                 clusters[min_cluster].neighbors.size() > 1) {
-           //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
-              glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
-           } else {
-              glColor4d(1,1,1,0.8);
-           }
-           //glPushMatrix();
-           //glTranslated(p.position[0], p.position[1], p.position[2]);
-           //utils::drawSphere(0.01, 4, 4);
-           glVertex3dv(p.position.data());
-           //glPopMatrix();
-        }
-        glEnd();
-     }
-
-
-     /*	glPointSize(3);
-         glColor3f(0,0,1);
-         glVertexPointer(3, GL_DOUBLE, sizeof(Particle),
-         &(particles[0].goalPosition));
-         glDrawArrays(GL_POINTS, 0, particles.size());
-      */
-
-  }
-
 
   glColor3d(1, 0, 1);
   for(auto& projectile : projectiles){
