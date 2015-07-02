@@ -51,7 +51,7 @@ namespace utils{
     
 	  glBegin(GL_QUAD_STRIP);
 	  for(j = 0; j <= longs; j++) {
-		double lng = 2 * M_PI * (double) (j - 1) / longs;
+		double lng = 2 * M_PI * (double) j / longs;
 		double x = cos(lng);
 		double y = sin(lng);
     
@@ -63,6 +63,7 @@ namespace utils{
 	  glEnd();
 	}
   }
+
 
   inline std::pair<Eigen::Vector3d, Eigen::Vector3d>
 	getPlaneTangents(const Eigen::Vector3d& normal){
