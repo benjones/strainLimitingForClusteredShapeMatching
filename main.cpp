@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+
 #include "world.h"
 
 #include <SDL.h>
@@ -28,6 +30,14 @@ int main(int argc, char** argv){
 
   World world;
   world.loadFromJson(argv[1]);
+
+  std::ifstream eyeIn(".eye.txt");
+  if(eyeIn){
+	Eigen::Vector3d eye;
+	eyeIn >> eye.x() >> eye.y() >> eye.z();
+	world.cameraPosition = eye;
+  }
+
 
   if(SDL_Init(SDL_INIT_EVERYTHING) < 0){
 	std::cout << "couldn't init SDL" << std::endl;
@@ -133,6 +143,11 @@ void loop(SDL_Window* window, World& world){
 	  default:
 		; // do nothing
 	  }
+	  std::ofstream eyeOuts(".eye.txt");
+	  eyeOuts << world.cameraPosition.x() << ' ' 
+			  << world.cameraPosition.y() << ' ' 
+			  << world.cameraPosition.z() << std::endl;
+
 	  if(readyToExit){break;}
 	}
 
