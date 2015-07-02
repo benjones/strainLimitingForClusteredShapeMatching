@@ -100,7 +100,9 @@ void World::loadFromJson(const std::string& _filename){
 
   dt = root.get("dt",1/60.0).asDouble();
   neighborRadius = root.get("neighborRadius", 0.1).asDouble();
-  nClusters = root.get("nClusters", -1).asInt();
+  nClusters = root.get("nClusters", 1).asInt();
+  neighborRadiusMax = root.get("neighborRadiusMax", std::numeric_limits<double>::max()).asDouble();
+  nClustersMax = root.get("nClustersMax", std::numeric_limits<int>::max()).asInt();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
   alpha = root.get("alpha", 1.0).asDouble();
   omega = root.get("omega", 1.0).asDouble();
@@ -272,7 +274,18 @@ void World::loadFromJson(const std::string& _filename){
   restPositionGrid.numBuckets = 6;
   restPositionGrid.updateGrid(particles);
   
-  while (!makeClusters()) {nClusters *= 1.25; neighborRadius *= 1.25;}
+  while (!makeClusters()) {
+	nClusters = std::ceil(1.25*nClusters); 
+	neighborRadius *= 1.25; 
+	if (nClusters > nClustersMax && neighborRadius > neighborRadiusMax) {
+	  std::cout<<nClusters<<" "<<nClustersMax<<std::endl;
+	  std::cout<<neighborRadius<<" "<<neighborRadiusMax<<std::endl;
+	  exit(0);
+	}
+	nClusters = std::min(nClusters, nClustersMax);
+	neighborRadius = std::min(neighborRadius, neighborRadiusMax);
+	std::cout<<"trying clustering again with nClusters = "<<nClusters<<" neighborRadius = "<<neighborRadius<<std::endl;
+  }
   std::cout<<"nClusters = "<<nClusters<<std::endl;
 
   //apply initial rotation/scaling, etc

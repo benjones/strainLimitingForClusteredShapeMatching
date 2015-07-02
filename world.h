@@ -188,14 +188,13 @@ public:
   std::vector<size_t> clusterCenters;
 
   double dt, elapsedTime;
-  double neighborRadius;
-  int nClusters;
+  double neighborRadius, neighborRadiusMax;
+  int nClusters, nClustersMax;
 
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
   double yield, nu, hardening; // plasticity parameters
   double toughness;
-  int maxNumClusters;
   double collisionRestitution;
   double outlierThreshold;
 
