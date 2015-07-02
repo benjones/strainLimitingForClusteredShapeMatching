@@ -17,7 +17,13 @@ public:
 
   void loadFromJson(const std::string& _filename);
   
-  void readParticleFile(const std::string& _filename);
+
+  struct ParticleSet{ 
+	std::vector<Eigen::Vector3d> positions;
+	Eigen::Vector3d bbMin, bbMax;
+  };
+
+  ParticleSet readParticleFile(const std::string& _filename);
   void saveParticleFile(const std::string& _filename) const;
   
   void timestep();

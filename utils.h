@@ -172,9 +172,9 @@ namespace utils{
      tangent2 = normal.cross(tangent1);
      tangent2.normalize(); //probably not necessary
 
-     const double sos = normal.dot(normal);
-	 double d = normal.dot(center) + offset;
-	 Eigen::Vector3d supportPoint = center - d * normal;
+     //const double sos = normal.dot(normal);
+	 const double d = normal.dot(center) + offset;
+	 const Eigen::Vector3d supportPoint = center - d * normal;
      //const Eigen::Vector3d supportPoint{normal.x()*offset/sos,
 	 //  normal.y()*offset/sos,
 	 //  normal.z()*offset/sos};

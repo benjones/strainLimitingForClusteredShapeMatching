@@ -30,8 +30,46 @@ void World::loadFromJson(const std::string& _filename){
 
   auto particleFilesIn = root["particleFiles"];
   for(auto i : range(particleFilesIn.size())){
-	readParticleFile(particleFilesIn[i].asString());
+	auto particleInfo = readParticleFile(particleFilesIn[i].asString());
+
+	for(const auto & pos : particleInfo.positions){
+	  particles.emplace_back();
+	  particles.back().position = pos;
+	  particles.back().restPosition = pos;
+	  particles.back().velocity = Eigen::Vector3d::Zero();
+	}
+
   }
+
+  auto movingParticleFilesIn = root["movingParticleFiles"];
+  for(auto i : range(movingParticleFilesIn.size())){
+	auto& movingP = movingParticleFilesIn[i];
+	auto particleInfo = readParticleFile(movingP["filename"].asString());
+	Eigen::Vector3d offset = Eigen::Vector3d::Zero();
+	auto& os = movingP["offset"];
+	if(!os.isNull()){
+	  offset.x() = os[0].asDouble();
+	  offset.y() = os[1].asDouble();
+	  offset.z() = os[2].asDouble();
+	}
+
+	Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
+	auto& vel = movingP["velocity"];
+	if(!vel.isNull()){
+	  velocity.x() = vel[0].asDouble();
+	  velocity.y() = vel[1].asDouble();
+	  velocity.z() = vel[2].asDouble();
+	}
+	for(const auto& pos : particleInfo.positions){
+	  particles.emplace_back();
+	  particles.back().position = pos + offset;
+	  particles.back().restPosition = pos + offset;
+	  particles.back().velocity = velocity;
+	}
+
+  }
+
+
   
   auto cameraPositionIn = root["cameraPosition"];
   if(!cameraPositionIn.isNull() && cameraPositionIn.isArray() && cameraPositionIn.size() == 3){
@@ -252,40 +290,32 @@ void World::loadFromJson(const std::string& _filename){
 
 
 
-void World::readParticleFile(const std::string& _filename){
+World::ParticleSet World::readParticleFile(const std::string& _filename){
 
 
   std::ifstream ins(_filename);
   
+  ParticleSet ret;
+
   Eigen::Vector3d pos;
   ins >> pos.x() >> pos.y() >> pos.z();
-  //auto xpos = pos;
-  //pos[0] = pos[0]/2.0;
-  //pos[1] = pos[1]/2.0 + 2;
-  //pos[2] = pos[2]/2.0;
-  double bbMin[3] = {pos.x(), pos.y(), pos.z()}, 
-	bbMax[3] = {pos.x(), pos.y(), pos.z()};
+
+  ret.bbMin = pos;
+  ret.bbMax = pos;
+  
   while(ins){
-	particles.emplace_back();
-	particles.back().position = pos;
-	particles.back().restPosition = pos;
-	particles.back().velocity = Eigen::Vector3d::Zero();
+	ret.positions.push_back(pos);
+	
+	ret.bbMin - ret.bbMin.cwiseMin(pos);
+	ret.bbMax - ret.bbMax.cwiseMax(pos);
 
 	ins >> pos.x() >> pos.y() >> pos.z();
-	//pos[0] = pos[0]/2.0;
-	//pos[1] = pos[1]/2.0 + 2;
-	//pos[2] = pos[2]/2.0;
-	bbMin[0] = std::min(bbMin[0], pos.x());
-	bbMin[1] = std::min(bbMin[1], pos.y());
-	bbMin[2] = std::min(bbMin[2], pos.z());
-	bbMax[0] = std::max(bbMax[0], pos.x());
-	bbMax[1] = std::max(bbMax[1], pos.y());
-	bbMax[2] = std::max(bbMax[2], pos.z());
   }
 
-  std::cout << "total particles now: " << particles.size() << std::endl;
-	std::cout << "bounding box: [" << bbMin[0] << ", " << bbMin[1] << ", "<< bbMin[2];
-	std::cout << "] x [" << bbMax[0] << ", " << bbMax[1] << ", "<< bbMax[2] << "]" << std::endl;;
+  std::cout << "total particles in file " << _filename << ": " << ret.positions.size() << std::endl;
+  std::cout << "bounding box: [" << ret.bbMin[0] << ", " << ret.bbMin[1] << ", "<< ret.bbMin[2];
+  std::cout << "] x [" << ret.bbMax[0] << ", " << ret.bbMax[1] << ", "<< ret.bbMax[2] << "]" << std::endl;
+  return ret;
 }
 
 void World::saveParticleFile(const std::string& _filename) const{
