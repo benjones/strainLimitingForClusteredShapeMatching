@@ -17,11 +17,13 @@ OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o til
 
 #-----------------------------------------
 # Update to point to your eigen headers, sdl headers
-INCS = -I/usr/local/opt/sdl2/include/SDL2/ -I/Library/Frameworks/SDL2.framework/headers
-EIGEN_INCLUDE=-I/usr/local/opt/eigen/include/eigen3/ -I/usr/local/include/eigen3/
+INCS = -I/usr/local/opt/sdl2/include/SDL2/
+EIGEN_INCLUDE=-I/usr/local/opt/eigen/include/eigen3/
 
 # Update to point to your SDL and opengl libs
-SDL_LIB = -framework OpenGL -framework SDL2 -F/Library/Frameworks #-L/usr/local/opt/sdl2/lib -lSDL2 
+SDL_LIB = -L/usr/local/opt/sdl2/lib -lSDL2 -framework OpenGL 
+
+
 
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <vector>
 #include <utility>
 
 #ifdef __APPLE__
@@ -55,13 +56,76 @@ namespace utils{
 		double x = cos(lng);
 		double y = sin(lng);
     
-		glNormal3f(x * zr0, y * zr0, z0);
-		glVertex3f(r*x * zr0, r*y * zr0, r*z0);
 		glNormal3f(x * zr1, y * zr1, z1);
 		glVertex3f(r*x * zr1, r*y * zr1, r*z1);
+		glNormal3f(x * zr0, y * zr0, z0);
+		glVertex3f(r*x * zr0, r*y * zr0, r*z0);
 	  }
 	  glEnd();
 	}
+  }
+
+  inline void drawClippedSphere(double r, int lats, int longs,
+        const Eigen::Vector3d& center,
+        const std::vector<std::pair<Eigen::Vector3d, double> >& planes) {
+     int i, j;
+     for(i = 1; i <= lats; i++) {
+        double lat0 = M_PI * (-0.5 + (double) (i - 1) / lats);
+        double z0  = sin(lat0);
+        double zr0 =  cos(lat0);
+
+        double lat1 = M_PI * (-0.5 + (double) i / lats);
+        double z1 = sin(lat1);
+        double zr1 = cos(lat1);
+
+        glBegin(GL_QUADS);
+        for(j = 0; j < longs; j++) {
+           double lng0 = 2 * M_PI * (double) j / longs;
+           double x0 = cos(lng0);
+           double y0 = sin(lng0);
+           double lng1 = 2 * M_PI * ((double) (j+1)) / longs;
+           double x1 = cos(lng1);
+           double y1 = sin(lng1);
+
+           Eigen::Vector3d n0(x0 * zr1, y0 * zr1, z1);
+           Eigen::Vector3d n1(x0 * zr0, y0 * zr0, z0);
+           Eigen::Vector3d n2(x1 * zr0, y1 * zr0, z0);
+           Eigen::Vector3d n3(x1 * zr1, y1 * zr1, z1);
+
+           Eigen::Vector3d v0 = r*n0+center;
+           Eigen::Vector3d v1 = r*n1+center;
+           Eigen::Vector3d v2 = r*n2+center;
+           Eigen::Vector3d v3 = r*n3+center;
+
+           //always draw if there are no planes
+           bool draw = true;
+
+           //if there are planes, check to make sure we're on the right side
+           for (int p=0; p<planes.size(); p++) {
+              Eigen::Vector3d norm = planes[p].first;
+              double offset = planes[p].second;
+
+              if (norm.dot(v0) > -offset &&
+                    norm.dot(v1) > -offset &&
+                    norm.dot(v2) > -offset &&
+                    norm.dot(v3) > -offset) {
+                 draw = false;
+              }
+           }
+
+           if (draw) {
+              glNormal3f(n0(0),n0(1),n0(2));
+              glVertex3f(v0(0),v0(1),v0(2));
+              glNormal3f(n1(0),n1(1),n1(2));
+              glVertex3f(v1(0),v1(1),v1(2));
+              glNormal3f(n2(0),n2(1),n2(2));
+              glVertex3f(v2(0),v2(1),v2(2));
+              glNormal3f(n3(0),n3(1),n3(2));
+              glVertex3f(v3(0),v3(1),v3(2));
+           }
+        }
+        glEnd();
+     }
   }
 
 

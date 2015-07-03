@@ -190,6 +190,8 @@ void World::drawPretty(SDL_Window* window) const {
      }
   }
 
+  glEnable(GL_POLYGON_OFFSET_FILL);
+  glPolygonOffset(1.0,1.0);
 
   //draw cluster spheres
   if(drawClusters){
@@ -207,8 +209,24 @@ void World::drawPretty(SDL_Window* window) const {
            //c.restCom = current COM in rest space
            //c.worldCom - c.restCom = translation of center of mass rest to world
            //trans = location of c in world.
-           auto trans = c.cg.c + c.worldCom - c.restCom;
-           glTranslated(trans(0), trans(1), trans(2));
+           //auto trans = cg.c + c.worldCom - c.restCom;
+           //auto trans = c.worldCom - c.restCom;
+           //glTranslated(trans(0), trans(1), trans(2));
+           
+           //step 3, translate from rest space origin to world 
+           glTranslated(c.worldCom(0), c.worldCom(1), c.worldCom(2)); 
+
+           //step 2, rotate about rest-to-world transform
+           Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
+           //push the rotation onto a 4x4 glMatrix
+           //gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
+           auto polar = utils::polarDecomp(c.restToWorldTransform);
+           gl_rot.block<3,3>(0,0) << polar.first;
+           glMultMatrixd(gl_rot.data());
+
+           //step 1, translate rest com to origin
+           glTranslated(-c.restCom(0), -c.restCom(1), -c.restCom(2));
+
            RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
            //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
            if (colorByToughness) {
@@ -219,8 +237,13 @@ void World::drawPretty(SDL_Window* window) const {
                  rgb = RGBColor(1.0-factor, factor, factor);
               }
            }
+           glPolygonMode(GL_FRONT,GL_FILL);
            glColor4d(rgb.r, rgb.g, rgb.b, 0.6);
-           utils::drawSphere(c.cg.r, 10, 10);
+           //utils::drawSphere(c.cg.r, 10, 10);
+           utils::drawClippedSphere(c.cg.r, 30, 30, c.cg.c, c.cg.planes);
+           glPolygonMode(GL_FRONT,GL_LINE);
+           glColor3d(0,0,0);
+           utils::drawClippedSphere(c.cg.r, 30, 30, c.cg.c, c.cg.planes);
            glPopMatrix();
         }
      }
@@ -230,8 +253,8 @@ void World::drawPretty(SDL_Window* window) const {
   //draw fracture planes 
   glMatrixMode(GL_MODELVIEW);
   if(drawFracturePlanes){
-     glPolygonMode(GL_FRONT, GL_FILL);
-     glPolygonMode(GL_BACK, GL_LINE);
+     glEnable(GL_CULL_FACE);
+     glCullFace(GL_BACK);
      for(auto&& pr : benlib::enumerate(clusters)){
         auto& c = pr.second;
         const auto i = pr.first;
@@ -247,7 +270,9 @@ void World::drawPretty(SDL_Window* window) const {
               //step 2, rotate about rest-to-world transform
               Eigen::Matrix4d gl_rot = Eigen::Matrix4d::Identity();
               //push the rotation onto a 4x4 glMatrix
-              gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
+              //gl_rot.block<3,3>(0,0) << c.restToWorldTransform;
+              auto polar = utils::polarDecomp(c.restToWorldTransform);
+              gl_rot.block<3,3>(0,0) << polar.first;
               glMultMatrixd(gl_rot.data());
 
               //step 1, translate rest com to origin
@@ -255,18 +280,24 @@ void World::drawPretty(SDL_Window* window) const {
 
               RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
               for (auto &p : cg.planes) {
-                 glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
+                 glPolygonMode(GL_FRONT, GL_FILL);
+                 glColor4d(rgb.r, rgb.g, rgb.b, 0.5);
                  //if rest com translated to origin (step 1 above) 
                  ////then we project from c.cg.c to make support point
-                 utils::drawPlane(p.first, p.second, 0.2, c.cg.c);
+                 utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
+                 glPolygonMode(GL_FRONT, GL_LINE);
+                 glColor3d(0,0,0);
+                 utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
+                 //if rest com translated to origin (step 1 above) 
               }
            }
            glPopMatrix();
         }
      }
-     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+     glDisable(GL_CULL_FACE);
   }
 
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   if (which_cluster != -1) {
      auto& c = clusters[which_cluster];
