@@ -103,7 +103,7 @@ void World::loadFromJson(const std::string& _filename){
   nClusters = root.get("nClusters", 1).asInt();
   neighborRadiusMax = root.get("neighborRadiusMax", std::numeric_limits<double>::max()).asDouble();
   nClustersMax = root.get("nClustersMax", std::numeric_limits<int>::max()).asInt();
-  blackhole = root.get("blackhole", 1.0e10).asDouble();
+  blackhole = root.get("blackhole", 1.0).asDouble();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
   alpha = root.get("alpha", 1.0).asDouble();
   omega = root.get("omega", 1.0).asDouble();
