@@ -114,14 +114,16 @@ video games.  The authors also introduced several extensions including linear an
 
 Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice-based shape matching,
 which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
-of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
-simple fracture model that removed over-extended links in the lattice.  
+of the regular structure of the lattices to achieve extremely high performance.  
 
 Despite impressive results and substantial promise,
 the shape matching framework has been largely disregarded by the research community in favor of position-based
 dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
 the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching
-and pointed out several advantages of shape matching over position-based dynamics.
+and pointed out several advantages of shape matching over position-based dynamics.  Most sifnificantly, shape matching respects Newton's 
+laws of motion.
+
+Clustering is crazy well-studied.  So is collision detection.
 
 \section{Methods}
 For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
@@ -184,7 +186,7 @@ Given $\B{R}$ and $\B{x}_{cm}-\B{r}_{cm}$, we define goal positions, $\B{g}_i$, 
 \end{equation}
 Hookean springs are then used to define forces that move the particles toward the goal positions.
 
-\paragraph{Clustered Shape Matching}
+\subsection{Clustered Shape Matching}
 Handling multiple clusters is straightforward.  When computing a particle's contribution to 
 cluster quantities, we must divide the particle's mass among its clusters.  To do 
 so we introduce a weight $w_{i,c}$ for particle $p_i$ in cluster $c$.  The simplest weighting
