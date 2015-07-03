@@ -190,7 +190,8 @@ public:
   double dt, elapsedTime;
   double neighborRadius, neighborRadiusMax;
   int nClusters, nClustersMax;
-
+  double blackhole;
+  
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
   double yield, nu, hardening; // plasticity parameters

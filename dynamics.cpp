@@ -701,7 +701,7 @@ bool World::makeClusters(){
   // fuzzy c-means loop
   iters = 0;
   double sqrNeighborRadius = neighborRadius*neighborRadius;
-  while ((!converged || iters < 5) && iters < 100) {
+  while ((!converged || iters < 5) && iters < 10000) {
 	converged = true;
 	iters++;
 	
@@ -742,7 +742,7 @@ bool World::makeClusters(){
 		  bestNorm = newNorm;
 		}
 	  }
-	  clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,1.0));
+	  clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,blackhole));
 	  p.totalweight = 1.0;
 	  converged = false;
 	}
@@ -780,6 +780,7 @@ bool World::makeClusters(){
 	  exit(0);
 	}
   }
+  if (!converged) return false;
   std::cout << "numClusters: " << clusters.size() << std::endl;
 
   for(auto& c : clusters){ 
