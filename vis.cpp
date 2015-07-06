@@ -123,7 +123,11 @@ void World::drawPretty(SDL_Window* window) const {
      glPointSize(10);
 
      if (!drawColoredParticles) {
-        glColor4d(1,1,1,0.95);
+        if (which_cluster == -1) {
+           glColor4d(1,1,1,0.95);
+        } else {
+           glColor4d(1,1,1,0.2);
+        }
         glEnableClientState(GL_VERTEX_ARRAY);
         glVertexPointer(3, GL_DOUBLE,
               sizeof(Particle),
@@ -212,7 +216,7 @@ void World::drawPretty(SDL_Window* window) const {
            //auto trans = cg.c + c.worldCom - c.restCom;
            //auto trans = c.worldCom - c.restCom;
            //glTranslated(trans(0), trans(1), trans(2));
-           
+           /*
            //step 3, translate from rest space origin to world 
            glTranslated(c.worldCom(0), c.worldCom(1), c.worldCom(2)); 
 
@@ -226,6 +230,10 @@ void World::drawPretty(SDL_Window* window) const {
 
            //step 1, translate rest com to origin
            glTranslated(-c.restCom(0), -c.restCom(1), -c.restCom(2));
+           */
+
+           Eigen::Matrix4d vis_t = c.getVisTransform();
+           glMultMatrixd(vis_t.data());
 
            RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
            //RGBColor rgb = HSLColor(2.0*acos(-1)*i/clusters.size(), 0.7, 0.7).to_rgb();
@@ -253,8 +261,8 @@ void World::drawPretty(SDL_Window* window) const {
   //draw fracture planes 
   glMatrixMode(GL_MODELVIEW);
   if(drawFracturePlanes){
-     glEnable(GL_CULL_FACE);
-     glCullFace(GL_BACK);
+     //glEnable(GL_CULL_FACE);
+     //glCullFace(GL_BACK);
      for(auto&& pr : benlib::enumerate(clusters)){
         auto& c = pr.second;
         const auto i = pr.first;
@@ -265,6 +273,7 @@ void World::drawPretty(SDL_Window* window) const {
 
            if (cg.planes.size() > 0) {
               //step 3, translate from rest space origin to world 
+              /*
               glTranslated(c.worldCom(0), c.worldCom(1), c.worldCom(2)); 
 
               //step 2, rotate about rest-to-world transform
@@ -277,24 +286,65 @@ void World::drawPretty(SDL_Window* window) const {
 
               //step 1, translate rest com to origin
               glTranslated(-c.restCom(0), -c.restCom(1), -c.restCom(2));
+              */
 
-              RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
-              for (auto &p : cg.planes) {
-                 glPolygonMode(GL_FRONT, GL_FILL);
-                 glColor4d(rgb.r, rgb.g, rgb.b, 0.5);
-                 //if rest com translated to origin (step 1 above) 
-                 ////then we project from c.cg.c to make support point
-                 utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
-                 glPolygonMode(GL_FRONT, GL_LINE);
-                 glColor3d(0,0,0);
-                 utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
-                 //if rest com translated to origin (step 1 above) 
+              if (joshDebugFlag) {
+                 Eigen::Matrix4d vis_t = c.getVisTransform();
+                 glMultMatrixd(vis_t.data());
+
+                 RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
+                 for (auto &p : cg.planes) {
+                    glPolygonMode(GL_FRONT, GL_FILL);
+                    glColor4d(rgb.r, rgb.g, rgb.b, 0.5);
+                    //if rest com translated to origin (step 1 above) 
+                    ////then we project from c.cg.c to make support point
+                    utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
+                    glPolygonMode(GL_FRONT, GL_LINE);
+                    glColor3d(0,0,0);
+                    utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
+                    //if rest com translated to origin (step 1 above) 
+                 }
+              } else {
+                 Eigen::Matrix4d vis_t = c.getVisTransform();
+                 //glMultMatrixd(vis_t.data());
+
+                 RGBColor rgb = HSLColor(2.0*acos(-1)*(i%12)/12.0, 0.7, 0.7).to_rgb();
+                 for (auto &p : cg.planes) {
+                    glPolygonMode(GL_FRONT, GL_FILL);
+                    glColor4d(rgb.r, rgb.g, rgb.b, 0.5);
+                    //if rest com translated to origin (step 1 above) 
+                    ////then we project from c.cg.c to make support point
+
+                    Eigen::Vector4d norm4(p.first(0), p.first(1), p.first(2), 0);
+                    Eigen::Vector4d pt4(c.cg.c(0), c.cg.c(1), c.cg.c(2), 1);
+                    double d = norm4.dot(pt4) + p.second;
+                    pt4 = pt4 - d*norm4;
+
+                    norm4 = vis_t * norm4;
+                    pt4 = vis_t * pt4;
+
+                    Eigen::Vector3d norm3(norm4(0), norm4(1), norm4(2));
+                    Eigen::Vector3d pt3(pt4(0), pt4(1), pt4(2));
+                    d = norm3.dot(pt3);
+
+
+                    utils::drawPlane(norm3, -d, c.cg.r, pt3);
+                 }
+
+                 //only draw the plane outlines with the transform
+                 glMultMatrixd(vis_t.data());
+                 for (auto &p : cg.planes) {
+                    glPolygonMode(GL_FRONT, GL_LINE);
+                    glColor3d(0,0,0);
+                    utils::drawPlane(p.first, p.second, c.cg.r, c.cg.c);
+                    //if rest com translated to origin (step 1 above) 
+                 }
               }
            }
            glPopMatrix();
         }
      }
-     glDisable(GL_CULL_FACE);
+     //glDisable(GL_CULL_FACE);
   }
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
