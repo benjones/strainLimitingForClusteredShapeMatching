@@ -701,7 +701,7 @@ bool World::makeClusters(){
   // fuzzy c-means loop
   iters = 0;
   double sqrNeighborRadius = neighborRadius*neighborRadius;
-  while ((!converged || iters < 5) && iters < 10000) {
+  while ((!converged || iters < 5) && iters < clusterItersMax) {
 	converged = true;
 	iters++;
 	

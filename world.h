@@ -189,7 +189,7 @@ public:
 
   double dt, elapsedTime;
   double neighborRadius, neighborRadiusMax;
-  int nClusters, nClustersMax;
+  int nClusters, nClustersMax, clusterItersMax;
   double blackhole;
   
   int numConstraintIters;
