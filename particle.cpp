@@ -1,4 +1,6 @@
 #include "particle.h"
+#include "utils.h"
+#include <iostream>
 
 inline double sqr (double x) {return x*x;}
 
@@ -34,3 +36,23 @@ CollisionGeometry & CollisionGeometry::operator= (const CollisionGeometry &that)
   //planes.push_back(std::pair<Eigen::Vector3d, double>(p.first, p.second));
   return *this;
 };
+
+Eigen::Matrix4d Cluster::getVisTransform() const {
+    Eigen::Matrix4d total_t = Eigen::Matrix4d::Identity();
+    //step 3, translate from rest space origin to world 
+    total_t.block<3,1>(0,3) << worldCom;
+    
+    //step 2, rotate about rest-to-world transform
+    Eigen::Matrix4d rot = Eigen::Matrix4d::Identity();
+    //push the rotation onto a 4x4 glMatrix
+    auto polar = utils::polarDecomp(restToWorldTransform);
+    rot.block<3,3>(0,0) << polar.first;
+    total_t = total_t * rot;
+
+    //step 1, translate rest com to origin
+    Eigen::Matrix4d local_t = Eigen::Matrix4d::Identity();
+    local_t.block<3,1>(0,3) << -restCom;
+    total_t = total_t * local_t;
+
+    return total_t;
+}

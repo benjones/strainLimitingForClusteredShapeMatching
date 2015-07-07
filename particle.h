@@ -57,5 +57,6 @@ class Cluster {
 
   CollisionGeometry cg;
   Eigen::Matrix3d worldToRestTransform, restToWorldTransform;
+  Eigen::Matrix4d getVisTransform() const;
 };
 
