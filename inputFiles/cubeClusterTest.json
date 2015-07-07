@@ -4,6 +4,7 @@
 	"nClusters" : 60,
 	"clusteringAlgorithm" : 2,
 	"clusterKernel" : 3,
+	"kernel weight" : 2.0,  // for fuzzy c-means this should be > 1
 
 	//"blackhole" : 1000.0,
 	"alpha" : 0.5,
