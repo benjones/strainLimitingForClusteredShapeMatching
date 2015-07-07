@@ -3,7 +3,7 @@
 	"neighborRadius" : 0.2,
 	"nClusters" : 60,
 	"clusteringAlgorithm" : 0,
-	"clusterKernel" : 3,
+	"clusterKernel" : 0,
 	"kernel weight" : 2.0,  // for fuzzy c-means this should be > 1
 
 	//"blackhole" : 1000.0,

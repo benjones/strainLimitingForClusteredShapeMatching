@@ -12,6 +12,8 @@ using benlib::range;
 
 
 
+inline double cube(double x) { return x*x*x;}
+
 void World::loadFromJson(const std::string& _filename){
   elapsedTime = 0;
   filename = _filename;
@@ -106,7 +108,7 @@ void World::loadFromJson(const std::string& _filename){
   clusterItersMax = root.get("clusterItersMax", 10000).asInt();
   clusteringAlgorithm = root.get("clusteringAlgorithm", 0).asInt();
   clusterOverlap = root.get("clusterOverlap", 0.0).asDouble();
-  clusterKernel = root.get("clusterKernel", 1).asInt();
+  clusterKernel = root.get("clusterKernel", 0).asInt();
   kernelWeight = root.get("kernelWeight", 2.0).asDouble();
   blackhole = root.get("blackhole", 1.0).asDouble();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
@@ -312,6 +314,8 @@ void World::loadFromJson(const std::string& _filename){
 	}
 	nClusters = std::min(nClusters, nClustersMax);
 	neighborRadius = std::min(neighborRadius, neighborRadiusMax);
+	sqrNeighborRadius = neighborRadius * neighborRadius;
+	poly6norm = 315.0 / (64.0 * M_PI * cube(cube(neighborRadius)));
 	std::cout<<"trying clustering again with nClusters = "<<nClusters<<" neighborRadius = "<<neighborRadius<<std::endl;
   }
   std::cout<<"nClusters = "<<nClusters<<std::endl;

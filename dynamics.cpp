@@ -703,21 +703,19 @@ bool World::makeRandomClusters() {
 }
 
 double World::kernel(const Eigen::Vector3d &x) {
-  double poly6norm = 315.0 / (64.0 * M_PI * cube(cube(neighborRadius)));
-  double sqrNeighborRadius = neighborRadius * neighborRadius;
-
   switch (clusterKernel) {
-
-  case 0: // constant weight
+  case 0: // 1 / r^2
+	return 1.0 / (x.squaredNorm() + 1.0e-4);
+  case 1: // constant weight
 	return 1.0;
-  case 1: // poly 6
+  case 2: // poly 6
 	return poly6norm * cube(sqrNeighborRadius-x.squaredNorm());
-  case 2: // blend
+  case 3: // blend
 	return poly6norm * cube(sqrNeighborRadius-x.squaredNorm()) + kernelWeight;
-  case 3: // fuzzy c-means
+  case 4: // fuzzy c-means
 	return x.norm();
   default:
-	return 1.0;
+	return 1.0 / (x.squaredNorm() + 1.0e-4);
   }
 }
 
@@ -727,6 +725,7 @@ bool World::makeClusters(){
 
   bool converged;
   int iters = 0;
+  double convergenceThreshold = 1e-6 * sqrNeighborRadius; // 0.1% motion allowed
   std::random_device rd;
   std::mt19937 g(std::mt19937::default_seed);
   std::vector<bool> picked(particles.size());
@@ -898,7 +897,7 @@ bool World::makeClusters(){
 		converged = false;
 	  }
 
-	  if (clusterKernel == 3) {
+	  if (clusterKernel == 4) {
 		for (auto m = 0; m < particles.size(); m++) {
 		  auto &p = particles[m];
 		  p.totalweight = 0.0;
@@ -930,6 +929,7 @@ bool World::makeClusters(){
 	  }
 	  
 	  for (auto& c : clusters) {
+		c.worldCom = c.restCom;
 		c.mass = 0.0;
 		c.restCom = Eigen::Vector3d::Zero();
 		for (auto &n : c.neighbors) {
@@ -940,6 +940,7 @@ bool World::makeClusters(){
 		  c.mass += w * p.mass;
 		}
 		c.restCom /= c.mass;
+		if ((c.restCom - c.worldCom).squaredNorm() > convergenceThreshold) converged = false;
 	  }
 	} 
 	std::cout<<"Fuzzy c-means clustering ran "<<iters<<" iterations."<<std::endl;
