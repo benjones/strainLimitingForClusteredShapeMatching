@@ -1,0 +1,13 @@
+{
+	"particleFiles" : [ "inputFiles/cube.txt"],
+		"neighborRadius" : 0.1,
+	"nClusters" : 40,
+	"clusteringAlgorithm" : 0,
+		//"neighborRadius" : 1000.0,
+		"alpha" : 1.0,
+		"omega" : 0.3,
+		"numConstraintIters" : 8,
+		"maxStretch" : 0.1,
+	"gravity" : [0.0, 0.0, 0.0],
+	"initialStretch" : [2.0, 1.0, 1.0]
+}
