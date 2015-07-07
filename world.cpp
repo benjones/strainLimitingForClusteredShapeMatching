@@ -104,6 +104,7 @@ void World::loadFromJson(const std::string& _filename){
   neighborRadiusMax = root.get("neighborRadiusMax", std::numeric_limits<double>::max()).asDouble();
   nClustersMax = root.get("nClustersMax", std::numeric_limits<int>::max()).asInt();
   clusterItersMax = root.get("clusterItersMax", 10000).asInt();
+  clusteringAlgorithm = root.get("clusteringAlgorithm", 0).asInt();
   blackhole = root.get("blackhole", 1.0).asDouble();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
   alpha = root.get("alpha", 1.0).asDouble();
@@ -271,6 +272,17 @@ void World::loadFromJson(const std::string& _filename){
   }
 
 
+  Eigen::Vector3d initialStretch;
+  auto& initialStretchIn = root["initialStretch"];
+  if(!initialStretchIn.isNull() && initialStretchIn.isArray() && initialStretchIn.size() == 3){
+	initialStretch.x() = initialStretchIn[0].asDouble();
+	initialStretch.y() = initialStretchIn[1].asDouble();
+	initialStretch.z() = initialStretchIn[2].asDouble();
+  } else {
+	std::cout << "default gravity" << std::endl;
+	gravity = Eigen::Vector3d{0, -9.81, 0};
+  }
+
 
   
   restPositionGrid.numBuckets = 6;
@@ -290,6 +302,13 @@ void World::loadFromJson(const std::string& _filename){
   }
   std::cout<<"nClusters = "<<nClusters<<std::endl;
 
+
+  
+  for (auto &p : particles) {
+	p.position.x() *= initialStretch[0];
+	p.position.x() *= initialStretch[1];
+	p.position.x() *= initialStretch[2];
+  }
   //apply initial rotation/scaling, etc
   //todo, read this from json
   //Eigen::Vector3d axis{0,0,1};
@@ -297,7 +316,7 @@ void World::loadFromJson(const std::string& _filename){
 	//p.position.x() *= 2.5;
 	//p.velocity = 0.5*p.position.cross(axis);
 	//auto pos = p.position;
-	//.position[0] = 0.36*pos[0] + 0.48*pos[1] - 0.8*pos[2];
+	//p.position[0] = 0.36*pos[0] + 0.48*pos[1] - 0.8*pos[2];
 	//p.position[1] = -0.8*pos[0] + 0.6*pos[1];// - 0.8*pos[2];
 	//p.position[2] = 0.48*pos[0] + 0.64*pos[1] + 0.6*pos[2];
   //}

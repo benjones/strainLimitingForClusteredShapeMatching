@@ -89,6 +89,7 @@ public:
   void updateNeighbors(size_t partIndex);
 
   bool makeClusters();
+  bool makeRandomClusters();
 
   void countClusters();
 
@@ -191,6 +192,7 @@ public:
   double neighborRadius, neighborRadiusMax;
   int nClusters, nClustersMax, clusterItersMax;
   double blackhole;
+  int clusteringAlgorithm;  // 0 = default (fuzzy c-means with weights); 1 = fuzzy c-means, constant weight; 2 = k-means; 3 = random
   
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;

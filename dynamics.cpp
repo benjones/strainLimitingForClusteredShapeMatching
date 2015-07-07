@@ -650,103 +650,165 @@ void World::selfCollisions() {
 inline double cube(double x) { return x*x*x;}
 //inline double poly6(double r, double h) {(r<h) ? return cube(h - r) : return 0.0;}
 
+bool World::makeRandomClusters() {
+  clusters.clear();
+  auto r = range(particles.size());
+  auto lonelyParticles = std::vector<size_t>(r.begin(), r.end());
+	
+  for(auto& p : particles){p.numClusters = 0; p.totalweight = 0.0;}
+  
+  while(!lonelyParticles.empty()) {
+	auto currentParticle = lonelyParticles.back();
+	lonelyParticles.pop_back();
+	Cluster c;
+	c.restCom = particles[currentParticle].restPosition;
+	std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+	c.neighbors.resize(neighbors.size());
+	double w = 1.0;
+	for(unsigned int i=0; i<neighbors.size(); i++) {
+	  auto n = neighbors[i];
+	  Particle &p = particles[n];
+	  p.numClusters++; 
+	  p.totalweight += w; 
+	  p.clusters.push_back(clusters.size());
+	  c.neighbors[i] = std::pair<int, double>(n, w);
+	}
+	clusters.push_back(c);
+
+	std::cout<<lonelyParticles.size()<<std::endl;
+	auto it = std::remove_if(lonelyParticles.begin(), lonelyParticles.end(),
+							 [&neighbors](size_t n){
+							   //neighbors aren't lonely anymore
+		  return std::find(neighbors.begin(),
+			  neighbors.end(),
+			  n) != neighbors.end();
+							 });
+	lonelyParticles.erase(it, lonelyParticles.end());
+	std::cout<<lonelyParticles.size()<<std::endl;
+  } 
+  for (auto& c : clusters) {
+	c.mass = 0.0;
+	c.restCom = Eigen::Vector3d::Zero();
+	for (auto &n : c.neighbors) {
+	  auto &p = particles[n.first];
+	  double w = n.second / p.totalweight;
+	  c.restCom += w * p.mass * p.position;
+	  c.mass += w * p.mass;
+	}
+	c.restCom /= c.mass;
+  }
+  return true;
+}
+
 bool World::makeClusters(){
+  std::cout<<"using clusteringAlgorithm "<<clusteringAlgorithm<<std::endl;
   clusters.clear();
 
+  bool converged;
+  int iters = 0;
   std::random_device rd;
   std::mt19937 g(std::mt19937::default_seed);
   std::vector<bool> picked(particles.size());
   for (auto &&p : picked) p = false;
 
   // initialize cluster centers to random paricles
-  while (clusters.size() < nClusters) {
-	Cluster c;
-	int r = g() % particles.size();
-	if (picked[r]) continue;
-	picked[r] = true;
-	c.restCom = particles[r].restPosition;
-	clusters.push_back(c);
-  }
-  
-  bool converged = false;
-  int iters = 0;
-  while (!converged) {
-	iters++;
+  if (clusteringAlgorithm == 3) {
+	makeRandomClusters();
 	converged = true;
-	for (auto& c : clusters) c.neighbors.clear();
-	
-	for (auto i=0; i<particles.size(); i++) {
-	  auto& p = particles[i];
-	  int bestCluster = 0;
-	  double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
-	  for (auto j = 0; j<clusters.size(); j++) {
-		double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
-		if (newNorm < bestNorm) {
-		  bestCluster = j;
-		  bestNorm = newNorm;
-		}
-	  }
-	  clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,1.0));
-	  if (p.numClusters != bestCluster) converged = false;
-	  p.numClusters = bestCluster;
-	  p.totalweight = 1.0;
-	}
-	
-	for (auto& c : clusters) {
-	  c.restCom = sumWeightedRestCOM(c.neighbors);
-	}
   }
-  
 
-  // fuzzy c-means loop
-  iters = 0;
-  double sqrNeighborRadius = neighborRadius*neighborRadius;
-  while ((!converged || iters < 5) && iters < clusterItersMax) {
-	converged = true;
-	iters++;
-	
-	for (auto i=0; i<particles.size(); i++) {
-	  auto& p = particles[i];
-	  p.clusters.clear();
-	  p.numClusters = 0;
-	  p.totalweight = 0.0;
-	}
-
-	for (auto j = 0; j<clusters.size(); j++) {
-	  Cluster &c = clusters[j];
-	  int oldNeighbors = c.neighbors.size();
+#if 0
+  if (clusteringAlgorithm == 3) {
+	for (auto j=0; j<clusters.size(); j++) {
+	  auto &c = clusters[j];
 	  std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
 	  c.neighbors.resize(neighbors.size());
 	  for(unsigned int i=0; i<neighbors.size(); i++) {
 		auto n = neighbors[i];
 		Particle &p = particles[n];
-		double norm = (c.restCom - p.restPosition).squaredNorm();
-		double w = 1e7*cube(sqrNeighborRadius-norm);
+		//double norm = (c.restCom - p.restPosition).squaredNorm();
+		//double w = 1e7*cube(sqrNeighborRadius-norm);
+		double w = 1.0;
 		c.neighbors[i] = std::pair<int, double>(n, w);
 		p.totalweight += w;
 		p.clusters.push_back(j);
 		p.numClusters++;
 	  }
-	  if (oldNeighbors != c.neighbors.size()) converged = false;
 	}
-	
-	for (int i = 0; i<particles.size(); i++) {
-	  auto& p = particles[i];
-	  if (p.numClusters > 0) continue;
-	  int bestCluster = 0;
-	  double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
-	  for (auto j = 0; j<clusters.size(); j++) {
-		double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
-		if (newNorm < bestNorm) {
-		  bestCluster = j;
-		  bestNorm = newNorm;
-		}
+	for (auto& p : particles) {
+	  if (p.numClusters == 0) {
+		std::cout<<"Particle has no cluster"<<std::endl;
+		return false;
 	  }
-	  clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,blackhole));
-	  p.totalweight = 1.0;
-	  converged = false;
+	}
+  }
+#endif
+  
+  if (clusteringAlgorithm < 3) {
+	while (clusters.size() < nClusters) {
+	  Cluster c;
+	  int r = g() % particles.size();
+	  if (picked[r]) continue;
+	  picked[r] = true;
+	  c.restCom = particles[r].restPosition;
+	  clusters.push_back(c);
 	}
 
+	converged = false;
+	while (!converged) {
+	  iters++;
+	  converged = true;
+	  for (auto& c : clusters) c.neighbors.clear();
+	  
+	  for (auto i=0; i<particles.size(); i++) {
+		auto& p = particles[i];
+		int bestCluster = 0;
+		double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
+		for (auto j = 0; j<clusters.size(); j++) {
+		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
+		  if (newNorm < bestNorm) {
+			bestCluster = j;
+			bestNorm = newNorm;
+		  }
+		}
+		clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,1.0));
+		if (p.numClusters != bestCluster) converged = false;
+		p.numClusters = bestCluster;
+		p.totalweight = 1.0;
+	  }
+	  
+	  for (auto& c : clusters) {
+		c.mass = 0.0;
+		c.restCom = Eigen::Vector3d::Zero();
+		for (auto &n : c.neighbors) {
+		  auto &p = particles[n.first];
+		  double w = n.second / p.totalweight;
+		  c.restCom += w * p.mass * p.position;
+		  c.mass += w * p.mass;
+		}
+		c.restCom /= c.mass;
+	  }
+	}
+  }
+  
+  if (clusteringAlgorithm == 2) {
+	for(auto& p : particles){p.numClusters = 0; p.totalweight = 0.0;}
+	for (auto j=0; j<clusters.size(); j++) {
+	  auto &c = clusters[j];
+	  std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+	  c.neighbors.resize(neighbors.size());
+	  for(unsigned int i=0; i<neighbors.size(); i++) {
+		auto n = neighbors[i];
+		Particle &p = particles[n];
+		//double norm = (c.restCom - p.restPosition).squaredNorm();
+		//double w = 1e7*cube(sqrNeighborRadius-norm);
+		double w = 1.0;
+		c.neighbors[i] = std::pair<int, double>(n, w);
+		p.totalweight += w;
+		p.clusters.push_back(j);
+		p.numClusters++;
+	  }
+	}
 	for (auto& c : clusters) {
 	  c.mass = 0.0;
 	  c.restCom = Eigen::Vector3d::Zero();
@@ -758,9 +820,80 @@ bool World::makeClusters(){
 	  }
 	  c.restCom /= c.mass;
 	}
-  } 
-  std::cout<<"Fuzzy c-means clustering ran "<<iters<<" iterations."<<std::endl;
-  
+	for (auto& p : particles) {
+	  if (p.numClusters == 0) {
+		std::cout<<"Particle has no cluster"<<std::endl;
+		return false;
+	  }
+	}
+  }
+
+  // fuzzy c-means loop
+  if (clusteringAlgorithm < 2) {
+	iters = 0;
+	double sqrNeighborRadius = neighborRadius*neighborRadius;
+	while ((!converged || iters < 5) && iters < clusterItersMax) {
+	  converged = true;
+	  iters++;
+	
+	  for (auto i=0; i<particles.size(); i++) {
+		auto& p = particles[i];
+		p.clusters.clear();
+		p.numClusters = 0;
+		p.totalweight = 0.0;
+	  }
+	  
+	  for (auto j = 0; j<clusters.size(); j++) {
+		Cluster &c = clusters[j];
+		int oldNeighbors = c.neighbors.size();
+		std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+		c.neighbors.resize(neighbors.size());
+		for(unsigned int i=0; i<neighbors.size(); i++) {
+		  auto n = neighbors[i];
+		  Particle &p = particles[n];
+		  double norm = (c.restCom - p.restPosition).squaredNorm();
+		  double w = 1e7*cube(sqrNeighborRadius-norm);
+		  if (clusteringAlgorithm == 1) w = 1.0;
+		  c.neighbors[i] = std::pair<int, double>(n, w);
+		  p.totalweight += w;
+		  p.clusters.push_back(j);
+		  p.numClusters++;
+		}
+		if (oldNeighbors != c.neighbors.size()) converged = false;
+	  }
+	
+	  for (int i = 0; i<particles.size(); i++) {
+		auto& p = particles[i];
+		if (p.numClusters > 0) continue;
+		int bestCluster = 0;
+		double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
+		for (auto j = 0; j<clusters.size(); j++) {
+		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
+		  if (newNorm < bestNorm) {
+			bestCluster = j;
+			bestNorm = newNorm;
+		  }
+		}
+		clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,blackhole));
+		p.totalweight = 1.0;
+		converged = false;
+	  }
+	  
+	  for (auto& c : clusters) {
+		c.mass = 0.0;
+		c.restCom = Eigen::Vector3d::Zero();
+		for (auto &n : c.neighbors) {
+		  auto &p = particles[n.first];
+		  double w = n.second / p.totalweight;
+		  c.restCom += w * p.mass * p.position;
+		  c.mass += w * p.mass;
+		}
+		c.restCom /= c.mass;
+	  }
+	} 
+	std::cout<<"Fuzzy c-means clustering ran "<<iters<<" iterations."<<std::endl;
+  }
+
   for (auto& p : particles) {
 	if (p.numClusters == 0) {
 	  std::cout<<"Particle has no cluster"<<std::endl;
