@@ -1,13 +1,17 @@
 {
 	"particleFiles" : [ "inputFiles/cube.txt"],
-		"neighborRadius" : 0.1,
-	"nClusters" : 40,
-	"clusteringAlgorithm" : 0,
-		//"neighborRadius" : 1000.0,
-		"alpha" : 1.0,
-		"omega" : 0.3,
-		"numConstraintIters" : 8,
-		"maxStretch" : 0.1,
-	"gravity" : [0.0, 0.0, 0.0],
-	"initialStretch" : [2.0, 1.0, 1.0]
+	"neighborRadius" : 0.2,
+	"nClusters" : 60,
+	"clusteringAlgorithm" : 2,
+	"clusterKernel" : 3,
+
+	//"blackhole" : 1000.0,
+	"alpha" : 0.5,
+	"omega" : 0.3,
+	"numConstraintIters" : 3,
+	"maxStretch" : 0.1,
+	"fracture" : "off",
+	"selfCollisions" : "off",
+	"initialStretch" : [2.0, 1.0, 1.0],
+	"gravity" : [0.0, 0.0, 0.0]
 }

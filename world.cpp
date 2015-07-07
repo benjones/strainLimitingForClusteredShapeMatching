@@ -105,6 +105,9 @@ void World::loadFromJson(const std::string& _filename){
   nClustersMax = root.get("nClustersMax", std::numeric_limits<int>::max()).asInt();
   clusterItersMax = root.get("clusterItersMax", 10000).asInt();
   clusteringAlgorithm = root.get("clusteringAlgorithm", 0).asInt();
+  clusterOverlap = root.get("clusterOverlap", 0.0).asDouble();
+  clusterKernel = root.get("clusterKernel", 1).asInt();
+  kernelWeight = root.get("kernelWeight", 2.0).asDouble();
   blackhole = root.get("blackhole", 1.0).asDouble();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
   alpha = root.get("alpha", 1.0).asDouble();
@@ -121,6 +124,18 @@ void World::loadFromJson(const std::string& _filename){
   
   collisionRestitution = root.get("collisionRestitution", 0.5).asDouble();
   outlierThreshold = root.get("outlierThreshold", 2.0).asDouble();
+
+  auto fractureIn = root["fracture"];
+  if (!fractureIn.isNull() && fractureIn.asString().compare("off") == 0) {
+	fractureOn = false;
+	std::cout<<"Fracture off"<<std::endl;
+  } else fractureOn = true;
+
+  auto selfCollisionsIn = root["selfCollisions"];
+  if (!selfCollisionsIn.isNull() && selfCollisionsIn.asString().compare("off") == 0) {
+	selfCollisionsOn = false;
+	std::cout<<"Self Collisions Off"<<std::endl;
+  } else selfCollisionsOn = true;
 
   auto& gravityIn = root["gravity"];
   if(!gravityIn.isNull() && gravityIn.isArray() && gravityIn.size() == 3){
@@ -279,8 +294,7 @@ void World::loadFromJson(const std::string& _filename){
 	initialStretch.y() = initialStretchIn[1].asDouble();
 	initialStretch.z() = initialStretchIn[2].asDouble();
   } else {
-	std::cout << "default gravity" << std::endl;
-	gravity = Eigen::Vector3d{0, -9.81, 0};
+	initialStretch = Eigen::Vector3d{1.0, 1.0, 1.0};
   }
 
 
@@ -306,8 +320,8 @@ void World::loadFromJson(const std::string& _filename){
   
   for (auto &p : particles) {
 	p.position.x() *= initialStretch[0];
-	p.position.x() *= initialStretch[1];
-	p.position.x() *= initialStretch[2];
+	p.position.y() *= initialStretch[1];
+	p.position.z() *= initialStretch[2];
   }
   //apply initial rotation/scaling, etc
   //todo, read this from json

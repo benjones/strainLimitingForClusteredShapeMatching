@@ -192,7 +192,13 @@ public:
   double neighborRadius, neighborRadiusMax;
   int nClusters, nClustersMax, clusterItersMax;
   double blackhole;
-  int clusteringAlgorithm;  // 0 = default (fuzzy c-means with weights); 1 = fuzzy c-means, constant weight; 2 = k-means; 3 = random
+  int clusteringAlgorithm;  // 0 = default (fuzzy c-means with weights); 2 = k-means; 3 = random
+  double clusterOverlap;
+  int clusterKernel; // 0 = constant, 1 = poly6, 2 = blend (with kernelweight), 3 = fuzzy c-means
+  double kernelWeight; // only for the blended kernel, and fuzzy c-means
+  bool fractureOn, selfCollisionsOn;
+
+  double kernel(const Eigen::Vector3d &x);
   
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
