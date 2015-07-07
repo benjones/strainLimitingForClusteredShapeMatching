@@ -677,7 +677,7 @@ bool World::makeRandomClusters() {
 	}
 	clusters.push_back(c);
 
-	std::cout<<lonelyParticles.size()<<std::endl;
+	//std::cout<<lonelyParticles.size()<<std::endl;
 	auto it = std::remove_if(lonelyParticles.begin(), lonelyParticles.end(),
 							 [&neighbors](size_t n){
 							   //neighbors aren't lonely anymore
@@ -686,7 +686,7 @@ bool World::makeRandomClusters() {
 			  n) != neighbors.end();
 							 });
 	lonelyParticles.erase(it, lonelyParticles.end());
-	std::cout<<lonelyParticles.size()<<std::endl;
+	//std::cout<<lonelyParticles.size()<<std::endl;
   } 
   for (auto& c : clusters) {
 	c.mass = 0.0;

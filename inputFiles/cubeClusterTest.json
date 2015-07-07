@@ -2,7 +2,7 @@
 	"particleFiles" : [ "inputFiles/cube.txt"],
 	"neighborRadius" : 0.2,
 	"nClusters" : 60,
-	"clusteringAlgorithm" : 2,
+	"clusteringAlgorithm" : 0,
 	"clusterKernel" : 3,
 	"kernel weight" : 2.0,  // for fuzzy c-means this should be > 1
 
