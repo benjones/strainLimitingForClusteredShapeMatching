@@ -830,7 +830,9 @@ bool World::makeClusters(){
 		p.numClusters++;
 	  }
 	}
+
 	for (auto& c : clusters) {
+	  c.cg.init(c.restCom, neighborRadius);
 	  c.mass = 0.0;
 	  c.restCom = Eigen::Vector3d::Zero();
 	  for (auto &n : c.neighbors) {
@@ -943,6 +945,7 @@ bool World::makeClusters(){
 		if ((c.restCom - c.worldCom).squaredNorm() > convergenceThreshold) converged = false;
 	  }
 	} 
+	for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
 	std::cout<<"Fuzzy c-means clustering ran "<<iters<<" iterations."<<std::endl;
   }
 
@@ -954,9 +957,43 @@ bool World::makeClusters(){
 	}
   }
 
-  updateClusterProperties(benlib::range(clusters.size()));
+  for (auto& c : clusters) {
+	Eigen::Matrix3d Aqq;
+	Aqq.setZero();
+	for (auto &n : c.neighbors) {
+	  auto &p = particles[n.first];
+	  Eigen::Vector3d qj = p.restPosition - c.restCom;
+	  Aqq += qj * qj.transpose();
+	}
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(Aqq, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
-  for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
+	double min, max;
+	Eigen::Vector3d n;
+	for (unsigned int i=0; i<3; i++) {
+	  n = solver.matrixV().col(i);
+	  min = std::numeric_limits<double>::max();
+	  max = -std::numeric_limits<double>::max();
+	  for (auto &neighbor : c.neighbors) {
+		auto &p = particles[neighbor.first];
+		double d = n.dot(p.restPosition);
+		if (d < min) min = d;
+		if (d > max) max = d;
+	  }
+	  double center = n.dot(c.cg.c);
+	  //std::cout<<max - min<<" "<<neighborRadius<<std::endl;
+	  //if (max - min < 1.5*neighborRadius) {
+	  if (max - center < 0.5*neighborRadius) {
+		std::cout<<" adding plane: "<<n(0)<<"x + "<<n(1)<<"y + "<<n(2)<<"z + "<<-max<<std::endl;
+		c.cg.addPlane(n, -max);
+	  }
+	  if (center - min < 0.5*neighborRadius) {
+		std::cout<<" adding plane: "<<-n(0)<<"x + "<<-n(1)<<"y + "<<-n(2)<<"z + "<<min<<std::endl;
+		c.cg.addPlane(-n, min);
+	  }
+	}
+  }
+
+  updateClusterProperties(benlib::range(clusters.size()));
 
   for (auto& c : clusters) {
 	if (c.mass < 1e-5) {
