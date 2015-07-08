@@ -125,6 +125,7 @@ void World::loadFromJson(const std::string& _filename){
   hardening = root.get("hardening", 0.0).asDouble();
   
   collisionRestitution = root.get("collisionRestitution", 0.5).asDouble();
+  collisionGeometryThreshold = root.get("collisionGeometryThreshold", 0.5).asDouble();
   outlierThreshold = root.get("outlierThreshold", 2.0).asDouble();
 
   auto fractureIn = root["fracture"];

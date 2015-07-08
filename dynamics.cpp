@@ -982,11 +982,11 @@ bool World::makeClusters(){
 	  double center = n.dot(c.cg.c);
 	  //std::cout<<max - min<<" "<<neighborRadius<<std::endl;
 	  //if (max - min < 1.5*neighborRadius) {
-	  if (max - center < 0.5*neighborRadius) {
+	  if (max - center < collisionGeometryThreshold*neighborRadius) {
 		std::cout<<" adding plane: "<<n(0)<<"x + "<<n(1)<<"y + "<<n(2)<<"z + "<<-max<<std::endl;
 		c.cg.addPlane(n, -max);
 	  }
-	  if (center - min < 0.5*neighborRadius) {
+	  if (center - min < collisionGeometryThreshold*neighborRadius) {
 		std::cout<<" adding plane: "<<-n(0)<<"x + "<<-n(1)<<"y + "<<-n(2)<<"z + "<<min<<std::endl;
 		c.cg.addPlane(-n, min);
 	  }

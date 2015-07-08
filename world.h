@@ -205,6 +205,7 @@ public:
   double yield, nu, hardening; // plasticity parameters
   double toughness;
   double collisionRestitution;
+  double collisionGeometryThreshold;
   double outlierThreshold;
   double poly6norm, sqrNeighborRadius;
 
