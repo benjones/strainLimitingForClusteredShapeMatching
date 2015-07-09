@@ -133,6 +133,8 @@ which used a set of hierarchical lattices to define the shape matching clusters.
 of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
 simple fracture model that removed over-extended links in the lattice.  
 
+\ben{In order to improve stability for non-volumetric objects (ie shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.}
+
 Despite impressive results and substantial promise,
 the shape matching framework has been largely disregarded by the research community in favor of position-based
 dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
@@ -294,21 +296,32 @@ clusters from the priority queue and, if the $\Sigma_{\max}$ still exceeds $\tau
 as follows.
 
 We assume that the fracture surface is defined by the plane that passes through the center of mass of the 
-cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive%\adam{?}
- side of this plane are removed from the cluster and added to a new cluster.  Additionally, we remove particles 
-from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
-That is if, for particle $p_i$,
+cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive 
+ side of this plane are removed from the cluster and added to a new cluster.  
+ 
+\ben{To propagate fractures to nearby clusters, we examine each particle in the split cluster.  If a particle is a member of clusters on both sides of the fracture plane, it is split into two particles.  The mass is divided between the two new particles based on how many clusters they belong to; all other properties are copied to both new particles.  This process mimics duplication of node degrees of freedom fracture in finite element approaches.  To compare which side of the plane the particle and clusters are on, we evaluate
 \begin{equation}
 \sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \mathrel{!}=
-\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}
-\end{equation}
+\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}.
+\end{equation} 
+for each cluster, $d$, that particle $i$ is a member of.
+}
+\mycomment{
+the particle is on the opposite side of the fracture plane from 
+from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
+That is if, for particle $p_i$,
+
 particle $p_i$ is removed from cluster $d$.  We then update the properties of the affected clusters.
 The plasticity variables, $\B{F}^p$ and $\alpha$, are copied from the fractured cluster to the new cluster.
 For every cluster that undergoes a membership change, we update the mass, $m_c$; the 
 rest and world center of mass, $\B{r}_{cm,c}$ and $\B{x}_{cm,c}$; the cluster width (see~\cite{Bargteil:2014:SLF});
-and the stored matrix, $\B{A}_{rr}^{-1}$.  To handle potentially degenerate clusters, we compute $\B{A}_{rr}^{-1}$
+and the stored matrix, $\B{A}_{rr}^{-1}$.}
+
+\ben{
+Initially our clusters are well sampled; however, fractures may create degenerate clusters.  To prevent instability due to these clusters, we compute $\B{A}_{rr}^{-1}$
 through the pseudoinverse.  If, when computing the pseudoinverse, any of the singular values are thresholded,
-we set $\B{F}_c^p = \B{I}$.  We also update particle-to-cluster maps and $n_i$ for affected particles.
+we set $\B{F}_c^p = \B{I}$.  
+}
 
 Because cluster membership may have changed due to the fracturing of a different cluster, we verify that 
 $\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.  \adam{Finally, we delete
