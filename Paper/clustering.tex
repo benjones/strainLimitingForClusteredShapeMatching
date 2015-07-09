@@ -195,25 +195,52 @@ scheme divides the particles mass evenly among the $n_i$ clusters it belongs to,
 %essentially replacing $m_i$ with $m_i/n_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
 %and when computing cluster mass and center-of-mass.
 In this simple scheme, if particle $p_i$ belongs
-to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$, is
+to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c} = \B{x}_{c}$ (dropping the $_{cm}$ for clarity), is
 \begin{equation}
 \label{eq:com}
-\B{x}_{cm,c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c}) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
+\B{x}_{c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c}) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
 \end{equation}
 where $\mathcal{P}_c$ is the set of particles in cluster $c$.
-Of course, more general weighting schemes are possible and in our implementation we use the well-known $\mathrm{poly6}(\cdot)$ kernel~\cite{Mueller},
+Of course, more general weighting schemes are possible and in our implementation we experimented with five weighting functions.
+First is the ``box'' kernel, or constant weights
+\begin{equation}
+\label{eq:box}
+\mathrm{box}(\B{x}_i, \B{x}_{c}, h) = 1.
+\end{equation}
+Second is the well-known $\mathrm{poly6}(\cdot)$ kernel~\cite{Mueller},
 \begin{equation}
 \label{eq:poly6}
-\mathrm{poly6}(\B{r},h) = \frac{315}{64\pi h^9}\left(h^2-\left|\B{r}\right|^2\right)^3,
+\mathrm{poly6}(\B{x}_i, \B{x}_{c}, h) = \frac{315}{64\pi h^9}\left(h^2-\|\B{x}_i-\B{x}_{c}\|^2\right)^3,
 \end{equation}
-where $h$ is the kernel width and $\B{r}$ is the vector from the cluster center-of-mass to the particle.
+where $h$ is the kernel width.
+Third is a blend of the $\mathrm{box}$ and $\mathrm{poly6}$ kernels
+\begin{equation}
+\label{blend}
+\mathrm{blend}(\B{x}_i, \B{x}_{c}, h) = \mathrm{poly6}(\B{x}_i, \B{x}_{c}, h) + \beta,
+\end{equation}
+where $\beta$ is a blend parameter.
+Fourth is a simple inverse distance squared kernel,
+\begin{equation}
+\label{eq:invdistancesquared}
+\mathrm{invsq}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\|\B{x}_i-\B{x}_{c}\|+\epsilon},
+\end{equation}
+where $\epsilon$ prevents dividing by zero (we use $\epsilon = 0.0001$).
+Fifth is the fuzzy c-means weighting function,
+\begin{equation}
+\label{eq:fuzzycmeans}
+\mathrm{fcm}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\sum_{d\in\mathcal{C}}\left(\frac{\|x_i - x_{c}\|}{\|x_i-x_{d}\|}\right)^{\frac{2}{m-1}}},
+\end{equation}
+where $m$ is a user-specified parameter greater than one.
+Note that $\mathrm{fcm}$ is the only weighting function where the weight in one cluster depends on the positions of other cluster centers,
+which significantly complicates computation.
 Of course, we normalize our weights to a partition of unity,
 \begin{equation}
 \label{eq:weights}
-w_{i,c} = \frac{\mathrm{poly6}(\B{x}_i-\B{x}_{cm,c}, h)}{\sum_{d\in\mathcal{C}}\mathrm{poly6}(\B{x}_i-\B{x}_{cm,d}, h)}
+w_{i,c} = \frac{\mathrm{kernel}(\B{x}_i, \B{x}_{c}, h)}{\sum_{d\in\mathcal{C}}\mathrm{kernel}(\B{x}_i, \B{x}_{d}, h)}
 \end{equation}
-We do not believe our approach is particularly sentitive
-to the choice of kernel, but this kernel has the advantages of finite support, smoothly going to zero at $h$ and being fast to compute.  
+As discussed in~\sref{sec:results} the choice of kernel can have significant impact on the results; while we selected
+$\mathrm{invsq}$ as our default, our implementation makes it easy to switch between kernels to satisfy artistic goals.
+
 We also essentially replace $m_i$ with $w_{i,c}m_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
 For example, when computing the goal position, $\B{g}_i$, for a particle we perform a weighted
 average of the goal positions given by each cluster it is a part of.  That is,
@@ -230,15 +257,32 @@ In our context, there are several desirable properities for a clustering algorit
 otherwise the simulated object will fall apart.  The clusters must include all the particles, preferably with a modest number of clusters.  
 Finally, if the clusters are well-approximated by spheres, collision handling becomes far simpler.  While clustering is
 very well-studied in machine learning, these properties are unique to our problem and we are not aware of any algorithm tailored to these
-constraints.  Consequently, we developed our own approach, which is quite similar to fuzzy c-means, k-means, expecationa maximization (EM), 
-and Lloyd's algorithm.  Like all these algorithms, we iteratively perform two-steps:
+constraints.  
+In our implementation we experimented with three clustering algorithms.  The first algorithm, $\mathrm{random}$,
+borrowed from Bargteil and Jones~\shortcite{} is a simple randomized scheme that iteratively
+chooses a random particle that is not a member of any cluster,
+uses its location as the center of a new cluster, and adds all particles within a user-specified distance to the cluster.  
+The algorithm terminates when all particles are a member of at least on cluster.  Weights, cluster center-of-mass, etc are
+determined after the algorithm terminates.  
+The second algorithm uses $\mathrm{k-means}$ to determine cluster centers; given random seed locations for clusters, this two-step algorithm iteratively
+\begin{enumerate}
+\item updates cluster membership for each particle by choosing the nearest cluster center
+\item updates cluster centers to be the center of mass of the particles in the cluster.
+\end{enumerate}
+After the $\mathrm{k-means}$ algorithm terminates overlapping clusters are computed by including
+all particles within a user-specified distance of the computed cluster centers.  Finally, membership weights, cluster center-of-mass, etc are computed.
+Our final approach more closely resembles {\em fuzzy c-means}~\cite{}, but explicitly seeks greater sparsity in the membership weights by forcing
+weights for particles far from a cluster center to zero.
+%Consequently, we developed our own approach, which is quite similar to fuzzy c-means, k-means, expecationa maximization (EM), 
+%and Lloyd's algorithm.  Like all these algorithms, 
+Again, we iteratively perform two-steps:
 \begin{enumerate}
 \item update cluster membership and weights
 \item update cluster centers.
 \end{enumerate}
 Computing cluster membership involves a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
-(\eref{eq:weights}) requires evaluating the $\mathrm{poly6}(\cdot)$ (\eref{eq:poly6})
-kernel for each particle in each cluster and keeping a running sum of the weights for each particle.  Updating the cluster centers simply requires 
+(\eref{eq:weights}) requires evaluating the above 
+kernels for each particle in each cluster and keeping a running sum of the weights for each particle.  Updating the cluster centers simply requires 
 computing~\eref{eq:com} for each cluster using the weights computed in the previous step.  To faciliate satisfying the first requirement that 
 all particles belong to at least one particle, we add any particles that are not within $h$ of any cluster center to the nearest cluster 
 (in a similar manner to the k-means algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
