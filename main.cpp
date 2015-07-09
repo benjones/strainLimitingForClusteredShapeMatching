@@ -170,6 +170,7 @@ void loop(SDL_Window* window, World& world){
 
 	  if(dumpFrames){
 		world.dumpParticlePositions(std::string("frames/particles.") + std::to_string(frame) + ".txt");
+		world.dumpClippedSpheres(std::string("frames/particles.") + std::to_string(frame) + ".txt.spheres");
 		if(dumpColors){
 		  world.dumpColors(std::string("frames/particles.") + std::to_string(frame) + ".txt.colors");
 		}

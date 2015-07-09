@@ -458,3 +458,25 @@ void World::dumpColors(const std::string& filename) const {
   outs.write(reinterpret_cast<const char*>(colors.data()),
 	  3*numParticles*sizeof(float));
 }
+
+
+void World::dumpClippedSpheres(const std::string& filename) const {
+  std::ofstream outs(filename);
+  
+  outs << clusters.size() << '\n';
+  for(const auto& cluster : clusters){
+	outs << cluster.cg.planes.size() << '\n'
+		 << cluster.cg.c.x() << ' '
+		 << cluster.cg.c.y() << ' '
+		 << cluster.cg.c.z() << '\n'
+		 << cluster.cg.r << '\n';
+	for(const auto& plane : cluster.cg.planes){
+	  outs << plane.first.x() << ' '
+		   << plane.first.y() << ' '
+		   << plane.first.z() << ' '
+		   << plane.second << '\n';
+	}
+
+
+  }
+}

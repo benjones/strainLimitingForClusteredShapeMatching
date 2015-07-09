@@ -17,11 +17,11 @@ OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o til
 
 #-----------------------------------------
 # Update to point to your eigen headers, sdl headers
-INCS = -I/usr/local/opt/sdl2/include/SDL2/ -I/Library/Frameworks/SDL2.framework/Headers
-EIGEN_INCLUDE=-I/usr/local/opt/eigen/include/eigen3/ -I/usr/local/include/eigen3
+INCS = -I/Library/Frameworks/SDL2.framework/Headers
+EIGEN_INCLUDE=-I/usr/local/include/eigen3
 
 # Update to point to your SDL and opengl libs
-SDL_LIB = -L/usr/local/opt/sdl2/lib  -framework OpenGL -F/Library/Frameworks -framework SDL2
+SDL_LIB = -framework OpenGL -F/Library/Frameworks -framework SDL2
 
 
 
@@ -38,8 +38,8 @@ default: $(TARGETS)
 mitsubafy: mitsubafy.cpp jsoncpp.o
 	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafy mitsubafy.cpp jsoncpp.o
 
-mitsubafy: mitsubafyClusters.cpp jsoncpp.o
-	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafyClusters mitsubafyClusters.cpp jsoncpp.o
+mitsubafyClusters: mitsubafyClusters.cpp jsoncpp.o
+	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafyClusters mitsubafyClusters.cpp jsoncpp.o color_spaces.o
 
 
 clean:

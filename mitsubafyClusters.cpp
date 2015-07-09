@@ -1,4 +1,6 @@
 
+#include <array>
+#include <vector>
 #include <fstream>
 #include <iostream>
 #include <Eigen/Dense>
@@ -6,6 +8,8 @@
 
 #include "range.hpp"
 using benlib::range;
+
+#include "color_spaces.h"
 
 
 Eigen::Vector3d getSupportingPoint(const Eigen::Vector3d& normal, double offset){
@@ -38,14 +42,14 @@ int main(int argc, char** argv){
 
 
   const std::string usage = 
-	"mitsubafy <jsonFile> <formatStringForParticles> <outputDirectory> "
-	"<radius/skinnedObjFormatString> [extraXMLStuff]";
+	"mitsubafy <jsonFile> <formatStringForSpheres> <outputDirectory> "
+	"[extraXMLStuff], eg format string: frames/particles.%d.txt.spheres";
   
-  if(argc < 5){ std::cout << usage << std::endl; return 1;}
+  if(argc < 4){ std::cout << usage << std::endl; return 1;}
   
   std::string extraXML;
-  if(argc == 6){
-	std::ifstream ins(argv[5]);
+  if(argc == 5){
+	std::ifstream ins(argv[4]);
 	extraXML.assign(std::istreambuf_iterator<char>(ins),
 		std::istreambuf_iterator<char>());
   }
@@ -53,10 +57,6 @@ int main(int argc, char** argv){
   const std::string outputDir = argv[3];
   
   char* strEnd;
-  const double radius = std::strtod(argv[4], &strEnd);
-  const bool renderSpheres = (strEnd != argv[4]);
-  std::string objFormatString(argv[4]);
-
   std::vector<std::string> planeStrings;
    
   
@@ -260,7 +260,59 @@ int main(int argc, char** argv){
 		   << "</bsdf></shape>\n";
 	}
 
+	size_t numSpheres;
+	particleIns >> numSpheres;
+	for(auto sphereIndex : range(numSpheres)){
+	  
+	  size_t numPlanes;
+	  Eigen::Vector3d position;
+	  double radius;
+	  std::vector<std::array<double, 4> > clippingPlanes;
+	  
+	  particleIns >> numPlanes
+				  >> position.x()
+				  >> position.y()
+				  >> position.z()
+				  >> radius;
 
+	  clippingPlanes.reserve(numPlanes);
+	  for(auto planeIndex : range( numPlanes)){
+		
+		std::array<double, 4> thisPlane;
+		particleIns >> thisPlane[0]  //nx
+					>> thisPlane[1]  //ny
+					>> thisPlane[2]  //nz
+					>> thisPlane[3]; // d
+		clippingPlanes.push_back(thisPlane);
+
+	  }
+
+	  
+	  outs << "<shape type=\"ClippedSphere\">\n<point name=\"center\"x=\""
+		   << position.x() << "\" y=\""
+		   << position.y() << "\" z=\""
+		   << position.z() << "\" <float name=\"radius\" value=\""
+		   << radius << "\" \n<string name=\"clippingPlanes\" value=\""
+		   << numPlanes << " ";
+	  for(const auto& cp : clippingPlanes){
+		for(auto k : range(4)){
+		  outs << cp[k] << " ";
+		}
+	  }
+	  
+	  RGBColor thisColor = HSLColor(2.0*acos(-1)*(sphereIndex % 12)/12.0, 0.7, 0.7).to_rgb();
+
+	  outs << "\" />\n"
+		   << "<bsdf type=\"diffuse\"><rgb name=\"reflectance\" value=\""
+		   << thisColor.r << ", " 
+		   << thisColor.g << ", " 
+		   << thisColor.b << "\" /></bsdf>\n</shape>\n";
+	  
+
+	}
+
+
+	/*
 	if(renderSpheres){
 	  size_t nParticles;
 	  particleIns.read(reinterpret_cast<char*>(&nParticles), sizeof(nParticles));
@@ -304,7 +356,7 @@ int main(int argc, char** argv){
 		   << "<bsdf type=\"diffuse\"><srgb name=\"reflectance\" value=\"#33ee33\" /></bsdf>\n"
 		//		   << "<bsdf type=\"roughplastic\"><float name=\"alpha\" value=\"0.3\" /><spectrum name=\"specularReflectance\" value=\"0.2\" /><rgb name=\"diffuseReflectance\" value=\"#FFFFA4\" /></bsdf>\n"
 		   << "</shape>\n";
-	}
+		   }*/
 	outs << mitsubaFooter << std::endl;
   }
 
