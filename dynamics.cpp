@@ -653,6 +653,9 @@ inline double cube(double x) { return x*x*x;}
 //inline double poly6(double r, double h) {(r<h) ? return cube(h - r) : return 0.0;}
 
 bool World::makeRandomClusters() {
+  std::random_device rd;
+  std::mt19937 g(std::mt19937::default_seed);
+
   clusters.clear();
   auto r = range(particles.size());
   auto lonelyParticles = std::vector<size_t>(r.begin(), r.end());
@@ -660,8 +663,11 @@ bool World::makeRandomClusters() {
   for(auto& p : particles){p.numClusters = 0; p.totalweight = 0.0;}
   
   while(!lonelyParticles.empty()) {
-	auto currentParticle = lonelyParticles.back();
-	lonelyParticles.pop_back();
+	int r = g() % lonelyParticles.size();
+	//auto currentParticle = lonelyParticles.back();
+	//lonelyParticles.pop_back();
+	auto currentParticle = lonelyParticles[r];
+	lonelyParticles.erase(lonelyParticles.begin() + r);
 	Cluster c;
 	c.restCom = particles[currentParticle].restPosition;
 	std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
@@ -688,6 +694,7 @@ bool World::makeRandomClusters() {
 	lonelyParticles.erase(it, lonelyParticles.end());
 	//std::cout<<lonelyParticles.size()<<std::endl;
   } 
+  for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
   for (auto& c : clusters) {
 	c.mass = 0.0;
 	c.restCom = Eigen::Vector3d::Zero();
