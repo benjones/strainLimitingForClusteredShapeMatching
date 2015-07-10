@@ -123,7 +123,10 @@ the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated
 and pointed out several advantages of shape matching over position-based dynamics.  Most sifnificantly, shape matching respects Newton's 
 laws of motion.
 
-Clustering is crazy well-studied.  So is collision detection.
+Clustering is well-studied in the machine learning literature and many techniques, such as $\mathrm{k-means}, have become standard tools in computer graphics.  
+A complete survey of this literature is beyond the scope of this short paper, but for the sort of ``fuzzy'' clustering we propose in this paper,
+we recommend the survey by Nock and Nielsen~\shortcite{Nock:2006:OWC}.  Similarly, collision detection is well-studied in the 
+computer graphics and robotics literature.  For a survey of real-time techniques we recommend the text by Ericson~\shortcite{Ericson:2004:RCD}.
 
 \section{Methods}
 For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
@@ -189,25 +192,25 @@ Hookean springs are then used to define forces that move the particles toward th
 \subsection{Clustered Shape Matching}
 Handling multiple clusters is straightforward.  When computing a particle's contribution to 
 cluster quantities, we must divide the particle's mass among its clusters.  To do 
-so we introduce a weight $w_{i,c}$ for particle $p_i$ in cluster $c$.  The simplest weighting
+so we introduce a weight $w_{i,c}$ for particle $p_i$ in cluster $c$ that describes how much of
+$p_i$'s mass is contributed to cluster $c$.  These weights enter into equations \eqref{eq:sm}-\eqref{eq:defgrad} by multiplying
+the particle's mass.  As an example, the center-of-mass of cluster $c$, $\B{x}_{cm,c} = \B{x}_{c}$ (dropping the $_{cm}$ for clarity), is
+\begin{equation}
+\label{eq:com}
+\B{x}_{c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})~\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})}% = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
+\end{equation}
+where $\mathcal{P}_c$ is the set of particles in cluster $c$.
+We experimented with five weighting schemes in our implementation.  The first, and simplest, weighting
 scheme divides the particles mass evenly among the $n_i$ clusters it belongs to, $w_{i,c} = 1/n_i$.
 %divide the particle's mass by the number of clusters it belongs to,
 %essentially replacing $m_i$ with $m_i/n_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
 %and when computing cluster mass and center-of-mass.
-In this simple scheme, if particle $p_i$ belongs
-to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c} = \B{x}_{c}$ (dropping the $_{cm}$ for clarity), is
-\begin{equation}
-\label{eq:com}
-\B{x}_{c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c}) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
-\end{equation}
-where $\mathcal{P}_c$ is the set of particles in cluster $c$.
-Of course, more general weighting schemes are possible and in our implementation we experimented with five weighting functions.
-First is the ``box'' kernel, or constant weights
+This scheme correspnds to the ``box'' kernel, or constant weights,
 \begin{equation}
 \label{eq:box}
 \mathrm{box}(\B{x}_i, \B{x}_{c}, h) = 1.
 \end{equation}
-Second is the well-known $\mathrm{poly6}(\cdot)$ kernel~\cite{Mueller},
+Second is the well-known $\mathrm{poly6}(\cdot)$ kernel~\cite{Mueller:2003:PFS},
 \begin{equation}
 \label{eq:poly6}
 \mathrm{poly6}(\B{x}_i, \B{x}_{c}, h) = \frac{315}{64\pi h^9}\left(h^2-\|\B{x}_i-\B{x}_{c}\|^2\right)^3,
@@ -216,7 +219,7 @@ where $h$ is the kernel width.
 Third is a blend of the $\mathrm{box}$ and $\mathrm{poly6}$ kernels
 \begin{equation}
 \label{blend}
-\mathrm{blend}(\B{x}_i, \B{x}_{c}, h) = \mathrm{poly6}(\B{x}_i, \B{x}_{c}, h) + \beta,
+\mathrm{blend}(\B{x}_i, \B{x}_{c}, h) = \beta + \mathrm{poly6}(\B{x}_i, \B{x}_{c}, h),
 \end{equation}
 where $\beta$ is a blend parameter.
 Fourth is a simple inverse distance squared kernel,
@@ -225,15 +228,16 @@ Fourth is a simple inverse distance squared kernel,
 \mathrm{invsq}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\|\B{x}_i-\B{x}_{c}\|+\epsilon},
 \end{equation}
 where $\epsilon$ prevents dividing by zero (we use $\epsilon = 0.0001$).
-Fifth is the fuzzy c-means weighting function,
+Fifth is the fuzzy c-means weighting function~\cite{Dunn:1973:AFR,Bezdek:1981:PRF},
 \begin{equation}
 \label{eq:fuzzycmeans}
-\mathrm{fcm}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\sum_{d\in\mathcal{C}}\left(\frac{\|x_i - x_{c}\|}{\|x_i-x_{d}\|}\right)^{\frac{2}{m-1}}},
+\displaystyle \mathrm{fcm}(\B{x}_i, \B{x}_{c}, h) = \dfrac{1}{\displaystyle \sum_{d\in\mathcal{C}}\left(\dfrac{\|x_i - x_{c}\|}{\|x_i-x_{d}\|}\right)^{\tfrac{2}{m-1}}},
 \end{equation}
 where $m$ is a user-specified parameter greater than one.
 Note that $\mathrm{fcm}$ is the only weighting function where the weight in one cluster depends on the positions of other cluster centers,
 which significantly complicates computation.
-Of course, we normalize our weights to a partition of unity,
+
+To ensure that the total mass of the clusters equals the total mass of the particles, for all kernels we normalize our weights to a partition of unity,
 \begin{equation}
 \label{eq:weights}
 w_{i,c} = \frac{\mathrm{kernel}(\B{x}_i, \B{x}_{c}, h)}{\sum_{d\in\mathcal{C}}\mathrm{kernel}(\B{x}_i, \B{x}_{d}, h)}
@@ -241,11 +245,12 @@ w_{i,c} = \frac{\mathrm{kernel}(\B{x}_i, \B{x}_{c}, h)}{\sum_{d\in\mathcal{C}}\m
 As discussed in~\sref{sec:results} the choice of kernel can have significant impact on the results; while we selected
 $\mathrm{invsq}$ as our default, our implementation makes it easy to switch between kernels to satisfy artistic goals.
 
-We also essentially replace $m_i$ with $w_{i,c}m_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
-For example, when computing the goal position, $\B{g}_i$, for a particle we perform a weighted
+%We also essentially replace $m_i$ with $w_{i,c}m_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
+As noted above, these weights show up in many of our calculations.  As another example,
+when computing the goal position, $\B{g}_i$, for a particle we perform a weighted
 average of the goal positions given by each cluster it is a part of.  That is,
 \begin{equation}
-\B{g}_i = \sum_c w_{i,c}\B{g}_{i,c},
+\B{g}_i = \sum_c w_{i,c}~\B{g}_{i,c},
 \end{equation}
 where $\B{g}_{i,c}$ is the goal position for particle $p_i$ in cluster $c$.
 
@@ -253,47 +258,58 @@ where $\B{g}_{i,c}$ is the goal position for particle $p_i$ in cluster $c$.
 To maintain stability we adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
 
 \subsection{Clustering}
-In our context, there are several desirable properities for a clustering algorithm.  Of utmost importance is that the clusters must overlap, 
-otherwise the simulated object will fall apart.  The clusters must include all the particles, preferably with a modest number of clusters.  
+In our context, there are several desirable properities for a clustering algorithm.  Of utmost importance is that the clusters overlap, 
+otherwise the simulated object will fall apart.  The clusters must also include all the particles, preferably with a modest number of clusters.  
 Finally, if the clusters are well-approximated by spheres, collision handling becomes far simpler.  While clustering is
 very well-studied in machine learning, these properties are unique to our problem and we are not aware of any algorithm tailored to these
 constraints.  
+
 In our implementation we experimented with three clustering algorithms.  The first algorithm, $\mathrm{random}$,
-borrowed from Bargteil and Jones~\shortcite{} is a simple randomized scheme that iteratively
+borrowed from Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, is a simple randomized scheme that iteratively
 chooses a random particle that is not a member of any cluster,
 uses its location as the center of a new cluster, and adds all particles within a user-specified distance to the cluster.  
 The algorithm terminates when all particles are a member of at least on cluster.  Weights, cluster center-of-mass, etc are
-determined after the algorithm terminates.  
+determined after the algorithm terminates.  The user can specify the radius of a cluster's neighborhood, but not the number of clusters.
+
 The second algorithm uses $\mathrm{k-means}$ to determine cluster centers; given random seed locations for clusters, this two-step algorithm iteratively
 \begin{enumerate}
-\item updates cluster membership for each particle by choosing the nearest cluster center
+\item updates cluster membership for each particle by choosing the nearest cluster center;
 \item updates cluster centers to be the center of mass of the particles in the cluster.
 \end{enumerate}
+Convergence is achieved when cluster membership is no longer changing.  
 After the $\mathrm{k-means}$ algorithm terminates overlapping clusters are computed by including
 all particles within a user-specified distance of the computed cluster centers.  Finally, membership weights, cluster center-of-mass, etc are computed.
-Our final approach more closely resembles {\em fuzzy c-means}~\cite{}, but explicitly seeks greater sparsity in the membership weights by forcing
+
+Our final approach more closely resembles {\em fuzzy c-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
+but explicitly seeks greater sparsity in the membership weights by forcing
 weights for particles far from a cluster center to zero.
 %Consequently, we developed our own approach, which is quite similar to fuzzy c-means, k-means, expecationa maximization (EM), 
 %and Lloyd's algorithm.  Like all these algorithms, 
 Again, we iteratively perform two-steps:
 \begin{enumerate}
-\item update cluster membership and weights
-\item update cluster centers.
+\item update cluster membership {\em and weights};
+\item update cluster centers to be the center of mass of the particles in the cluster.
 \end{enumerate}
-Computing cluster membership involves a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
+Instead of computing the nearest cluster center for each particle as in $\mathrm{k-means}$, our algorithm includes all particles within a given distance
+using a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
 (\eref{eq:weights}) requires evaluating the above 
 kernels for each particle in each cluster and keeping a running sum of the weights for each particle.  Updating the cluster centers simply requires 
 computing~\eref{eq:com} for each cluster using the weights computed in the previous step.  To faciliate satisfying the first requirement that 
 all particles belong to at least one particle, we add any particles that are not within $h$ of any cluster center to the nearest cluster 
-(in a similar manner to the k-means algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
-we declare convergence if cluster membership remains the same for two iterations.   If the algorithm
+(in a similar manner to the $\mathrm{k-means}$ algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
+we declare convergence if cluster membership remains the same for two iterations and the cluster centers have not moved more than $0.1\%$ of the neighborhood radius.   
+If the algorithm
 does not converge within a limited number of iterations we increase the number of clusters and/or $h$ until convergence is achieved.
 
+Compared to $\mathrm{k-means}$ our algorithm has the advantage of including the fact that clusters should overlap in the optimization itself, which leads to slower convergence, but
+also to a clustering that is better suited to our needs.
 
 \subsection{Collision Detection}
 
-\section{Results and Discussion}
 
+
+\section{Results and Discussion}
+\label{sec:results}
 \begin{table*}
 \begin{center}
 \caption{Timing results in ms per frame taken on a Macbook Pro with a 2.4Ghz Intel i5 processor.}
@@ -315,7 +331,7 @@ swiss cheese & 25032 & 27 & $<$ 1 & $<$1 & 39 \\
 
 \paragraph{Limitations and Future Work}
 
-Our blue-noise sampling and k-means clustering improve upon the regular grids and
+Our blue-noise sampling and $\mathrm{k-means}$ clustering improve upon the regular grids and
 randomized clusters of Bargteil and Jones~\shortcite{Bargteil:2014:SLF} and are effective for our purposes,
 but better approaches certainly exist.  In particular, it would be interesting to explore adaptive sampling
 so that computational resources can be focused on interesting areas of the object.  
