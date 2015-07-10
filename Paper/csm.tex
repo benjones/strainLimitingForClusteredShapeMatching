@@ -61,7 +61,7 @@
 %%% the title and author information, and above the body of the content.
 
  \teaser{
-   \includegraphics[width=\linewidth]{Figures/teaser}
+   \includegraphics[width=\linewidth]{Figures/fractureTeaser}
    \caption{Left: An armadillo is tortured by being torn apart by the arms while being fired upon by spherical projectiles.  Center: A heartbreaking example.  Right: Tearing a slice of swiss cheese.}
    \label{fig:teaser}
  }
@@ -304,8 +304,16 @@ cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$
 \sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \mathrel{!}=
 \sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}.
 \end{equation} 
-for each cluster, $d$, that particle $i$ is a member of.
+for each cluster, $d$, that particle $i$ is a member of.  This process is illustrated in Figure \ref{fig:fractureFig}.
 }
+
+\begin{figure}
+\includegraphics[width=\linewidth]{Figures/fractureFigure}
+\caption{left: a cluster is fractured along a splitting plane defined by its center of mass and the vector $\mathbf{V}_{max}$.  right: splits are propagated to nearby clusters.   Since the blue particle is a member of clusters on both sides of the fracture plane, it is split into two new particles, one in cluster $c1$, one in cluster $c2$.  }
+\label{fig:fractureFig}
+\end{figure}
+
+
 \mycomment{
 the particle is on the opposite side of the fracture plane from 
 from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
@@ -364,15 +372,15 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
 %\josh{what else needs to be said here?}
 
 \section{Results and Discussion}
-\begin{figure}[h!]
-\includegraphics[width=\linewidth]{Figures/TwistedBar}
-\caption{A bar is twisted and then the clamps are released.  Top: A tough plastic bar does not fracture.  Bottom: The bar fractures before the clamps are released.}
+\begin{figure}
+\includegraphics[width=\linewidth]{Figures/twistingBarComp}
+\caption{A bar is twisted and then the clamps are released.  Top: A tough plastic bar does not fracture.  Bottom: The bar fractures violently before the clamps are released.}
 \label{fig:twistedbar}
 \end{figure}
 
 \begin{figure}
-\includegraphics[width=\linewidth]{Figures/projectile}
-\caption{A projectile is fired through a thin sheet of material.}
+\includegraphics[width=\linewidth]{Figures/plateComparison}
+\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent plastic deformation near the hole.  }
 \label{fig:projectile}
 \end{figure}
 
@@ -404,8 +412,9 @@ swiss cheese & 25032 & 27 & $<$ 1 & $<$1 & 39 \\
 In our first example, an armadillo is tortured by simultaneously pulling on and firing
 cannonballs at its arms (see~\fref{fig:teaser}).
 Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
-plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture. 
-In our third example a projectile is fired through a thin sheet of material (see~\fref{fig:projectile}).  
+plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture.  \ben{This twisting deformation causes the bar to fracture violently, spraying small pieces away from the object.}
+\ben{In our third example a projectile is fired through a thin sheet of material with various material properties(see~\fref{fig:projectile}).  The weak, brittle material 
+breaks into many small pieces.  The strong, brittle material breaks into larger pieces.  The ductile material deforms plastically near the impact before fracturing, bending permanently in the wake of the projectile.}
 In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
 where the tear begins and how it propagates.  Similarly, in our final example the holes in a 
 slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
