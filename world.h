@@ -193,7 +193,7 @@ public:
   double neighborRadius, neighborRadiusMax;
   int nClusters, nClustersMax, clusterItersMax;
   double blackhole;
-  int clusteringAlgorithm;  // 0 = default (fuzzy c-means with weights); 2 = k-means; 3 = random
+  int clusteringAlgorithm;  // 0 = default (fuzzy c-means with weights); 1 = k-means; 2 = random
   double clusterOverlap;
   int clusterKernel; // 0 = 1 / (r^2 + eps), 1 = constant, 2 = poly6, 3 = constant/poly6 blend (with kernelweight), 4 = fuzzy c-means
   double kernelWeight; // only for the blended kernel, and fuzzy c-means

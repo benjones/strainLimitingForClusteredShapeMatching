@@ -126,6 +126,7 @@ void World::loadFromJson(const std::string& _filename){
   
   collisionRestitution = root.get("collisionRestitution", 0.5).asDouble();
   collisionGeometryThreshold = root.get("collisionGeometryThreshold", 0.5).asDouble();
+  std::cout<<"collisionGeometryThreshold "<<collisionGeometryThreshold<<std::endl;
   outlierThreshold = root.get("outlierThreshold", 2.0).asDouble();
 
   auto fractureIn = root["fracture"];
@@ -305,6 +306,8 @@ void World::loadFromJson(const std::string& _filename){
   restPositionGrid.numBuckets = 6;
   restPositionGrid.updateGrid(particles);
   
+  sqrNeighborRadius = neighborRadius * neighborRadius;
+  poly6norm = 315.0 / (64.0 * M_PI * cube(cube(neighborRadius)));
   while (!makeClusters()) {
 	nClusters = std::ceil(1.25*nClusters); 
 	neighborRadius *= 1.25; 

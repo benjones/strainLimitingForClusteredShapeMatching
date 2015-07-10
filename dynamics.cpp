@@ -886,7 +886,10 @@ bool World::makeClusters(){
 		  p.clusters.push_back(j);
 		  p.numClusters++;
 		}
-		if (oldNeighbors != c.neighbors.size()) converged = false;
+		if (oldNeighbors != c.neighbors.size()) {
+		  //std::cout<<oldNeighbors<<" != "<<c.neighbors.size()<<std::endl;
+		  converged = false;
+		}
 	  }
 	
 	  for (int i = 0; i<particles.size(); i++) {
@@ -903,6 +906,7 @@ bool World::makeClusters(){
 		}
 		clusters[bestCluster].neighbors.push_back(std::pair<int,double>(i,blackhole));
 		p.totalweight = 1.0;
+		//std::cout<<"particle "<<i<<" not in cluster"<<std::endl;
 		converged = false;
 	  }
 
@@ -949,7 +953,10 @@ bool World::makeClusters(){
 		  c.mass += w * p.mass;
 		}
 		c.restCom /= c.mass;
-		if ((c.restCom - c.worldCom).squaredNorm() > convergenceThreshold) converged = false;
+		if ((c.restCom - c.worldCom).squaredNorm() > convergenceThreshold) {
+		  //std::cout<<c.restCom(0)<<" "<<c.restCom(1)<<" "<<c.restCom(2)<<" "<<c.worldCom(0)<<" "<<c.worldCom(1)<<" "<<c.worldCom(2)<<" "<<convergenceThreshold<<" "<<(c.restCom - c.worldCom).squaredNorm()<<std::endl;
+		  converged = false;
+		}
 	  }
 	} 
 	for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
