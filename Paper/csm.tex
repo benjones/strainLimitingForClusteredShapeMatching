@@ -133,7 +133,7 @@ which used a set of hierarchical lattices to define the shape matching clusters.
 of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
 simple fracture model that removed over-extended links in the lattice.  
 
-\ben{In order to improve stability for non-volumetric objects (ie shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.}
+\ben{In order to improve stability for non-volumetric objects (i.e. shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.}
 
 Despite impressive results and substantial promise,
 the shape matching framework has been largely disregarded by the research community in favor of position-based
@@ -299,7 +299,7 @@ We assume that the fracture surface is defined by the plane that passes through 
 cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive 
  side of this plane are removed from the cluster and added to a new cluster.  
  
-\ben{To propagate fractures to nearby clusters, we examine each particle in the split cluster.  If a particle is a member of clusters on both sides of the fracture plane, it is split into two particles.  The mass is divided between the two new particles based on how many clusters they belong to; all other properties are copied to both new particles.  This process mimics duplication of node degrees of freedom fracture in finite element approaches.  To compare which side of the plane the particle and clusters are on, we evaluate
+\ben{To propagate fractures to nearby clusters, we examine each particle in the split cluster.  If a particle is a member of clusters on both sides of the fracture plane, it is split into two particles.  The mass is divided between the two new particles based on how many clusters they belong to; all other properties are copied to both new particles.  This process mimics duplication of node degrees of freedom in finite element approaches to fracture.  To compare which side of the plane the particle and clusters are on, we evaluate
 \begin{equation}
 \sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \mathrel{!}=
 \sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}.
@@ -309,7 +309,7 @@ for each cluster, $d$, that particle $i$ is a member of.  This process is illust
 
 \begin{figure}
 \includegraphics[width=\linewidth]{Figures/fractureFigure}
-\caption{left: a cluster is fractured along a splitting plane defined by its center of mass and the vector $\mathbf{V}_{max}$.  right: splits are propagated to nearby clusters.   Since the blue particle is a member of clusters on both sides of the fracture plane, it is split into two new particles, one in cluster $c1$, one in cluster $c2$.  }
+\caption{Left: a cluster is fractured along a splitting plane defined by its center of mass and the vector $\mathbf{V}_{max}$.  Right: splits are propagated to nearby clusters.   Since the blue particle is a member of clusters on both sides of the fracture plane, it is split into two new particles, one in cluster $c1$, one in cluster $c2$.  }
 \label{fig:fractureFig}
 \end{figure}
 
@@ -378,17 +378,18 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
 \label{fig:twistedbar}
 \end{figure}
 
-\begin{figure}
-\includegraphics[width=\linewidth]{Figures/plateComparison}
-\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent plastic deformation near the hole.  }
-\label{fig:projectile}
-\end{figure}
-
 We have used our method to animate a number of examples of ductile fracture.  Timing results
 taken on a Macbook Pro with a 2.4GHz Intel i5 processor.
 are given in table~\tref{table:timing}.
 In all particle renderings, particle color is used to indicate the nearest cluster center.  
 We stress that clusters overlap and that particles typically belong to more than one cluster.
+
+\begin{figure}[t]
+\includegraphics[width=\linewidth]{Figures/plateComparison}
+\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent plastic deformation near the hole.  }
+\label{fig:projectile}
+%\vspace{-1.5in}
+\end{figure}
 
 \begin{table*}
 \begin{center}
@@ -413,7 +414,7 @@ In our first example, an armadillo is tortured by simultaneously pulling on and 
 cannonballs at its arms (see~\fref{fig:teaser}).
 Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
 plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture.  \ben{This twisting deformation causes the bar to fracture violently, spraying small pieces away from the object.}
-\ben{In our third example a projectile is fired through a thin sheet of material with various material properties(see~\fref{fig:projectile}).  The weak, brittle material 
+\ben{In our third example a projectile is fired through a thin sheet of material with various material properties (see~\fref{fig:projectile}).  The weak, brittle material 
 breaks into many small pieces.  The strong, brittle material breaks into larger pieces.  The ductile material deforms plastically near the impact before fracturing, bending permanently in the wake of the projectile.}
 In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
 where the tear begins and how it propagates.  Similarly, in our final example the holes in a 
