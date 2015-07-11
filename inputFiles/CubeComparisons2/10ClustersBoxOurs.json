@@ -1,0 +1,19 @@
+{
+	"particleFiles" : [ "inputFiles/cube.txt"],
+	"neighborRadius" : 0.415786,
+	"nClusters" : 10,
+	"clusteringAlgorithm" : 0,
+	"clusterKernel" : 1,
+	"kernel weight" : 2.0,  // for fuzzy c-means this should be > 1
+
+	//"blackhole" : 1000.0,
+	"alpha" : 0.5,
+	"omega" : 0.3,
+	"numConstraintIters" : 3,
+	"maxStretch" : 0.1,
+	"fracture" : "off",
+	"selfCollisions" : "off",
+	"collisionGeometryThreshold" : 0.0,
+	"initialStretch" : [2.0, 1.0, 1.0],
+	"gravity" : [0.0, 0.0, 0.0]
+}
