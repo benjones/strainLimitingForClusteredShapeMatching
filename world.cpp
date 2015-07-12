@@ -468,15 +468,22 @@ void World::dumpClippedSpheres(const std::string& filename) const {
   
   outs << clusters.size() << '\n';
   for(const auto& cluster : clusters){
+
+	auto visTrans = cluster.getVisTransform();
+
+	Eigen::Vector3d newCenter = cluster.cg.c + visTrans.col(3).head(3);
+
+
 	outs << cluster.cg.planes.size() << '\n'
-		 << cluster.cg.c.x() << ' '
-		 << cluster.cg.c.y() << ' '
-		 << cluster.cg.c.z() << '\n'
+		 << newCenter.x() << ' '
+		 << newCenter.y() << ' '
+		 << newCenter.z() << '\n'
 		 << cluster.cg.r << '\n';
 	for(const auto& plane : cluster.cg.planes){
-	  outs << plane.first.x() << ' '
-		   << plane.first.y() << ' '
-		   << plane.first.z() << ' '
+	  Eigen::Vector3d newNormal = visTrans.block(0,0,3,3)*plane.first;
+	  outs << newNormal.x() << ' '
+		   << newNormal.y() << ' '
+		   << newNormal.z() << ' '
 		   << plane.second << '\n';
 	}
 

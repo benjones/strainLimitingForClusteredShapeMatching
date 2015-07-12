@@ -36,7 +36,7 @@
 %%% Used by the ``review'' variation; the online ID will be printed on 
 %%% every page of the content.
 
-\TOGonlineid{70}
+\TOGonlineid{23}
 
 %%% Used by the ``preprint'' variation.
 
@@ -133,7 +133,7 @@ which used a set of hierarchical lattices to define the shape matching clusters.
 of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
 simple fracture model that removed over-extended links in the lattice.  
 
-\ben{In order to improve stability for non-volumetric objects (i.e. shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.}
+In order to improve stability for non-volumetric objects (i.e. shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.
 
 Despite impressive results and substantial promise,
 the shape matching framework has been largely disregarded by the research community in favor of position-based
@@ -299,13 +299,13 @@ We assume that the fracture surface is defined by the plane that passes through 
 cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive 
  side of this plane are removed from the cluster and added to a new cluster.  
  
-\ben{To propagate fractures to nearby clusters, we examine each particle in the split cluster.  If a particle is a member of clusters on both sides of the fracture plane, it is split into two particles.  The mass is divided between the two new particles based on how many clusters they belong to; all other properties are copied to both new particles.  This process mimics duplication of node degrees of freedom in finite element approaches to fracture.  To compare which side of the plane the particle and clusters are on, we evaluate
+To propagate fractures to nearby clusters, we examine each particle in the split cluster.  If a particle is a member of clusters on both sides of the fracture plane, it is split into two particles.  The mass is divided between the two new particles based on how many clusters they belong to; all other properties are copied to both new particles.  This process mimics duplication of node degrees of freedom in finite element approaches to fracture.  To compare which side of the plane the particle and clusters are on, we evaluate
 \begin{equation}
-\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \mathrel{!}=
+\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \neq %\mathrel{!}=
 \sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}.
 \end{equation} 
 for each cluster, $d$, of which particle $i$ is a member.  This process is illustrated in Figure \ref{fig:fractureFig}.
-}
+
 
 \begin{figure}
 \includegraphics[width=\linewidth]{Figures/fractureFigure}
@@ -325,16 +325,15 @@ For every cluster that undergoes a membership change, we update the mass, $m_c$;
 rest and world center of mass, $\B{r}_{cm,c}$ and $\B{x}_{cm,c}$; the cluster width (see~\cite{Bargteil:2014:SLF});
 and the stored matrix, $\B{A}_{rr}^{-1}$.}
 
-\ben{
 Initially our clusters are well sampled; however, fractures may create degenerate clusters.  To prevent instability due to these clusters, we compute $\B{A}_{rr}^{-1}$
 through the pseudoinverse.  If, when computing the pseudoinverse, any of the singular values are thresholded,
 we set $\B{F}_c^p = \B{I}$.  
-}
+
 
 Because cluster membership may have changed due to the fracturing of a different cluster, we verify that 
-$\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.  \adam{Finally, we delete
+$\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.  Finally, we delete
 clusters that have less than four particles because $\B{A}_{rr}$ cannot be full rank and we remove from clusters
-any ``outlier'' particles, which, even after strain limiting, are still too far from the cluster center.}
+any ``outlier'' particles, which, even after strain limiting, are still too far from the cluster center.
 
 \subsection{Sampling and Clustering}
 
@@ -413,9 +412,9 @@ swiss cheese & 25032 & 27 & $<$ 1 & $<$1 & 39 \\
 In our first example, an armadillo is tortured by simultaneously pulling on and firing
 cannonballs at its arms (see~\fref{fig:teaser}).
 Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
-plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture.  \ben{This twisting deformation causes the bar to fracture violently, spraying small pieces away from the object.}
-\ben{In our third example a projectile is fired through a thin sheet of material with various material properties (see~\fref{fig:projectile}).  The weak, brittle material 
-breaks into many small pieces.  The strong, brittle material breaks into larger pieces.  The ductile material deforms plastically near the impact before fracturing, bending permanently in the wake of the projectile.}
+plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture.  This twisting deformation causes the bar to fracture violently, spraying small pieces away from the object.
+In our third example a projectile is fired through a thin sheet of material with various material properties (see~\fref{fig:projectile}).  The weak, brittle material 
+breaks into many small pieces.  The strong, brittle material breaks into larger pieces.  The ductile material deforms plastically near the impact before fracturing, bending permanently in the wake of the projectile.
 In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
 where the tear begins and how it propagates.  Similarly, in our final example the holes in a 
 slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
