@@ -10,6 +10,7 @@
 
 	//"neighborRadius" : 0.09,
 	//"nClusters" : 50,
+	"collisionRestitution" : 2.0,
 	"neighborRadius" : 0.2,
 	"nClusters" : 50, //175,
 	"clusteringAlgorithm" : 0,
