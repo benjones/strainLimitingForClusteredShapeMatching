@@ -48,6 +48,7 @@ void World::loadFromJson(const std::string& _filename){
 	auto& movingP = movingParticleFilesIn[i];
 	auto particleInfo = readParticleFile(movingP["filename"].asString());
 	Eigen::Vector3d offset = Eigen::Vector3d::Zero();
+	double scale = movingP.get("scale", 1.0).asDouble();
 	auto& os = movingP["offset"];
 	if(!os.isNull()){
 	  offset.x() = os[0].asDouble();
@@ -64,8 +65,8 @@ void World::loadFromJson(const std::string& _filename){
 	}
 	for(const auto& pos : particleInfo.positions){
 	  particles.emplace_back();
-	  particles.back().position = pos + offset;
-	  particles.back().restPosition = pos + offset;
+	  particles.back().position = scale*pos + offset;
+	  particles.back().restPosition = scale*pos + offset;
 	  particles.back().velocity = velocity;
 	}
 
