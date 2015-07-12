@@ -70,8 +70,8 @@
 
 \begin{abstract}
 In this paper, we address clustering and collision detection in the clustered shape matching simulation framework
-for deformable bodies.  Our clustering algorithm resembles fuzzy c-means and gives particles weighted membership in clusters.
-We then use the weights to divide the particles mass among the clusters, resulting in very even distribution of mass over an 
+for deformable bodies.  Our clustering algorithm resembles fuzzy $c$-means and gives particles weighted membership in clusters.
+We then use the weights to divide the particles mass among the clusters, resulting in a very even distribution of mass over an 
 object.  By design our clustering algorithm also forms spherical clusters yielding exceptionally convenient collision geometry.  We further 
 enhance this simple collision proxy with halfspaces to allow for fracture or other simple geometric operations.
 The resulting approach is fast, versatile, and simple to implement.
@@ -89,10 +89,33 @@ The resulting approach is fast, versatile, and simple to implement.
 \copyrightspace
 
 \section{Introduction}\label{sec:Introduction}
-{\em Shape matching} is a geometrically motivated technique for animating deformable bodies introduced
-a decade ago by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
-\fref{fig:shapematching} summarizes the approach.
 
+Introduced a decade ago by \Mueller and
+colleagues~\shortcite{Mueller:2005:MDB}, {\em shape matching} is a
+technique for animating deformable bodies modeled as volumetric
+point samples.  The geometric distribution of points serves both as a
+descriptor for the body as well as a vehicle for simulating its
+movements.  Even though the approach lacks a well-developed mathematical
+underpinning, \Mueller et al.~illustrate many
+advantages to the technique that make it suitable for interactive
+graphics and in particular video games.  One of their key idea is 
+an extension that uses overlapping clusters of points to model the
+deforming body as opposed to a single point set.
+
+In this work, we perform further experimentation that develops a
+quantitative evaluation of clustered shape matching.  Specifically, we
+explore five different weighting schemes and three different clustering
+algorithms.  These schemes are aimed to balance computation time with
+cluster distributions while emphasizing results that look good.
+Furthermore, we enrich the cluster shape proxy, adding halfspaces that
+clip the original cluster sphere, enabling clusters to describe fracture
+and other input geometries.  This shape retains the simplicity of
+spherical geometries for collision, but allows for a more accurate
+description of the points that better matches the geometry used
+in simulation.  Together, these contributions allow for heuristics that
+improve the overall quality of clustered shape matching and further
+develop our understanding in absense of a rigorous mathematical
+theory.
 
 \begin{figure*}
 \includegraphics[width=\linewidth]{Figures/shapematching.png}
@@ -105,31 +128,58 @@ to their world positions, $\B{x}_i$ is computed.  The dotted red circles are the
 \end{figure*}
 
 \section{Related Work}
-The geometrically motivated shape matching approach was introduced by \Mueller and 
-colleagues~\shortcite{Mueller:2005:MDB}, who demonstrated impressive results and 
-described the key advantages of the approach: efficiency, stability, and controllability.
-Given these advantages, shape matching is especially appealing in interactive animation contexts such as
-video games.  The authors also introduced several extensions including linear and quadratic deformations 
-(in addition to rigid deformations), cluster-based deformation, and plasticity.  
 
-Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice-based shape matching,
-which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
-of the regular structure of the lattices to achieve extremely high performance.  
+Shape matching is a well known approach for simulating deformable
+bodies.  In the original work by \Mueller et al.~a diverse set of
+physical phenomena are able to be simulated interactively, including
+both rigid and plastic deformations with
+collisions\cite{Mueller:2005:MDF}.  Rivers and
+James~\shortcite{Rivers:2007:FFL} introduced a variant to the approach
+based on building a set of hierarchical lattices that define the shape
+matching clusters.  This hierarchy allows for a regular structure that
+improves performance and allows for the inclusion of a simple fracture
+model.  \josh{In a companion work, we develop a ductile fracture
+model~\cite{} -- should we say something like this Josh wonders?}
 
-Despite impressive results and substantial promise,
-the shape matching framework has been largely disregarded by the research community in favor of position-based
-dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
-the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching
-and pointed out several advantages of shape matching over position-based dynamics.  Most sifnificantly, shape matching respects Newton's 
-laws of motion.
+Interestingly, while the approach is simple and effective, the research
+community has recently focused more on techniques based on
+position-based
+dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}
+as opposed to shape matching.  Position-based dynamics boasts many
+advantages, but neither approach is universally best.  For example,
+Bargteil and Jones~\shortcite{Bargteil:2014:SLF} added strain-limiting
+into clustered shape matching and in doing so discovered several
+advantages of shape matching over position-based dynamics.  Most
+significantly, shape matching respects Newton's laws of motion.
+Furthermore, they also suggest that there is a dramatic effect to the
+choice of clustering, motivating this work to explicitly study the
+relationship between clusters and output quality.
 
-Clustering is well-studied in the machine learning literature and many techniques, such as $\mathrm{k-means}$ , have become standard tools in computer graphics.  
+%The geometrically motivated shape matching approach was introduced by \Mueller and 
+%colleagues~\shortcite{Mueller:2005:MDB}, who demonstrated impressive results and 
+%described the key advantages of the approach: efficiency, stability, and controllability.
+%Given these advantages, shape matching is especially appealing in interactive animation contexts such as
+%video games.  The authors also introduced several extensions including linear and quadratic deformations 
+%(in addition to rigid deformations), cluster-based deformation, and plasticity.  
+%
+%Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice-based shape matching,
+%which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
+%of the regular structure of the lattices to achieve extremely high performance.  
+%
+%Despite impressive results and substantial promise,
+%the shape matching framework has been largely disregarded by the research community in favor of position-based
+%dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
+%the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching
+%and pointed out several advantages of shape matching over position-based dynamics.  Most sifnificantly, shape matching respects Newton's 
+%laws of motion.
+
+Clustering is well-studied in the machine learning literature and many techniques, such as $k$-means, have become standard tools in computer graphics.  
 A complete survey of this literature is beyond the scope of this short paper, but for the sort of ``fuzzy'' clustering we propose in this paper,
 we recommend the survey by Nock and Nielsen~\shortcite{Nock:2006:OWC}.  Similarly, collision detection is well-studied in the 
 computer graphics and robotics literature.  For a survey of real-time techniques we recommend the text by Ericson~\shortcite{Ericson:2004:RCD}.
 
 \section{Methods}
-For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
+For completeness and readability, we first briefly review the shape matching approach of \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.  \fref{fig:shapematching} summarizes the approach.  
 \subsection{Shape Matching}
 \label{sec:ShapeMatching}
 In the shape matching framework
@@ -228,7 +278,7 @@ Fourth is a simple inverse distance squared kernel,
 \mathrm{invsq}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\|\B{x}_i-\B{x}_{c}\|+\epsilon},
 \end{equation}
 where $\epsilon$ prevents dividing by zero (we use $\epsilon = 0.0001$).
-Fifth is the fuzzy c-means weighting function~\cite{Dunn:1973:AFR,Bezdek:1981:PRF},
+Fifth is the fuzzy $c$-means weighting function~\cite{Dunn:1973:AFR,Bezdek:1981:PRF},
 \begin{equation}
 \label{eq:fuzzycmeans}
 \displaystyle \mathrm{fcm}(\B{x}_i, \B{x}_{c}, h) = \dfrac{1}{\displaystyle \sum_{d\in\mathcal{C}}\left(\dfrac{\|x_i - x_{c}\|}{\|x_i-x_{d}\|}\right)^{\tfrac{2}{m-1}}},
@@ -271,37 +321,37 @@ uses its location as the center of a new cluster, and adds all particles within 
 The algorithm terminates when all particles are a member of at least on cluster.  Weights, cluster center-of-mass, etc are
 determined after the algorithm terminates.  The user can specify the radius of a cluster's neighborhood, but not the number of clusters.
 
-The second algorithm uses $\mathrm{k-means}$ to determine cluster centers; given random seed locations for clusters, this two-step algorithm iteratively
+The second algorithm uses $k$-means to determine cluster centers; given random seed locations for clusters, this two-step algorithm iteratively
 \begin{enumerate}
 \item updates cluster membership for each particle by choosing the nearest cluster center;
 \item updates cluster centers to be the center of mass of the particles in the cluster.
 \end{enumerate}
 Convergence is achieved when cluster membership is no longer changing.  
-After the $\mathrm{k-means}$ algorithm terminates overlapping clusters are computed by including
+After the $k$-means algorithm terminates overlapping clusters are computed by including
 all particles within a user-specified distance of the computed cluster centers.  Finally, membership weights, cluster center-of-mass, etc are computed.
 
-Our final approach more closely resembles {\em fuzzy c-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
+Our final approach more closely resembles {\em fuzzy $c$-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
 but explicitly seeks greater sparsity in the membership weights by forcing
 weights for particles far from a cluster center to zero.
-%Consequently, we developed our own approach, which is quite similar to fuzzy c-means, k-means, expecationa maximization (EM), 
+%Consequently, we developed our own approach, which is quite similar to fuzzy $c$-means, $k$-means, expecationa maximization (EM), 
 %and Lloyd's algorithm.  Like all these algorithms, 
 Again, we iteratively perform two-steps:
 \begin{enumerate}
 \item update cluster membership {\em and weights};
 \item update cluster centers to be the center of mass of the particles in the cluster.
 \end{enumerate}
-Instead of computing the nearest cluster center for each particle as in $\mathrm{k-means}$, our algorithm includes all particles within a given distance
+Instead of computing the nearest cluster center for each particle as in $k$-means, our algorithm includes all particles within a given distance
 using a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
 (\eref{eq:weights}) requires evaluating the above 
 kernels for each particle in each cluster and keeping a running sum of the weights for each particle.  Updating the cluster centers simply requires 
 computing~\eref{eq:com} for each cluster using the weights computed in the previous step.  To faciliate satisfying the first requirement that 
 all particles belong to at least one particle, we add any particles that are not within $h$ of any cluster center to the nearest cluster 
-(in a similar manner to the $\mathrm{k-means}$ algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
+(in a similar manner to the $k$-means algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
 we declare convergence if cluster membership remains the same for two iterations and the cluster centers have not moved more than $0.1\%$ of the neighborhood radius.   
 If the algorithm
 does not converge within a limited number of iterations we increase the number of clusters and/or $h$ until convergence is achieved.
 
-Compared to $\mathrm{k-means}$ our algorithm has the advantage of including the fact that clusters should overlap in the optimization itself, which leads to slower convergence, but
+Compared to $k$-means our algorithm has the advantage of including the fact that clusters should overlap in the optimization itself, which leads to slower convergence, but
 also to a clustering that is better suited to our needs.
 
 \subsection{Collision Detection}
@@ -331,7 +381,7 @@ swiss cheese & 25032 & 27 & $<$ 1 & $<$1 & 39 \\
 
 \paragraph{Limitations and Future Work}
 
-Our blue-noise sampling and $\mathrm{k-means}$ clustering improve upon the regular grids and
+Our blue-noise sampling and $k$-means clustering improve upon the regular grids and
 randomized clusters of Bargteil and Jones~\shortcite{Bargteil:2014:SLF} and are effective for our purposes,
 but better approaches certainly exist.  In particular, it would be interesting to explore adaptive sampling
 so that computational resources can be focused on interesting areas of the object.  
