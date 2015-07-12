@@ -560,7 +560,7 @@ bool CollisionGeometry::project(Eigen::Vector3d &x) {
   n = r-m;
 
   for (auto &p : planes) {
-	m = p.first.dot(x) - p.second;
+	m = p.first.dot(x) + p.second;
   	if (m >= 0.0) return false;
   	if (-m < n) {
   	  n = -m;
