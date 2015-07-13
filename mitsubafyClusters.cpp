@@ -284,7 +284,7 @@ int main(int argc, char** argv){
 	  for(auto planeIndex : range( numPlanes)){
 		
 		std::array<double, 4> thisPlane;
-		particleIns >> thisPlane[0]  //nx
+		sphereIns >> thisPlane[0]  //nx
 					>> thisPlane[1]  //ny
 					>> thisPlane[2]  //nz
 					>> thisPlane[3]; // d
