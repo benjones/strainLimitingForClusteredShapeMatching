@@ -315,7 +315,7 @@ where $\beta$ is a blend parameter.
 Fourth is a simple inverse distance squared kernel,
 \begin{equation}
 \label{eq:invdistancesquared}
-\mathrm{invsq}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\|\B{x}_i-\B{x}_{c}\|+\epsilon},
+\mathrm{invsq}(\B{x}_i, \B{x}_{c}, h) = \frac{1}{\|\B{x}_i-\B{x}_{c}\|^2+\epsilon},
 \end{equation}
 where $\epsilon$ prevents dividing by zero (we use $\epsilon = 0.0001$).
 Fifth is the fuzzy $c$-means weighting function~\cite{Dunn:1973:AFR,Bezdek:1981:PRF},
@@ -482,7 +482,7 @@ something intelligent here.}
 
 Finally, we have a more practical example of a sphere colliding with a thin sheet.  This example demonstrates our approach
 to collisions.  Many of the clusters in the thin sheet include the automatically determined halfspaces demonstrating the efficacy
-of this approach.  This example ran at \adam{????} frames per second.
+of this approach.  On a typical laptop this example ran at 55 frames per second with rendering, 161 frames per second without rendering.
 
 In conclusion we have significantly extended the clustered shape matching framework for animating deformable bodies by introducing
 a new ``fuzzy'' clustering algorithm that produces a highly flexible weight distribution for each particle
