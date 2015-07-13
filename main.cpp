@@ -177,6 +177,15 @@ void loop(SDL_Window* window, World& world){
 	  }
 	  ++frame;
 	  if(frame % 60 == 0){std::cout << frame << std::endl;}
+	
+	// Uncomment the following for uniform-length clips
+
+	if (frame == 350)
+	{
+		readyToExit = true;
+		break;
+	}
+	  
 	}
    
 

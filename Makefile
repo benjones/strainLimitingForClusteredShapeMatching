@@ -38,8 +38,8 @@ default: $(TARGETS)
 mitsubafy: mitsubafy.cpp jsoncpp.o
 	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafy mitsubafy.cpp jsoncpp.o
 
-mitsubafy: mitsubafyClusters.cpp jsoncpp.o
-	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafyClusters mitsubafyClusters.cpp jsoncpp.o
+mitsubafyClusters: mitsubafyClusters.cpp jsoncpp.o
+	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafyClusters mitsubafyClusters.cpp jsoncpp.o color_spaces.o
 
 
 clean:

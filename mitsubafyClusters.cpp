@@ -11,7 +11,6 @@ using benlib::range;
 
 #include "color_spaces.h"
 
-
 Eigen::Vector3d getSupportingPoint(const Eigen::Vector3d& normal, double offset){
   return normal*offset;
 }
@@ -42,14 +41,13 @@ int main(int argc, char** argv){
 
 
   const std::string usage = 
-	"mitsubafy <jsonFile> <formatStringForSpheres> <outputDirectory> "
-	"[extraXMLStuff], eg format string: frames/particles.%d.txt.spheres";
+	"mitsubafy <jsonFile> <formatStringForParticles> <outputDirectory> formatStringForSpheres, [extraXMLstuff] (e.g., camera)";
   
-  if(argc < 4){ std::cout << usage << std::endl; return 1;}
+  if(argc < 5){ std::cout << usage << std::endl; return 1;}
   
   std::string extraXML;
-  if(argc == 5){
-	std::ifstream ins(argv[4]);
+  if(argc == 6){
+	std::ifstream ins(argv[5]);
 	extraXML.assign(std::istreambuf_iterator<char>(ins),
 		std::istreambuf_iterator<char>());
   }
@@ -121,7 +119,7 @@ int main(int argc, char** argv){
   const std::string sphereEnd = "</shape>\n";
 
   char currentFile[2048];
-  for(int frame = 0; ; ++frame){
+  for(int frame = 0; ; frame++){
 	std::vector<float> positions;
 	sprintf(currentFile, argv[2], frame);
 	//this will tell us how many files there are, even if we're using objs.
@@ -259,17 +257,24 @@ int main(int argc, char** argv){
 		   << "<bsdf type=\"diffuse\"><srgb name=\"reflectance\" value=\"#3333ee\" />"
 		   << "</bsdf></shape>\n";
 	}
+	// April's fix (7/10/15)
+		
+	sprintf(currentFile, argv[4], frame);
+
+	std::ifstream sphereIns(currentFile, std::ios_base::binary | std::ios_base::in);
 
 	size_t numSpheres;
-	particleIns >> numSpheres;
+	sphereIns >> numSpheres;
+
 	for(auto sphereIndex : range(numSpheres)){
 	  
+
 	  size_t numPlanes;
 	  Eigen::Vector3d position;
 	  double radius;
 	  std::vector<std::array<double, 4> > clippingPlanes;
 	  
-	  particleIns >> numPlanes
+	  sphereIns >> numPlanes
 				  >> position.x()
 				  >> position.y()
 				  >> position.z()
@@ -286,13 +291,12 @@ int main(int argc, char** argv){
 		clippingPlanes.push_back(thisPlane);
 
 	  }
-
 	  
-	  outs << "<shape type=\"ClippedSphere\">\n<point name=\"center\"x=\""
+	  outs << "<shape type=\"ClippedSphere\">\n<point name=\"center\" x=\""
 		   << position.x() << "\" y=\""
 		   << position.y() << "\" z=\""
-		   << position.z() << "\" <float name=\"radius\" value=\""
-		   << radius << "\" \n<string name=\"clippingPlanes\" value=\""
+		   << position.z() << "\" />\n<float name=\"radius\" value=\""
+		   << radius << "\" />\n<string name=\"clippingPlanes\" value=\""
 		   << numPlanes << " ";
 	  for(const auto& cp : clippingPlanes){
 		for(auto k : range(4)){
