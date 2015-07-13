@@ -129,49 +129,50 @@ to their world positions, $\B{x}_i$ is computed.  The dotted red circles are the
 
 \section{Related Work}
 
-Shape matching is a well known approach for simulating deformable
-bodies.  In the original work by \Mueller et al.~a diverse set of
-physical phenomena are able to be simulated interactively, including
-both rigid and plastic deformations with
-collisions\cite{Mueller:2005:MDF}.  Rivers and
-James~\shortcite{Rivers:2007:FFL} introduced a variant to the approach
-based on building a set of hierarchical lattices that define the shape
-matching clusters.  This hierarchy allows for a regular structure that
-improves performance and allows for the inclusion of a simple fracture
-model.  \josh{In a companion work, we develop a ductile fracture
-model~\cite{} -- should we say something like this Josh wonders?}
+%Shape matching is a well known approach for simulating deformable
+%bodies.  In the original work by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}
+%a diverse set of
+%physical phenomena are able to be simulated interactively, including
+%both rigid and plastic deformations with
+%collisions.  Rivers and
+%James~\shortcite{Rivers:2007:FFL} introduced a variant to the approach
+%based on building a set of hierarchical lattices that define the shape
+%matching clusters.  This hierarchy allows for a regular structure that
+%improves performance and allows for the inclusion of a simple fracture
+%model.  \josh{In a companion work, we develop a ductile fracture
+%model~\cite{} -- should we say something like this Josh wonders?}
 
-Interestingly, while the approach is simple and effective, the research
-community has recently focused more on techniques based on
-position-based
-dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}
-as opposed to shape matching.  Position-based dynamics boasts many
-advantages, but neither approach is universally best.  For example,
-Bargteil and Jones~\shortcite{Bargteil:2014:SLF} added strain-limiting
-into clustered shape matching and in doing so discovered several
-advantages of shape matching over position-based dynamics.  Most
-significantly, shape matching respects Newton's laws of motion.
-Furthermore, they also suggest that there is a dramatic effect to the
-choice of clustering, motivating this work to explicitly study the
-relationship between clusters and output quality.
+%Interestingly, while the approach is simple and effective, the research
+%community has recently focused more on techniques based on
+%position-based
+%dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}
+%as opposed to shape matching.  Position-based dynamics boasts many
+%advantages, but neither approach is universally best.  For example,
+%Bargteil and Jones~\shortcite{Bargteil:2014:SLF} added strain-limiting
+%into clustered shape matching and in doing so discovered several
+%advantages of shape matching over position-based dynamics.  Most
+%significantly, shape matching respects Newton's laws of motion.
+%Furthermore, they also suggest that there is a dramatic effect to the
+%choice of clustering, motivating this work to explicitly study the
+%relationship between clusters and output quality.
 
-%The geometrically motivated shape matching approach was introduced by \Mueller and 
-%colleagues~\shortcite{Mueller:2005:MDB}, who demonstrated impressive results and 
-%described the key advantages of the approach: efficiency, stability, and controllability.
-%Given these advantages, shape matching is especially appealing in interactive animation contexts such as
-%video games.  The authors also introduced several extensions including linear and quadratic deformations 
-%(in addition to rigid deformations), cluster-based deformation, and plasticity.  
+The geometrically motivated shape matching approach was introduced by \Mueller and 
+colleagues~\shortcite{Mueller:2005:MDB}, who demonstrated impressive results and 
+described the key advantages of the approach: efficiency, stability, and controllability.
+Given these advantages, shape matching is especially appealing in interactive animation contexts such as
+video games.  The authors also introduced several extensions including linear and quadratic deformations 
+(in addition to rigid deformations), cluster-based deformation, and plasticity.  
 %
-%Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice-based shape matching,
-%which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
-%of the regular structure of the lattices to achieve extremely high performance.  
-%
-%Despite impressive results and substantial promise,
-%the shape matching framework has been largely disregarded by the research community in favor of position-based
-%dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
-%the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching
-%and pointed out several advantages of shape matching over position-based dynamics.  Most sifnificantly, shape matching respects Newton's 
-%laws of motion.
+Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice-based shape matching,
+which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
+of the regular structure of the lattices to achieve extremely high performance.  
+
+Despite impressive results and substantial promise,
+the shape matching framework has been largely disregarded by the research community in favor of position-based
+dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  One notable exception is
+the work of Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, which incorporated strain-limiting into clustered shape matching
+and pointed out several advantages of shape matching over position-based dynamics.  Most significantly, shape matching respects Newton's 
+laws of motion.
 
 Clustering is well-studied in the machine learning literature and many techniques, such as $k$-means, have become standard tools in computer graphics.  
 A complete survey of this literature is beyond the scope of this short paper, but for the sort of ``fuzzy'' clustering we propose in this paper,
@@ -242,7 +243,7 @@ Hookean springs are then used to define forces that move the particles toward th
 \subsection{Clustered Shape Matching}
 Handling multiple clusters is straightforward.  When computing a particle's contribution to 
 cluster quantities, we must divide the particle's mass among its clusters.  To do 
-so we introduce a weight $w_{i,c}$ for particle $p_i$ in cluster $c$ that describes how much of
+so we introduce a weight $w_{i,c}$ for particle $p_i$ in cluster $c\in\mathcal{C}$ that describes how much of
 $p_i$'s mass is contributed to cluster $c$.  These weights enter into equations \eqref{eq:sm}-\eqref{eq:defgrad} by multiplying
 the particle's mass.  As an example, the center-of-mass of cluster $c$, $\B{x}_{cm,c} = \B{x}_{c}$ (dropping the $_{cm}$ for clarity), is
 \begin{equation}
@@ -319,44 +320,104 @@ borrowed from Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, is a simple rand
 chooses a random particle that is not a member of any cluster,
 uses its location as the center of a new cluster, and adds all particles within a user-specified distance to the cluster.  
 The algorithm terminates when all particles are a member of at least on cluster.  Weights, cluster center-of-mass, etc are
-determined after the algorithm terminates.  The user can specify the radius of a cluster's neighborhood, but not the number of clusters.
+determined after the algorithm terminates.  The user specifies the {\em neighborhood radius}--- 
+maximum distance, $d$, from the cluster center to particles
+included into the cluster; this $d$ is then used in a spherical range query to determine cluster membership.
+Note that in this algorithm, the user has no direct control over the number of clusters, $|\mathcal{C}|$.
 
-The second algorithm uses $k$-means to determine cluster centers; given random seed locations for clusters, this two-step algorithm iteratively
+The second algorithm uses $k$-means to determine cluster centers; given $k = |\mathcal{C}|$ 
+random seed locations for clusters, this two-step algorithm iteratively
 \begin{enumerate}
 \item updates cluster membership for each particle by choosing the nearest cluster center;
 \item updates cluster centers to be the center of mass of the particles in the cluster.
 \end{enumerate}
 Convergence is achieved when cluster membership is no longer changing.  
 After the $k$-means algorithm terminates overlapping clusters are computed by including
-all particles within a user-specified distance of the computed cluster centers.  Finally, membership weights, cluster center-of-mass, etc are computed.
+all particles within a user-specified distance, $d$, of the computed cluster centers.  
+Finally, membership weights, cluster center-of-mass, etc are computed.
 
 Our final approach more closely resembles {\em fuzzy $c$-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
 but explicitly seeks greater sparsity in the membership weights by forcing
-weights for particles far from a cluster center to zero.
-%Consequently, we developed our own approach, which is quite similar to fuzzy $c$-means, $k$-means, expecationa maximization (EM), 
-%and Lloyd's algorithm.  Like all these algorithms, 
-Again, we iteratively perform two-steps:
+weights for particles far from a cluster center to zero.  As in the previous algorithm, we choose inital cluster centers using $k$-means.
+However, we then perform an additional two-step iterative optimization:
 \begin{enumerate}
 \item update cluster membership {\em and weights};
-\item update cluster centers to be the center of mass of the particles in the cluster.
+\item update cluster centers to be the {\em weighted} center of mass of the particles in the cluster.
 \end{enumerate}
-Instead of computing the nearest cluster center for each particle as in $k$-means, our algorithm includes all particles within a given distance
-using a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
+Instead of computing the nearest cluster center for each particle as in $k$-means, our algorithm includes all particles within a given distance, 
+$d$, using a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
 (\eref{eq:weights}) requires evaluating the above 
 kernels for each particle in each cluster and keeping a running sum of the weights for each particle.  Updating the cluster centers simply requires 
 computing~\eref{eq:com} for each cluster using the weights computed in the previous step.  To faciliate satisfying the first requirement that 
-all particles belong to at least one particle, we add any particles that are not within $h$ of any cluster center to the nearest cluster 
+all particles belong to at least one particle, we add any particles that are not within the neighborhood radius, $d$, of 
+any cluster center to the nearest cluster 
 (in a similar manner to the $k$-means algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
 we declare convergence if cluster membership remains the same for two iterations and the cluster centers have not moved more than $0.1\%$ of the neighborhood radius.   
 If the algorithm
-does not converge within a limited number of iterations we increase the number of clusters and/or $h$ until convergence is achieved.
+does not converge within a limited number of iterations we increase the number of clusters, $|\mathcal{C}|$, and/or the neighborhood radius, $d$, until convergence is achieved.
 
 Compared to $k$-means our algorithm has the advantage of including the fact that clusters should overlap in the optimization itself, which leads to slower convergence, but
 also to a clustering that is better suited to our needs.
 
 \subsection{Collision Detection}
+We first describe the simple and efficient collision proxy geometry we use for clusters and then describe
+our collision detection and handling algorithm.
 
+\paragraph{Collision Geometry}
+Because we explicitly include the distance constraint during clustering, the resulting clusters are generally well approximated
+by spheres.  However, for some input geometry, such as a thin sheet, this approximation is less than ideal.  Consequently,
+we enhance our collision proxy by adding planes.  Specifically, our geometric representation of the collision proxy
+is the intersection of a sphere with a set of half-spaces.
 
+The radius of the sphere is given by the user-specified neighborhood radius, $d$.  The center of the sphere is chosen as the 
+geometric center of the range query used during clustering---the randomly chosen seed particles for $\mathrm{random}$ algorithm;
+the cluster centers given by $k$-means in the $\mathrm{k-means}$ algorithm; or the cluster centers given by our new algorithm.
+Note that with $\mathrm{random}$ and $\mathrm{k-means}$ the algorithmic cluster centers and the physical cluster center of mass will
+generally not be the same point.  One advantage of our algorithm is that, because the weighted center of mass is computed during
+the optimization, the algorithm's output is the physical center of mass.
+
+As mentioned above we intersect these sphere with half-spaces.  During initialization, after computing the clusters, we examine the 
+Eigenvectors, $\B{V}_i$, of the scatter matrix, $\B{A}_{rr}$.  These Eigenvectors give the principal directions that describe the distribution
+of particles in the cluster.  We compute the planes normal to these Eigenvectors that bound the particles in the cluster.  Specifically,
+for each Eigenvector we compute the dot product with each particle in the cluster, keeping track of the 
+minimum and maximum values, yeilding six plane equations of the form
+\begin{equation}
+\phi(\B{x}) = \B{V}_i\cdot\B{x} + a_j = 0.
+\end{equation}
+We adopt the convention that points for which $\phi(\cdot)<0$ lie {\em inside} the halfspace.  If a plane lies within a user-specified
+distance of the center of the sphere---that is it cuts off a significant portion of the collision volume---we add it to the collision
+geometry.  This geometric representation is stored in the rest space of the objcet.  More planes can be added at runtime by projecting
+them from world space to rest space using $\B{F}^{-1}$.
+
+For each cluster we also store, in world space, the maximum distance from the center of mass to a member particle, yielding simple
+collision proxy in world space.
+
+\paragraph{Collision Detection and Handling}
+During runtime, we check for collision between every pair of clusters, $c_1$ and $c_2$.  We explicitly prohibit collisions between
+any two clusters that ``overlap,'' or have a particle in common.  To facilitate quickly culling these collisions
+we compute cluster overlap maps; each cluster stores
+a list of clusters that it cannot collide with.  Computing the overlap maps is somewhat involved; for each particle,
+we inform every pair of clusters in the particle's membership list that there is an overlap.
+Luckily, these maps can be computed once during initialization if the clusters remain constant.
+
+If two clusters do not have a membership overlap, we next check whether their world-space sphere proxies overlap.  If not, 
+there is no collision and we continue to the next pair of clusters.  If so, we consider each particle, $p_i$, in the
+first cluster, $c_1$.  We first check whether the particle is inside the world-space sphere proxy of the second cluster, $c_2$.  If not, 
+we continue to the next particle.  If so, we transform the particle's world position into the second cluster's rest space,
+Specifically, we compute
+\begin{equation}
+\B{x}_i^\prime = \B{r}_{c_2} + \B{F}_{c_2}^{-1}\left(\B{x}_i - \B{x}_{c_2}\right)
+\end{equation}
+We then project $\B{x}^\prime$ onto our simple collision
+geometry by taking the minimum of all projections onto the sphere and half-space components.  If the particle lies outside the
+sphere or any of the halfspaces, we simply continue to the next particle.  Otherwise, we transform the projected point, $\B{y}_i^\prime$,
+to world space to get $\B{y}_i$.  Finally we move the particle toward $\B{y}$.  
+Specifically, we update $\B{x}_i$ as
+\begin{equation}
+\B{x}_i = \B{x}_i + \gamma\left(\B{y}_i-\B{x}_i\right).
+\end{equation}
+With $\gamma=1$ the collision should be completely resolved.  In complicated collision scenarios, with multiple constraints on any given
+particle, choosing $\gamma=1$ can be problematic, so we allow the user to specify the value.
 
 \section{Results and Discussion}
 \label{sec:results}
