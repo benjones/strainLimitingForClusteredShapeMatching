@@ -70,11 +70,14 @@
 
 \begin{abstract}
 In this paper, we address clustering and collision detection in the clustered shape matching simulation framework
-for deformable bodies.  Our clustering algorithm resembles fuzzy $c$-means and gives particles weighted membership in clusters.
-We then use the weights to divide the particles mass among the clusters, resulting in a very even distribution of mass over an 
-object.  By design our clustering algorithm also forms spherical clusters yielding exceptionally convenient collision geometry.  We further 
-enhance this simple collision proxy with halfspaces to allow for fracture or other simple geometric operations.
-The resulting approach is fast, versatile, and simple to implement.
+for deformable bodies.  Our clustering algorithm is ``fuzzy,'' meaning that it gives particles weighted membership in clusters.
+These weights are a significant extension to the basic clustered shape matching framework as they
+are used to divide particle mass among the clusters.  We explore several weighting schemes
+and demonstrate that the choice of weighting scheme gives artists additional control over material behavior.
+Furthermore, by design our clustering algorithm yields spherical clusters, which not only results in sparse weight vectors, but
+also exceptionally efficient collision geometry.  We further 
+enhance this simple collision proxy with halfspaces to allow for even better, yet still simple and computationally efficient, 
+collision proxies.  The resulting approach is fast, versatile, and simple to implement.
 \end{abstract}
 
 \begin{CRcatlist}
@@ -91,31 +94,67 @@ The resulting approach is fast, versatile, and simple to implement.
 \section{Introduction}\label{sec:Introduction}
 
 Introduced a decade ago by \Mueller and
-colleagues~\shortcite{Mueller:2005:MDB}, {\em shape matching} is a
-technique for animating deformable bodies modeled as volumetric
-point samples.  The geometric distribution of points serves both as a
-descriptor for the body as well as a vehicle for simulating its
-movements.  Even though the approach lacks a well-developed mathematical
-underpinning, \Mueller et al.~illustrate many
-advantages to the technique that make it suitable for interactive
-graphics and in particular video games.  One of their key idea is 
-an extension that uses overlapping clusters of points to model the
-deforming body as opposed to a single point set.
+colleagues~\shortcite{Mueller:2005:MDB}, 
+{\em shape matching} is a
+geometrically motivated technique for animating deformable bodies.
+\fref{fig:shapematching} summarizes the basic approach.
+The basic approach samples a deformable object with particles, which
+determine the degrees of freedom in the object.  Each timestep, a best-fit
+rigid transformation of the rest {\em shape} of the object to the 
+current configuration of particles is computed and Hookean springs
+are used to pull the particles toward the transformed shape.
+A powerful extension to this basic approach, also introduced by 
+\Mueller and colleagues~\shortcite{Mueller:2005:MDB}, is to break the
+object into several overlapping clusters.  We refer to this approach as
+{\em clusterd shape matching}.  Having more than one cluster imbues
+the object with a richer space of deformation, while overlap keeps
+the object from falling apart.
+While this approach lacks a well-developed mathematical
+underpinning, it has a number of advantages that make it especially
+well-suited to interactive graphics applications, such as video games.
 
-In this work, we perform further experimentation that develops a
-quantitative evaluation of clustered shape matching.  Specifically, we
-explore five different weighting schemes and three different clustering
-algorithms.  These schemes are aimed to balance computation time with
-cluster distributions while emphasizing results that look good.
-Furthermore, we enrich the cluster shape proxy, adding halfspaces that
-clip the original cluster sphere, enabling clusters to describe fracture
-and other input geometries.  This shape retains the simplicity of
-spherical geometries for collision, but allows for a more accurate
-description of the points that better matches the geometry used
-in simulation.  Together, these contributions allow for heuristics that
-improve the overall quality of clustered shape matching and further
-develop our understanding in absense of a rigorous mathematical
-theory.
+In this paper, we address two important aspects of the clustered shape matching framework, namely clustering
+and collision detection.
+We consider two previously introduced clustering algorithms and introduce a new algorithm tailored to our
+specific problem.
+Of particular note is that our new clustering algorithm is ``fuzzy,'' 
+meaning that particles have weighted membership in clusters.
+Weighted membership is a significant extension to the basic clustered shape matching framework and greatly
+increases the flexibility of the approach because the weights are used to determine how a particle's
+mass is distributed between clusters.
+We explore several weighting schemes and demonstrate that the choice of weighting scheme gives 
+artists additional control over material behavior.
+Furthermore, by design our clustering algorithm forms spherical clusters that, unlike most other fuzzy clustering
+techniques, yield sparse and spatially localized weight vectors.
+
+Our clustering method also works well with our approach to collision detection.  The spherical clusters
+result in exceptionally convenient collision geometry.  We further 
+enhance this simple collision proxy with halfspaces to allow for even better, yet still simple and computationally efficient, 
+collision proxies.  The resulting collision detection and handling code is very simple to implement {\em and} computationally efficient.
+Combined these extensions significantly enhance the power and versatility of the clustered shape matching framework.
+
+%modeled as volumetric
+%point samples.  The geometric distribution of points serves both as a
+%descriptor for the body as well as a vehicle for simulating its
+%movements.  
+%One of their key idea is 
+%an extension that uses overlapping clusters of points to model the
+%deforming body as opposed to a single point set.
+
+%In this work, we perform further experimentation that develops a
+%quantitative evaluation of clustered shape matching.  Specifically, we
+%explore five different weighting schemes and three different clustering
+%algorithms.  These schemes are aimed to balance computation time with
+%cluster distributions while emphasizing results that look good.
+%Furthermore, we enrich the cluster shape proxy, adding halfspaces that
+%clip the original cluster sphere, enabling clusters to describe fracture
+%and other input geometries.  This shape retains the simplicity of
+%spherical geometries for collision, but allows for a more accurate
+%description of the points that better matches the geometry used
+%in simulation.  Together, these contributions allow for heuristics that
+%improve the overall quality of clustered shape matching and further
+%develop our understanding in absense of a rigorous mathematical
+%theory.
 
 \begin{figure*}
 \includegraphics[width=\linewidth]{Figures/shapematching.png}
@@ -325,7 +364,7 @@ maximum distance, $d$, from the cluster center to particles
 included into the cluster; this $d$ is then used in a spherical range query to determine cluster membership.
 Note that in this algorithm, the user has no direct control over the number of clusters, $|\mathcal{C}|$.
 
-The second algorithm uses $k$-means to determine cluster centers; given $k = |\mathcal{C}|$ 
+The second algorithm, $\mathrm{kmeans}$, uses $k$-means to determine cluster centers; given $k = |\mathcal{C}|$ 
 random seed locations for clusters, this two-step algorithm iteratively
 \begin{enumerate}
 \item updates cluster membership for each particle by choosing the nearest cluster center;
@@ -336,7 +375,7 @@ After the $k$-means algorithm terminates overlapping clusters are computed by in
 all particles within a user-specified distance, $d$, of the computed cluster centers.  
 Finally, membership weights, cluster center-of-mass, etc are computed.
 
-Our final approach more closely resembles {\em fuzzy $c$-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
+Our final algorithm, $\mathrm{ours}$, more closely resembles {\em fuzzy $c$-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
 but explicitly seeks greater sparsity in the membership weights by forcing
 weights for particles far from a cluster center to zero.  As in the previous algorithm, we choose inital cluster centers using $k$-means.
 However, we then perform an additional two-step iterative optimization:
@@ -371,8 +410,8 @@ is the intersection of a sphere with a set of half-spaces.
 
 The radius of the sphere is given by the user-specified neighborhood radius, $d$.  The center of the sphere is chosen as the 
 geometric center of the range query used during clustering---the randomly chosen seed particles for $\mathrm{random}$ algorithm;
-the cluster centers given by $k$-means in the $\mathrm{k-means}$ algorithm; or the cluster centers given by our new algorithm.
-Note that with $\mathrm{random}$ and $\mathrm{k-means}$ the algorithmic cluster centers and the physical cluster center of mass will
+the cluster centers given by $k$-means in the $\mathrm{kmeans}$ algorithm; or the cluster centers given by $\mathrm{ours}$.
+Note that with $\mathrm{random}$ and $\mathrm{kmeans}$ the algorithmic cluster centers and the physical cluster center of mass will
 generally not be the same point.  One advantage of our algorithm is that, because the weighted center of mass is computed during
 the optimization, the algorithm's output is the physical center of mass.
 
@@ -421,7 +460,35 @@ particle, choosing $\gamma=1$ can be problematic, so we allow the user to specif
 
 \section{Results and Discussion}
 \label{sec:results}
-\begin{table*}
+
+Artists must specify two parameters for our clustering algorithm: the neighbor radius, $d$, and the desired number of clusters, 
+$|\mathcal{C}|$.  Additionally, artists may choose between all three of our clustering algorithms ($\mathrm{random}$, $\mathrm{kmeans}$,
+and $\mathrm{ours}$) and between all five weighting functions ($\mathrm{box}$, $\mathrm{poly6}$, $\mathrm{blend}$, $\mathrm{invsq}$, 
+$\mathrm{fcm}$). The accompanying video includes a variety of examples that explore the effects of these choices with a simple animation
+of a cube that is stretched by a factor of 2 in the x-direction and released.
+In the first set of examples we show the effect of increasing the number of clusters, $|\mathcal{C}|$, from 1 to 50, while choosing the
+minimal neighbor radius that allows convergence.  These examples clearly show how more clusters "soften" up the object.  
+However, since the neighborRadius is minimal in some sense, there are still fairly sharp boundaries between the clusters.
+To illustrate the effect of the neighbor radius, $d$, we fix the number of clusters, $|\mathcal{C}|$, at 10 and increase $d$ from
+the minimal value needed for convergence.  With a minimal radius, there are sharp boundaries between the objects.  With a larger
+radius the result is smoother.  Using an even larger radius is akin to using fewer clusters.  Thus, there is a complex interaction
+between these two parameters.  One approach to authoring would be to first choose the number of clusters and then increase the neighbor
+radius from the minimal value until a desired smoothness is acheived.  Automatically tuning the neighbor radius would be an interesting
+area for future work.
+
+We also show examples with the different algorithms and different kernels for cluster sizes of 10 and 50.  \adam{It would be nice to say 
+something intelligent here.}
+
+Finally, we have a more practical example of a sphere colliding with a thin sheet.  This example demonstrates our approach
+to collisions.  Many of the clusters in the thin sheet include the automatically determined halfspaces demonstrating the efficacy
+of this approach.  This example ran at \adam{????} frames per second.
+
+In conclusion we have significantly extended the clustered shape matching framework for animating deformable bodies by introducing
+a new ``fuzzy'' clustering algorithm that produces a highly flexible weight distribution for each particle
+and also leads to a simple collision proxy that we enhance with half-spaces.  These approaches will certainly improve the
+power and versatility of the clustered shape matching framework.
+
+\mycomment{\begin{table*}
 \begin{center}
 \caption{Timing results in ms per frame taken on a Macbook Pro with a 2.4Ghz Intel i5 processor.}
 \label{table:timing}
@@ -469,7 +536,7 @@ and computation, which correlates with ``integration units,'' is often limited.
 For these reasons, the clustered shape matching framework is extremely appealing for computer animation, 
 especially interactive animation.  The utility and versatility of this framework is greatly improved by our extensions 
 to clustering and collision handling.
-
+}
 
 
 
