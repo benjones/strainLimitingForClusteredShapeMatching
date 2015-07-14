@@ -36,7 +36,7 @@
 %%% Used by the ``review'' variation; the online ID will be printed on 
 %%% every page of the content.
 
-\TOGonlineid{70}
+\TOGonlineid{53}
 
 %%% Used by the ``preprint'' variation.
 
@@ -53,7 +53,7 @@
 \affil[***]{University of California, Riverside}
 \pdfauthor{}
 
-\keywords{Shape Matching, Ductile Fracture}
+\keywords{Shape Matching, Clustering, Collisions}
 
 \begin{document}
 
@@ -477,12 +477,18 @@ between these two parameters.  One approach to authoring would be to first choos
 radius from the minimal value until a desired smoothness is acheived.  Automatically tuning the neighbor radius would be an interesting
 area for future work.
 
-We also show examples with the different algorithms and different kernels for cluster sizes of 10 and 50.  \adam{It would be nice to say 
-something intelligent here.}
+We also show examples with the different algorithms and different kernels for cluster sizes of 10 and 50.  
+It is clear from these examples that both the underlying clustering algorithm and the choice of weights 
+have a significant impact on the material behavior.  However, our clustering algorithm, because the weights
+are included in the optimization, is more sensitive to the choice of weighting function.
+%\adam{It would be nice to say something intelligent here.}
 
-Finally, we have a more practical example of a sphere colliding with a thin sheet.  This example demonstrates our approach
+Next, we have a more practical example of a sphere colliding with a thin sheet.  This example demonstrates our approach
 to collisions.  Many of the clusters in the thin sheet include the automatically determined halfspaces demonstrating the efficacy
 of this approach.  On a typical laptop this example ran at 55 frames per second with rendering, 161 frames per second without rendering.
+
+Finally, we demonstrate our methods ability to update the collision proxies at runtime by including an example that exhibits
+fracture.  In this example, the stress caused by the collisions induce the objects to break apart.
 
 In conclusion we have significantly extended the clustered shape matching framework for animating deformable bodies by introducing
 a new ``fuzzy'' clustering algorithm that produces a highly flexible weight distribution for each particle
