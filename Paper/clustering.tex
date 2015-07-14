@@ -224,7 +224,7 @@ For completeness and readability, we first briefly review the shape matching app
 \label{sec:ShapeMatching}
 In the shape matching framework
 objects are discretized into a set of particles, $p_i\in\mathcal{P}$, with masses, $m_i$, and rest positions, $\B{r}_i$, 
-that follow a path, $\B{x}_i(t)$, in world-space through time.  
+that follow a path, $\B{x}_i(t)$, in world space through time.
 Shape matching takes its name from the fact that, each frame, we match the rest shape to 
 the deformed shape by finding
 the least-squares best-fit rigid transformation from the rest pose
@@ -235,7 +235,7 @@ vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimizes
 \label{eq:sm}
 \sum_i m_i \| \B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\|^2.
 \end{equation}
-The best translation is given by the center-of-mass in the rest and world space.  
+The best translation is given by the center of mass in the rest and world space.
 Computing the rotation, $\B{R}$, is more involved.  
 We first compute the least-squares best-fit linear deformation gradient, $\B{F}$.
 Specifically, we seek the $\B{F}$ that minimizes
@@ -284,7 +284,7 @@ Handling multiple clusters is straightforward.  When computing a particle's cont
 cluster quantities, we must divide the particle's mass among its clusters.  To do 
 so we introduce a weight $w_{i,c}$ for particle $p_i$ in cluster $c\in\mathcal{C}$ that describes how much of
 $p_i$'s mass is contributed to cluster $c$.  These weights enter into equations \eqref{eq:sm}-\eqref{eq:defgrad} by multiplying
-the particle's mass.  As an example, the center-of-mass of cluster $c$, $\B{x}_{cm,c} = \B{x}_{c}$ (dropping the $_{cm}$ for clarity), is
+the particle's mass.  As an example, the center of mass of cluster $c$, $\B{x}_{cm,c} = \B{x}_{c}$ (dropping the $_{cm}$ for clarity), is
 \begin{equation}
 \label{eq:com}
 \B{x}_{c} = \frac{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})~\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_iw_{i,c})}% = \frac{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i) \B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(m_i/n_i)},
@@ -294,7 +294,7 @@ We experimented with five weighting schemes in our implementation.  The first, a
 scheme divides the particles mass evenly among the $n_i$ clusters it belongs to, $w_{i,c} = 1/n_i$.
 %divide the particle's mass by the number of clusters it belongs to,
 %essentially replacing $m_i$ with $m_i/n_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
-%and when computing cluster mass and center-of-mass.
+%and when computing cluster mass and center of mass.
 This scheme correspnds to the ``box'' kernel, or constant weights,
 \begin{equation}
 \label{eq:box}
@@ -358,7 +358,7 @@ In our implementation we experimented with three clustering algorithms.  The fir
 borrowed from Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, is a simple randomized scheme that iteratively
 chooses a random particle that is not a member of any cluster,
 uses its location as the center of a new cluster, and adds all particles within a user-specified distance to the cluster.  
-The algorithm terminates when all particles are a member of at least on cluster.  Weights, cluster center-of-mass, etc are
+The algorithm terminates when all particles are a member of at least one cluster.  Weights, cluster center of mass, etc.\ are
 determined after the algorithm terminates.  The user specifies the {\em neighborhood radius}--- 
 maximum distance, $d$, from the cluster center to particles
 included into the cluster; this $d$ is then used in a spherical range query to determine cluster membership.
@@ -373,22 +373,22 @@ random seed locations for clusters, this two-step algorithm iteratively
 Convergence is achieved when cluster membership is no longer changing.  
 After the $k$-means algorithm terminates overlapping clusters are computed by including
 all particles within a user-specified distance, $d$, of the computed cluster centers.  
-Finally, membership weights, cluster center-of-mass, etc are computed.
+Finally, membership weights, cluster center of mass, etc.\ are computed.
 
 Our final algorithm, $\mathrm{ours}$, more closely resembles {\em fuzzy $c$-means}~\cite{Dunn:1973:AFR,Bezdek:1981:PRF}, 
 but explicitly seeks greater sparsity in the membership weights by forcing
-weights for particles far from a cluster center to zero.  As in the previous algorithm, we choose inital cluster centers using $k$-means.
+weights for particles far from a cluster center to zero.  As in the previous algorithm, we choose initial cluster centers using $k$-means.
 However, we then perform an additional two-step iterative optimization:
 \begin{enumerate}
 \item update cluster membership {\em and weights};
 \item update cluster centers to be the {\em weighted} center of mass of the particles in the cluster.
 \end{enumerate}
 Instead of computing the nearest cluster center for each particle as in $k$-means, our algorithm includes all particles within a given distance, 
-$d$, using a standard spherical range query, which is accelareted with a grid data structure.  Computing the weights 
+$d$, using a standard spherical range query, which is accelerated with a grid data structure.  Computing the weights 
 (\eref{eq:weights}) requires evaluating the above 
 kernels for each particle in each cluster and keeping a running sum of the weights for each particle.  Updating the cluster centers simply requires 
 computing~\eref{eq:com} for each cluster using the weights computed in the previous step.  To faciliate satisfying the first requirement that 
-all particles belong to at least one particle, we add any particles that are not within the neighborhood radius, $d$, of 
+all particles belong to at least one cluster, we add any particles that are not within the neighborhood radius, $d$, of 
 any cluster center to the nearest cluster 
 (in a similar manner to the $k$-means algorithm).  Any such particles immediately signal that the algorithm has not converged.  Otherwise,
 we declare convergence if cluster membership remains the same for two iterations and the cluster centers have not moved more than $0.1\%$ of the neighborhood radius.   
@@ -439,9 +439,9 @@ a list of clusters that it cannot collide with.  Computing the overlap maps is s
 we inform every pair of clusters in the particle's membership list that there is an overlap.
 Luckily, these maps can be computed once during initialization if the clusters remain constant.
 
-If two clusters do not have a membership overlap, we next check whether their world-space sphere proxies overlap.  If not, 
+If two clusters do not have a membership overlap, we next check whether their world space sphere proxies overlap.  If not, 
 there is no collision and we continue to the next pair of clusters.  If so, we consider each particle, $p_i$, in the
-first cluster, $c_1$.  We first check whether the particle is inside the world-space sphere proxy of the second cluster, $c_2$.  If not, 
+first cluster, $c_1$.  We first check whether the particle is inside the world space sphere proxy of the second cluster, $c_2$.  If not, 
 we continue to the next particle.  If so, we transform the particle's world position into the second cluster's rest space,
 Specifically, we compute
 \begin{equation}
