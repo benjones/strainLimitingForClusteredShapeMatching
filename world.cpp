@@ -472,7 +472,9 @@ void World::dumpClippedSpheres(const std::string& filename) const {
 
 	auto visTrans = cluster.getVisTransform();
 
-	Eigen::Vector3d newCenter = cluster.cg.c + visTrans.col(3).head(3);
+   //Eigen::Vector3d newCenter = cluster.cg.c + visTrans.col(3).head(3);
+   Eigen::Vector4d newCenter(cluster.cg.c(0), cluster.cg.c(1), cluster.cg.c(2), 1);
+   newCenter = visTrans * newCenter;
 
 
 	outs << cluster.cg.planes.size() << '\n'
@@ -481,11 +483,28 @@ void World::dumpClippedSpheres(const std::string& filename) const {
 		 << newCenter.z() << '\n'
 		 << cluster.cg.r << '\n';
 	for(const auto& plane : cluster.cg.planes){
-	  Eigen::Vector3d newNormal = visTrans.block(0,0,3,3)*plane.first;
-	  outs << newNormal.x() << ' '
-		   << newNormal.y() << ' '
-		   << newNormal.z() << ' '
-		   << plane.second << '\n';
+	  //Eigen::Vector3d newNormal = visTrans.block(0,0,3,3)*plane.first;
+     // outs << newNormal.x() << ' '
+	//	   << newNormal.y() << ' '
+	//	   << newNormal.z() << ' '
+	//	   << plane.second << '\n';
+	  Eigen::Vector4d norm4(plane.first(0), plane.first(1), plane.first(2), 0);
+     Eigen::Vector4d pt4(cluster.cg.c(0), cluster.cg.c(1), cluster.cg.c(2), 1);
+     double d = norm4.dot(pt4) + plane.second;
+     pt4 = pt4 - d*norm4;
+
+     norm4 = visTrans * norm4;
+     pt4 = visTrans * pt4;
+
+     Eigen::Vector3d norm3(norm4(0), norm4(1), norm4(2));
+     Eigen::Vector3d pt3(pt4(0), pt4(1), pt4(2));
+     d = norm3.dot(pt3);
+      
+     outs << norm3.x() << ' '
+		   << norm3.y() << ' '
+	      << norm3.z() << ' '
+		   << -d << '\n';
+      
 	}
 
 
