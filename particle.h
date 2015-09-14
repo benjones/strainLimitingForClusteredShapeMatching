@@ -26,4 +26,6 @@ class Cluster {
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
   Cluster() {Fp.setIdentity(); cstrain = 0.0;}
+    double justFractured = false;
+
 };

@@ -5,10 +5,10 @@
 	"alpha" : 0.1,
 	"omega" : 0.3,
 	"numConstraintIters" : 8,
-	"maxStretch" : 0.1,
+	"maxStretch" : 0.5,
 	"nClusters" : 30,
 	"springDamping": 0.1,
-	"toughness" : 1.1,
+	"toughness" : 0.28,
 //	"planes" : [ 
 //		[0, 1, 0, -2],
 //		[1, 1, 0, -2],
