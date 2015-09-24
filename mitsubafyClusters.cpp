@@ -10,6 +10,7 @@
 using benlib::range;
 
 #include "color_spaces.h"
+#include "sphere.h"
 
 Eigen::Vector3d getSupportingPoint(const Eigen::Vector3d& normal, double offset){
   return normal*offset;
@@ -36,6 +37,98 @@ getPlaneTangents(const Eigen::Vector3d& normal){
   
   return std::make_pair(span1, span2);
 }*/
+
+void make_sphere(int frame, int sphereIndex, const std::string& outputDir,     
+                 Eigen::Vector3d &position, 
+                 double radius, 
+	              std::vector<std::array<double, 4> > & clippingPlanes) {
+
+   char filename[256];
+   sprintf(filename, "sphere.%d.%d.ply", frame, sphereIndex);
+	const std::string outputFile = outputDir + "/" + filename;
+
+   std::ofstream sout(outputFile);
+
+   sout << "ply\n";
+   sout << "format binary_little_endian 1.0\n";
+   sout << "element vertex 2562\n";
+   sout << "property float x\n";
+   sout << "property float y\n";
+   sout << "property float z\n";
+   //sout << "property float nx\n";
+   //sout << "property float ny\n";
+   //sout << "property float nz\n";
+   sout << "element face 5120\n";
+   sout << "property list uchar int vertex_indices\n";
+   sout << "end_header\n";
+
+   std::vector<Eigen::Vector3d> proj_verts;
+
+   for (int i=0; i<sphere_verts.size()/3; i++) {
+      Eigen::Vector3d n(sphere_verts[3*i], sphere_verts[3*i+1], sphere_verts[3*i+2]);
+      Eigen::Vector3d v = radius * n;
+      v = v + position;
+
+      for (int j=0; j<clippingPlanes.size(); j++) {
+         Eigen::Vector3d normal(clippingPlanes[j][0], clippingPlanes[j][1], clippingPlanes[j][2]);
+         double offset = clippingPlanes[j][3];
+
+         double dist = normal.dot(v) + offset;
+         if (dist > 0) {
+            //project back down
+            v = v - dist*normal;
+            //update normal
+            n = normal;
+         }
+      }
+      //sout << v[0] << " " << v[1] << " " << v[2] << "\n";
+      proj_verts.push_back(v);
+      float f = v[0];
+      sout.write((char*) &f, sizeof(float));
+      f = v[1];
+      sout.write((char*) &f, sizeof(float));
+      f = v[2];
+      sout.write((char*) &f, sizeof(float));
+    //  f = n[0];
+    //  sout.write((char*) &f, sizeof(float));
+    //  f = n[1];
+    //  sout.write((char*) &f, sizeof(float));
+    //  f = n[2];
+    //  sout.write((char*) &f, sizeof(float));
+   }
+
+
+
+   for (int i=0; i<sphere_faces.size()/3; i++) {
+      int v0 = sphere_faces[3*i+0];
+      int v1 = sphere_faces[3*i+1];
+      int v2 = sphere_faces[3*i+2];
+
+      Eigen::Vector3d p0 = proj_verts[v0];
+      Eigen::Vector3d p1 = proj_verts[v1];
+      Eigen::Vector3d p2 = proj_verts[v2];
+
+      Eigen::Vector3d e10 = p1-p0;
+      Eigen::Vector3d e20 = p2-p0;
+
+      Eigen::Vector3d cp = e20.cross(e10);
+      if (cp.squaredNorm() < 1e-13) {
+         //replace this triangle with a point
+         v0 = v1 = v2 = 0;
+      }
+
+      // sout << "3 " << v0 << " " << v1 << " " << v2 << "\n";
+      unsigned char nv = 3;
+      sout.write((char*) &nv, sizeof(unsigned char));
+      sout.write((char*) &v0, sizeof(int));
+      sout.write((char*) &v1, sizeof(int));
+      sout.write((char*) &v2, sizeof(int));
+   }
+
+   sout.close();
+
+
+}
 
 int main(int argc, char** argv){
 
@@ -142,7 +235,8 @@ int main(int argc, char** argv){
 	for(auto&& ps : planeStrings){ outs << ps << std::endl;}
 
 	//deal with moving obstacles:
-	for(auto i : range(root["movingPlanes"].size())){  
+	/*
+   for(auto i : range(root["movingPlanes"].size())){  
 
 	  auto& plane = root["movingPlanes"][i];
 
@@ -179,6 +273,7 @@ int main(int argc, char** argv){
 	
 
 	}
+   */
 
 	//twisting planes
 	for(auto i : range(root["twistingPlanes"].size())){
@@ -292,6 +387,8 @@ int main(int argc, char** argv){
 
 	  }
 	  
+
+     /*
 	  outs << "<shape type=\"ClippedSphere\">\n<point name=\"center\" x=\""
 		   << position.x() << "\" y=\""
 		   << position.y() << "\" z=\""
@@ -303,14 +400,21 @@ int main(int argc, char** argv){
 		  outs << cp[k] << " ";
 		}
 	  }
+     */
+
+     make_sphere(frame, sphereIndex, outputDir, position, radius, clippingPlanes);
+
+     outs << "<shape type=\"ply\">\n";
+     outs << "<string name=\"filename\" value=\"sphere." << frame << "." << sphereIndex << ".ply\" />\n";
 	  
 	  RGBColor thisColor = HSLColor(2.0*acos(-1)*(sphereIndex % 12)/12.0, 0.7, 0.7).to_rgb();
 
-	  outs << "\" />\n"
-		   << "<bsdf type=\"diffuse\"><rgb name=\"reflectance\" value=\""
+	  outs << "<bsdf type=\"diffuse\"><rgb name=\"reflectance\" value=\""
 		   << thisColor.r << ", " 
 		   << thisColor.g << ", " 
 		   << thisColor.b << "\" /></bsdf>\n</shape>\n";
+
+         
 	  
 
 	}
