@@ -1,22 +1,22 @@
 {
 	"particleFiles" : [ ],
 	"movingParticleFiles" : [
-		{ "filename" : "inputFiles/bunny.txt",
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
 		  "offset" : [ 0, 0, -0.8],
 		  "velocity" : [ 0, 0, 0.4],
 		  "scale" : 0.4
 		},
-		{ "filename" : "inputFiles/bunny.txt",
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
 		  "offset" : [ 0, 0, 0.8],
 		  "velocity" : [ 0, 0, -0.4],
 		  "scale" : 0.4
 		},
-		{ "filename" : "inputFiles/bunny.txt",
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
 		  "offset" : [ 0, 0.8, 0],
 		  "velocity" : [ 0, -0.4, 0],
 		  "scale" : 0.4
 		},
-		{ "filename" : "inputFiles/bunny.txt",
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
 		  "offset" : [ 0, -0.8, 0],
 		  "velocity" : [ 0, 0.4,0 ],
 		  "scale" : 0.4

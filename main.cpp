@@ -180,7 +180,7 @@ void loop(SDL_Window* window, World& world){
 	
 	// Uncomment the following for uniform-length clips
 
-	  if (false&& frame == 350)
+	  if (frame == 480)
 	{
 		readyToExit = true;
 		break;
