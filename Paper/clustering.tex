@@ -124,6 +124,7 @@ well-suited to interactive graphics applications, such as video games.
 \includegraphics[width=\linewidth]{Figures/clustercollision.png}
 \caption{Top: The particles in one of our scenes color-coded by the closest cluster.
 Bottom: The collision geometry for the same scene.}
+\label{fig:collisiongeometry}
 \end{figure}
 
 In this paper, we address two important aspects of the clustered shape matching framework, namely clustering
@@ -485,6 +486,12 @@ particle, choosing $\gamma=1$ can be problematic, so we allow the user to specif
 \section{Results and Discussion}
 \label{sec:results}
 
+\begin{figure*}[t!]
+\includegraphics[width=\linewidth]{Figures/dropHoldWithFracture}
+\caption{A sphere falls on a beam, causing it to fracture.}
+\label{fig:fracture}
+\end{figure*}
+
 Artists must specify two parameters for our clustering algorithm: the neighbor radius, $d$, and the desired number of clusters, 
 $|\mathcal{C}|$.  Additionally, artists may choose between all three of our clustering algorithms ($\mathrm{random}$, $\mathrm{kmeans}$,
 and $\mathrm{ours}$) and between all five weighting functions ($\mathrm{box}$, $\mathrm{poly6}$, $\mathrm{blend}$, $\mathrm{invsq}$, 
@@ -510,16 +517,24 @@ are included in the optimization, is more sensitive to the choice of weighting f
 Next, we have a more practical example of a sphere colliding with a thin sheet.  This example demonstrates our approach
 to collisions.  Many of the clusters in the thin sheet include the automatically determined half-spaces demonstrating the efficacy
 of this approach.  On a typical laptop this example ran at 55 frames per second with rendering, 161 frames per second without rendering.
+See~\fref{fig:collisiongeometry} for both the particle rendering as well as a visualization of the collision geometry.
 
 The next example demonstrates our approach on more complex geometry.  In this example four instances of the bunny model collide 
-in zero gravity.  This example did not run in real-time.
+in zero gravity, see~\fref{fig:bunnies}.  This example did not run in real-time.
+
+\begin{figure}
+\includegraphics[width=\linewidth]{Figures/bunnies}
+\caption{Several bunnies collide in zero gravity.}
+\label{fig:bunnies}
+\end{figure}
 
 Finally, we demonstrate our method's ability to update the collision proxies at runtime by including an example that exhibits
-fracture.  In this example, the stress caused by the collisions induces the objects to break apart.
+fracture.  In this example, the stress caused by the collisions induces the objects to break apart, see~\fref{fig:fracture}.
 
 Qualitatively, we found that the $\mathrm{box}$ kernel was too sharp to be satisfactory and that the falloff of $\mathrm{poly6}$
 was overly smooth, resulting in little resistance to deformation.  $\mathrm{blend}$ performed better, but required setting an 
-additional parameter.  $\mathrm{invsq}$ and $\mathrm{fcm}$ performed similarly; because $\mathrm{invsq}$ is simpler, we chose
+additional parameter.  $\mathrm{invsq}$ and $\mathrm{fcm}$ performed similarly; because $\mathrm{invsq}$ is simpler and does
+not require setting an additional parameter, we chose
 it as our default kernel.  When setting up examples, we typically chose the number of clusters, \nc, first and then adjusted the
 neighbor radius, $d$, until we achieve the desired behavior.  Too little overlap results in clusters that appear almost disconnected,
 while too much overlap produces results that could be achieved with fewer clusters.
@@ -602,7 +617,7 @@ to clustering and collision handling.
 
 \section*{Acknowledgements}
 The authors wish to thank the anonymous reviewers for their time and helpful comments.
-We also thank Parasaran Raman and Suresh Venkatasubramanian for sharing their knowledge
+We also thank Parasaran Raman and Suresh Venkatasubramanian  Suresh for sharing their knowledge
 of clustering algorithms.
 This work was supported in part by National Science Foundation awards
 IIS-1314896, IIS-1314757, and IIS-1314813 
