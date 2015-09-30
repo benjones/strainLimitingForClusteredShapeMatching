@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "vis.h"
 #include "world.h"
 
 #include <SDL.h>
@@ -31,12 +32,6 @@ int main(int argc, char** argv){
   World world;
   world.loadFromJson(argv[1]);
 
-  std::ifstream eyeIn(".eye.txt");
-  if(eyeIn){
-	Eigen::Vector3d eye;
-	eyeIn >> eye.x() >> eye.y() >> eye.z();
-	world.cameraPosition = eye;
-  }
 
 
   if(SDL_Init(SDL_INIT_EVERYTHING) < 0){
@@ -61,9 +56,22 @@ int main(int argc, char** argv){
 
 
 void loop(SDL_Window* window, World& world){
+
+  
   
   auto context = SDL_GL_CreateContext(window);  
   int frame = 0;
+
+  Camera camera;
+  VisSettings visSettings;
+
+  std::ifstream eyeIn(".eye.txt");
+  if(eyeIn){
+	Eigen::Vector3d eye;
+	eyeIn >> eye.x() >> eye.y() >> eye.z();
+	camera.position = eye;
+  } 
+
 
 
   benlib::Profiler totalProf;
@@ -75,6 +83,7 @@ void loop(SDL_Window* window, World& world){
   bool mouseDown = false;
   Eigen::Vector2i mousePosition;
 
+  bool paused = false;
   while(!readyToExit){
 
 	SDL_Event event;
@@ -86,35 +95,35 @@ void loop(SDL_Window* window, World& world){
 		} else if(event.key.keysym.sym == SDLK_r){
 		  world.restart();
 		} else if(event.key.keysym.sym == SDLK_UP){
-		  world.move(true);
+		  camera.move(true);
 		} else if(event.key.keysym.sym == SDLK_DOWN){
-		  world.move(false);
+		  camera.move(false);
       } else if(event.key.keysym.sym == SDLK_RIGHT){
-		  world.which_cluster++;
-        if (world.which_cluster >= world.clusters.size()) {
-           world.which_cluster = world.clusters.size()-1;
+		  visSettings.which_cluster++;
+        if (visSettings.which_cluster >= world.clusters.size()) {
+           visSettings.which_cluster = world.clusters.size()-1;
         }
-        std::cout << "Displaying cluster: " << world.which_cluster << std::endl;
+        std::cout << "Displaying cluster: " << visSettings.which_cluster << std::endl;
 		} else if(event.key.keysym.sym == SDLK_LEFT){
-		  world.which_cluster--;
-        if (world.which_cluster < 0) {
-           world.which_cluster = -1;
+		  visSettings.which_cluster--;
+        if (visSettings.which_cluster < 0) {
+           visSettings.which_cluster = -1;
         }
-        std::cout << "Displaying cluster: " << world.which_cluster << std::endl;
+        std::cout << "Displaying cluster: " << visSettings.which_cluster << std::endl;
 		} else if(event.key.keysym.sym == SDLK_c){
-		  world.drawClusters = !world.drawClusters;
+		  visSettings.drawClusters = !visSettings.drawClusters;
       } else if(event.key.keysym.sym == SDLK_f){
-		  world.drawFracturePlanes = !world.drawFracturePlanes;
+		  visSettings.drawFracturePlanes = !visSettings.drawFracturePlanes;
       } else if(event.key.keysym.sym == SDLK_j){
-		  world.joshDebugFlag = !world.joshDebugFlag;
+		  visSettings.joshDebugFlag = !visSettings.joshDebugFlag;
       } else if(event.key.keysym.sym == SDLK_v){
-		  world.drawColoredParticles = !world.drawColoredParticles;
+		  visSettings.drawColoredParticles = !visSettings.drawColoredParticles;
       } else if(event.key.keysym.sym == SDLK_t){
-		  world.colorByToughness = !world.colorByToughness;
+		  visSettings.colorByToughness = !visSettings.colorByToughness;
       } else if(event.key.keysym.sym == SDLK_d){
 		  world.dragWithPlanes = !world.dragWithPlanes;  
 		} else if(event.key.keysym.sym == SDLK_p){
-		  world.paused = !world.paused;
+		  paused = !paused;
       }
 		break;
 	  case SDL_QUIT:
@@ -131,12 +140,12 @@ void loop(SDL_Window* window, World& world){
 		break;
 		
 	  case SDL_MOUSEWHEEL:
-		world.zoom(event.wheel.y);
+		camera.zoom(event.wheel.y);
 		break;
 	  case SDL_MOUSEMOTION:
 		if(mouseDown){
 		  Eigen::Vector2i newPosition{event.motion.x, event.motion.y};
-		  world.pan(mousePosition, newPosition);
+		  camera.pan(mousePosition, newPosition);
 		  mousePosition = newPosition;
 		}
 		break;
@@ -144,9 +153,9 @@ void loop(SDL_Window* window, World& world){
 		; // do nothing
 	  }
 	  std::ofstream eyeOuts(".eye.txt");
-	  eyeOuts << world.cameraPosition.x() << ' ' 
-			  << world.cameraPosition.y() << ' ' 
-			  << world.cameraPosition.z() << std::endl;
+	  eyeOuts << camera.position.x() << ' ' 
+			  << camera.position.y() << ' ' 
+			  << camera.position.z() << std::endl;
 
 	  if(readyToExit){break;}
 	}
@@ -159,14 +168,14 @@ void loop(SDL_Window* window, World& world){
 	if(frame > 600){break;}
 	*/
 	
-   if(world.paused){
+   if(paused){
 	  //world.drawSingleCluster(window, frame);
 	  //SDL_Delay(300);
-	  world.drawPretty(window);
+	 drawWorldPretty(world, camera, visSettings, window);
 	} else {
 	  world.timestep();
 	  auto renderTime = totalProf.timeName("render");
-	  world.drawPretty(window);
+	  drawWorldPretty(world, camera, visSettings, window);
 
 	  if(dumpFrames){
 		world.dumpParticlePositions(std::string("frames/particles.") + std::to_string(frame) + ".txt");
@@ -186,9 +195,9 @@ void loop(SDL_Window* window, World& world){
 		break;
 	}
 	  
-	}
+   }
    
-
+   
   }
   }
   world. prof.dump<std::chrono::duration<double>>(std::cout);

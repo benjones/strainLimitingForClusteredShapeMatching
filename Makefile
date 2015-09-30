@@ -13,7 +13,7 @@ OPT = -O2 -g
 
 TARGETS = runSimulator mitsubafy mitsubafyClusters
 
-OBJECTS =  main.o particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o vis.o
+OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o vis.o
 
 #-----------------------------------------
 # Update to point to your eigen headers, sdl headers
@@ -42,14 +42,17 @@ mitsubafyClusters: mitsubafyClusters.cpp jsoncpp.o
 	$(CC) $(OPT) $(FLAGS) $(EIGEN_INCLUDE) -o mitsubafyClusters mitsubafyClusters.cpp jsoncpp.o color_spaces.o
 
 
+libshapematch.a: $(OBJECTS)
+	ar rcs libshapematch.a $(OBJECTS)
+
 clean:
 	/bin/rm -fv *.o $(TARGETS) 
 
 #-----------------------------------------
 #-----------------------------------------
 
-runSimulator: $(OBJECTS)
-	$(CC) $(LDOPTS) -o runSimulator $(OBJECTS) $(SDL_LIB)
+runSimulator: $(OBJECTS) libshapematch.a
+	$(CC) $(LDOPTS) -o runSimulator -L. -lshapematch $(SDL_LIB) $(EIGEN_INCLUDE) $(INCS) $(FLAGS) main.cpp
 
 
 #-----------------------------------------

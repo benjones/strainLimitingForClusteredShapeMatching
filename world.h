@@ -42,10 +42,10 @@ public:
   void removeLonelyParticles();
 
   inline void restart(){ 
-	Eigen::Vector3d oldCameraPosition = cameraPosition;
+	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
 	Eigen::Vector3d oldCameraLookAt = cameraLookAt;
 	Eigen::Vector3d oldCameraUp = cameraUp;
-
+	*/
 	particles.clear(); 
 	planes.clear();
    movingPlanes.clear();
@@ -56,10 +56,11 @@ public:
 	cylinders.clear();
 
 	loadFromJson(filename);
-
+	/*
 	cameraPosition = oldCameraPosition;
 	cameraLookAt = oldCameraLookAt;
 	cameraUp = oldCameraUp;
+	*/
 	elapsedTime = 0;
   }
 
@@ -67,7 +68,9 @@ public:
   void dumpClippedSpheres(const std::string& filename) const;
   void dumpColors(const std::string& filename) const;
 
-  void draw(SDL_Window* window) const ;
+
+  //refactored out into vis, camera/settings stuff
+  /*  void draw(SDL_Window* window) const ;
   void drawPretty(SDL_Window* window) const ;
   void drawSingleCluster(SDL_Window* window, int frame) const;
   void drawPlanes() const;
@@ -79,7 +82,7 @@ public:
 		   Eigen::Vector2i newPosition);
 
   void move(bool forward);
-
+  */
   void bounceOutOfPlanes();
 
   std::vector<std::vector<int> > clusterCollisionMap;
@@ -179,7 +182,7 @@ public:
   AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
   
 
-  Eigen::Vector3d cameraPosition, cameraLookAt, cameraUp, gravity;
+  Eigen::Vector3d gravity;
 
   std::vector<Eigen::Vector4d> planes;
   std::vector<MovingPlane> movingPlanes;
@@ -188,6 +191,9 @@ public:
   std::vector<Projectile> projectiles;
   std::vector<CylinderObstacle> cylinders;
   std::vector<size_t> clusterCenters;
+  bool dragWithPlanes = true;
+
+
 
   double dt, elapsedTime;
   double neighborRadius, neighborRadiusMax;
@@ -210,14 +216,6 @@ public:
   double outlierThreshold;
   double poly6norm, sqrNeighborRadius;
 
-  bool drawClusters = true;
-  bool drawFracturePlanes = true;
-  bool drawColoredParticles = false;
-  bool joshDebugFlag = true;
-  bool colorByToughness = false;
-  bool dragWithPlanes = true;
-  bool paused = false;
-  int which_cluster = -1;
 
   benlib::Profiler prof;
 };

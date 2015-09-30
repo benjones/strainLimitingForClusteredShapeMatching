@@ -73,7 +73,7 @@ void World::loadFromJson(const std::string& _filename){
   }
 
 
-  
+  /* unused in all our examples, and doesn't really belong, refactored to the vis stuff --Ben
   auto cameraPositionIn = root["cameraPosition"];
   if(!cameraPositionIn.isNull() && cameraPositionIn.isArray() && cameraPositionIn.size() == 3){
 	cameraPosition.x() = cameraPositionIn[0].asDouble();
@@ -81,8 +81,7 @@ void World::loadFromJson(const std::string& _filename){
 	cameraPosition.z() = cameraPositionIn[2].asDouble();
   } else {
 	cameraPosition = Eigen::Vector3d{0,7, -5};
-  }
-
+	}
   auto cameraLookAtIn = root["cameraLookAt"];
   if(!cameraLookAtIn.isNull() && cameraLookAtIn.isArray() && cameraLookAtIn.size() == 3){
 	cameraLookAt.x() = cameraLookAtIn[0].asDouble();
@@ -99,7 +98,7 @@ void World::loadFromJson(const std::string& _filename){
 	cameraUp.z() = cameraUpIn[2].asDouble();
   } else {
 	cameraUp = Eigen::Vector3d{0,1,0};
-  }
+	}*/
 
   dt = root.get("dt",1/60.0).asDouble();
   neighborRadius = root.get("neighborRadius", 0.1).asDouble();
