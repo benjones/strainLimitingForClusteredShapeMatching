@@ -21,11 +21,11 @@ public:
   
   Eigen::Vector3i inline getBucket(Eigen::Vector3d position) const{
 	return Eigen::Vector3i {((position - 
-							  origin).array()/
-							 delta.array()).template cast<int>()
+			  origin).array()/
+		  delta.array()).template cast<int>()
 		}.unaryExpr([this](int a){
-			return std::max(0,std::min(a, numBuckets -1));
-		  });
+			  return std::max(0,std::min(a, numBuckets -1));
+			});
   }
   
   

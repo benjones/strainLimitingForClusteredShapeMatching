@@ -6,7 +6,7 @@
 #include "tiltingPlane.hpp"
 #include "projectile.hpp"
 #include "cylinderObstacle.hpp"
-#include "accelerationGrid.h"
+
 #include "preallocVector.hpp"
 #include "profiler.hpp"
 #include <SDL.h>
@@ -92,10 +92,12 @@ public:
   void solveConstraints();
   void updateNeighbors(size_t partIndex);
 
-  bool makeClusters();
-  bool makeRandomClusters();
+
+  void setupPlaneConstraints();
 
   void countClusters();
+  void mergeClusters(const std::vector<Particle>& newParticles,
+	  const std::vector<Cluster>* newClusters);
 
   //pass a container of clusters to update
   template <typename Container>
@@ -166,21 +168,6 @@ public:
   void strainLimitingIteration();
 
 
-
-  struct PositionGetter{
-	Eigen::Vector3d operator()(const Particle& p){
-	  return p.position;
-	}
-  };
-  
-  struct RestPositionGetter{
-	Eigen::Vector3d operator()(const Particle& p){
-	  return p.position;
-	}
-  };
-  AccelerationGrid<Particle, PositionGetter> positionGrid;
-  AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
-  
 
   Eigen::Vector3d gravity;
 

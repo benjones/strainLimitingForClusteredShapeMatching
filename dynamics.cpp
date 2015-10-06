@@ -652,62 +652,6 @@ void World::selfCollisions() {
 inline double cube(double x) { return x*x*x;}
 //inline double poly6(double r, double h) {(r<h) ? return cube(h - r) : return 0.0;}
 
-bool World::makeRandomClusters() {
-  std::random_device rd;
-  std::mt19937 g(std::mt19937::default_seed);
-
-  clusters.clear();
-  auto r = range(particles.size());
-  auto lonelyParticles = std::vector<size_t>(r.begin(), r.end());
-	
-  for(auto& p : particles){p.numClusters = 0; p.totalweight = 0.0;}
-  
-  while(!lonelyParticles.empty()) {
-	int r = g() % lonelyParticles.size();
-	//auto currentParticle = lonelyParticles.back();
-	//lonelyParticles.pop_back();
-	auto currentParticle = lonelyParticles[r];
-	lonelyParticles.erase(lonelyParticles.begin() + r);
-	Cluster c;
-	c.restCom = particles[currentParticle].restPosition;
-	std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
-	c.neighbors.resize(neighbors.size());
-	double w = 1.0;
-	for(unsigned int i=0; i<neighbors.size(); i++) {
-	  auto n = neighbors[i];
-	  Particle &p = particles[n];
-	  p.numClusters++; 
-	  p.totalweight += w; 
-	  p.clusters.push_back(clusters.size());
-	  c.neighbors[i] = std::pair<int, double>(n, w);
-	}
-	clusters.push_back(c);
-
-	//std::cout<<lonelyParticles.size()<<std::endl;
-	auto it = std::remove_if(lonelyParticles.begin(), lonelyParticles.end(),
-							 [&neighbors](size_t n){
-							   //neighbors aren't lonely anymore
-		  return std::find(neighbors.begin(),
-			  neighbors.end(),
-			  n) != neighbors.end();
-							 });
-	lonelyParticles.erase(it, lonelyParticles.end());
-	//std::cout<<lonelyParticles.size()<<std::endl;
-  } 
-  for (auto& c : clusters) c.cg.init(c.restCom, neighborRadius);
-  for (auto& c : clusters) {
-	c.mass = 0.0;
-	c.restCom = Eigen::Vector3d::Zero();
-	for (auto &n : c.neighbors) {
-	  auto &p = particles[n.first];
-	  double w = n.second / p.totalweight;
-	  c.restCom += w * p.mass * p.position;
-	  c.mass += w * p.mass;
-	}
-	c.restCom /= c.mass;
-  }
-  return true;
-}
 
 double World::kernel(const Eigen::Vector3d &x) {
   switch (clusterKernel) {

@@ -14,36 +14,37 @@ using benlib::range;
 
 template <typename ParticleType, typename Px>
 void AccelerationGrid<ParticleType, Px>::updateGrid(const std::vector<ParticleType>& particles){
-
+  
   assert(numBuckets > 0);
+  const auto getter = Px{}
   
   Eigen::Vector3d bbMin = 
 	std::accumulate(particles.begin(),
-					particles.end(),
-					Eigen::Vector3d{std::numeric_limits<double>::max(),
-						std::numeric_limits<double>::max(),
-						std::numeric_limits<double>::max()},
-					[](Eigen::Vector3d best, const ParticleType& p){
-					  return Eigen::Vector3d{std::min(best(0),Px{}(p)(0)),
-											 std::min(best(1),Px{}(p)(1)),
-											 std::min(best(2),Px{}(p)(2))};
-					  
-					});
+		particles.end(),
+		Eigen::Vector3d{std::numeric_limits<double>::max(),
+			std::numeric_limits<double>::max(),
+			std::numeric_limits<double>::max()},
+		[](Eigen::Vector3d best, const ParticleType& p){
+		  return Eigen::Vector3d{std::min(best(0),getter(p)(0)),
+								 std::min(best(1),getter(p)(1)),
+								 std::min(best(2),getter(p)(2))};
+		  
+		});
   
   
   
   Eigen::Vector3d bbMax = 
 	std::accumulate(particles.begin(),
-					particles.end(),
-					Eigen::Vector3d{std::numeric_limits<double>::min(),
-						std::numeric_limits<double>::min(),
-						std::numeric_limits<double>::min()},
-					[](Eigen::Vector3d best, const ParticleType& p){
-					  return Eigen::Vector3d{std::max(best(0),Px{}(p)(0)),
-											 std::max(best(1),Px{}(p)(1)),
-											 std::max(best(2),Px{}(p)(2))};
-					  
-					});
+		particles.end(),
+		Eigen::Vector3d{std::numeric_limits<double>::min(),
+			std::numeric_limits<double>::min(),
+			std::numeric_limits<double>::min()},
+		[](Eigen::Vector3d best, const ParticleType& p){
+		  return Eigen::Vector3d{std::max(best(0),getter(p)(0)),
+								 std::max(best(1),getter(p)(1)),
+								 std::max(best(2),getter(p)(2))};
+		  
+		});
   
   delta = (bbMax - bbMin)/numBuckets;
   //give us a little slack space
@@ -51,13 +52,13 @@ void AccelerationGrid<ParticleType, Px>::updateGrid(const std::vector<ParticleTy
   bbMax += 0.05*delta;
   origin = bbMin;
   delta = (bbMax - bbMin)/numBuckets;
-
+  
   grid.assign(numBuckets*numBuckets*numBuckets, {});
   
   for(auto&& e : enumerate(particles)){
 	const auto i = e.first;
 	const auto& p = e.second;
-	const auto bucket = getBucket(Px{}(p));
+	const auto bucket = getBucket(getter(p));
 	grid[index(bucket)].push_back(i);
   }
 }
@@ -72,6 +73,8 @@ getNearestNeighbors(const std::vector<ParticleType>& particles,
   
   const auto rSquared = r*r;
   //const auto p = Px{}(particles[pIndex]);
+
+  const auto getter = Px{};
   
   std::vector<int> ret;
   
@@ -85,7 +88,7 @@ getNearestNeighbors(const std::vector<ParticleType>& particles,
 		//		std::cout << "index: " << index(i,j,k) << std::endl;
 		//		std::cout << "grid size: " << grid.size() << std::endl;
 		for(auto q : grid[index(i,j,k)]){
-		  if ((x - Px{}(particles[q])).squaredNorm() <= rSquared){
+		  if ((x - getter(particles[q])).squaredNorm() <= rSquared){
 			ret.push_back(q);
 		  }
 		}
