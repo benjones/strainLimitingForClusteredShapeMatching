@@ -40,6 +40,7 @@ void World::loadFromJson(const std::string& _filename){
   clusteringParams.kernelWeight = root.get("kernelWeight", 2.0).asDouble();
   clusteringParams.blackhole = root.get("blackhole", 1.0).asDouble();
 
+  double mass = root.get("mass", 0.1).asDouble();
 
 
   
@@ -54,8 +55,9 @@ void World::loadFromJson(const std::string& _filename){
 	  newParticles.back().position = pos;
 	  newParticles.back().restPosition = pos;
 	  newParticles.back().velocity = Eigen::Vector3d::Zero();
+	  newParticles.back().mass = mass;
 	}
-	auto newClusters = makeClusters(newParticles, clusteringParams);
+	auto newClusters = iterateMakeClusters(newParticles, clusteringParams);
 	mergeClusters(newParticles, newClusters);
 
 	
@@ -88,8 +90,10 @@ void World::loadFromJson(const std::string& _filename){
 	  newParticles.back().position = scale*pos + offset;
 	  newParticles.back().restPosition = scale*pos + offset;
 	  newParticles.back().velocity = velocity;
+	  newParticles.back().mass = mass;
 	}
-	auto newClusters = makeClusters(newParticles, clusteringParams);
+	
+	auto newClusters = iterateMakeClusters(newParticles, clusteringParams);
 	mergeClusters(newParticles, newClusters);
   }
 
@@ -277,8 +281,6 @@ void World::loadFromJson(const std::string& _filename){
   }
 
 
-  double mass = root.get("mass", 0.1).asDouble();
-  for(auto& p : particles){ p.mass = mass;}
 
   //do this in mergeClusters instead
   //for(int i=0; i<(int)particles.size(); i++) particles[i].id = i;

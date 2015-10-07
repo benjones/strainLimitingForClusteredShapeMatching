@@ -4,7 +4,7 @@
 
 struct RestPositionGetter{
   Eigen::Vector3d operator()(const Particle& p) const{
-	return p.position;
+	return p.restPosition;
   }
 };
 

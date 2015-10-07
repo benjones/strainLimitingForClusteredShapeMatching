@@ -3,7 +3,7 @@
 #include "utils.h"
 
 #include "accelerationGrid.h"
-
+#include "profiler.hpp"
 #include <random>
 
 
@@ -11,6 +11,7 @@ inline double cube(double x) { return x*x*x;}
 
 std::vector<Cluster> makeRandomClusters(std::vector<Particle>& particles, double neighborRadius) {
   // std::random_device rd; unused since we're using the default seed always
+  
   std::mt19937 gen(std::mt19937::default_seed);
 
   
@@ -20,7 +21,7 @@ std::vector<Cluster> makeRandomClusters(std::vector<Particle>& particles, double
   auto lonelyParticles = std::vector<size_t>(r.begin(), r.end());
 
   AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
-  restPositionGrid.numBuckets = 8; //TODO tune me, 512 buckets now... seems reasonable?
+  restPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
   restPositionGrid.updateGrid(particles);
 
   
@@ -95,10 +96,11 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 
 
   AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
-  restPositionGrid.numBuckets = 8; //TODO tune me, 512 buckets now... seems reasonable?
+  restPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
   restPositionGrid.updateGrid(particles);
-
   
+  std::cout << "nClusters: " << params.nClusters << std::endl;
+  std::cout << "k means initialization...";
   if (params.clusteringAlgorithm < 2) { //kmeans or fuzzy cmeans
 
 	//seed nClusters clusters
@@ -160,8 +162,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 	  }
 	} //end while not converged
   }
-
-
+  std::cout  << "finished"  << std::endl;
   //fill in weights to clusters and particles
   if (params.clusteringAlgorithm == 1) {
 	for(auto& p : particles){p.numClusters = 0; p.totalweight = 0.0;}
@@ -204,8 +205,11 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
   }
 
   // fuzzy c-means loop
-  if (params.clusteringAlgorithm < 1) {
+    if (params.clusteringAlgorithm < 1) {
+	std::cout << "starting c means loop..." << std::endl;
 	iters = 0;
+
+	
 	while ((!converged || iters < 5) && iters < params.clusterItersMax) {
 	  converged = true;
 	  iters++;
@@ -215,14 +219,13 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		p.numClusters = 0;
 		p.totalweight = 0.0;
 	  }
-	  
+
 	  for (auto j = 0; j<clusters.size(); j++) {
 		Cluster &c = clusters[j];
 		int oldMembers = c.members.size();
 		std::vector<int> neighbors =
 		  restPositionGrid.getNearestNeighbors(particles, c.restCom, params.neighborRadius);
 		c.members.resize(neighbors.size());
-
 		for(unsigned int i=0; i<neighbors.size(); i++) {
 		  auto n = neighbors[i];
 		  Particle &p = particles[n];
@@ -233,7 +236,6 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		  p.numClusters++;
 		}
 		if (oldMembers != c.members.size()) {
-		  //std::cout<<oldNeighbors<<" != "<<c.neighbors.size()<<std::endl;
 		  converged = false;
 		}
 	  }
@@ -242,29 +244,29 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 	  for(auto i : range(particles.size())){
 		auto& p = particles[i];
 		if (p.numClusters > 0) continue;
-
+		
 		const auto& pRest = p.restPosition;
-		const auto bestPair = utils::minProjectedElement(clusters,
+		auto bestPair = utils::minProjectedElement(clusters,
 			[&pRest](const Cluster& c){ return (c.restCom - pRest).squaredNorm();});
 		bestPair.first->members.push_back(std::make_pair(i, params.blackhole));
 		
 		/*
-		int bestCluster = 0;
-		double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
-		for (auto j = 0; j<clusters.size(); j++) {
+		  int bestCluster = 0;
+		  double bestNorm = (clusters[0].restCom - p.restPosition).squaredNorm();
+		  for (auto j = 0; j<clusters.size(); j++) {
 		  double newNorm = (clusters[j].restCom - p.restPosition).squaredNorm();
 		  if (newNorm < bestNorm) {
-			bestCluster = j;
-			bestNorm = newNorm;
+		  bestCluster = j;
+		  bestNorm = newNorm;
 		  }
-		}
-		clusters[bestCluster].members.push_back(std::pair<int,double>(i,blackhole));
+		  }
+		  clusters[bestCluster].members.push_back(std::pair<int,double>(i,blackhole));
 		*/
 		p.totalweight = 1.0;
 		//std::cout<<"particle "<<i<<" not in cluster"<<std::endl;
 		converged = false;
+		
 	  }
-
 
 	  //compute the FCM weights x_i_c = 1/(sum_d_inclusters(||x_i - x_c||/||x_i - x_d||)^2/(m-1)
 	  if (params.clusterKernel == 4) {
@@ -359,6 +361,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		}
 	  }
 
+
 	  //compute cluster COMs
 	  for (auto& c : clusters) {
 		c.worldCom = c.restCom; //store the last rest COM here for now
@@ -375,7 +378,8 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		  converged = false;
 		}
 	  }
-	} 
+
+	}
 	for (auto& c : clusters) c.cg.init(c.restCom, params.neighborRadius);
 	std::cout<<"Fuzzy c-means clustering ran "<<iters<<" iterations."<<std::endl;
   }

@@ -270,7 +270,7 @@ namespace utils{
 	It bestIt = begin(cont);
 	Val bestVal = functor(*bestIt);
 
-	for(auto it = (++begin(cont)); it != end(cont); ++it){
+	for(auto it = begin(cont); it != end(cont); ++it){
 	  Val thisVal = functor(*it);
 	  if(thisVal < bestVal){
 		bestVal = thisVal;
