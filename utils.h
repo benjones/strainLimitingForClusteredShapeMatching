@@ -222,12 +222,13 @@ namespace utils{
 	return std::find(container.begin(), container.end(), value) != container.end();
   }
   
-  inline void drawPlane(const Eigen::Vector3d& normal, double offset, double size, const Eigen::Vector3d &center) {
-     Eigen::Vector3d tangent1, tangent2;
-
-     tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
+  inline void drawPlane(const Eigen::Vector3d& normal,
+	  double offset, double size, const Eigen::Vector3d &center) {
+	Eigen::Vector3d tangent1, tangent2;
+	
+	tangent1 = normal.cross(Eigen::Vector3d{1,0,0});
      if(tangent1.isZero(1e-3)){
-        tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
+	   tangent1 = normal.cross(Eigen::Vector3d{0,0,1});
         if(tangent1.isZero(1e-3)){
            tangent1 = normal.cross(Eigen::Vector3d{0,1,0});
         }
@@ -253,4 +254,47 @@ namespace utils{
      glEnd();
   }
 
+
+  //pick the element of the container that minimizes Functor(elem), for example, the distance to a point
+  template <typename Cont, typename Functor,
+			typename It = typename Cont::iterator,
+			typename Val = decltype(std::declval<Functor>()(*std::declval<It>()))>
+  std::pair<It, Val>
+  minProjectedElement(Cont& cont, Functor&& functor){
+	using std::begin;
+	using std::end;
+	if(begin(cont) == end(cont)){
+	  return std::make_pair(end(cont), std::numeric_limits<Val>::quiet_NaN());
+	}
+
+	It bestIt = begin(cont);
+	Val bestVal = functor(*bestIt);
+
+	for(auto it = (++begin(cont)); it != end(cont); ++it){
+	  Val thisVal = functor(*it);
+	  if(thisVal < bestVal){
+		bestVal = thisVal;
+		bestIt = it;
+	  }
+	}
+	return std::make_pair(bestIt, bestVal);
+  }
+
+  template<typename Cont, typename Val,
+		   typename It = typename Cont::iterator>
+  It findInContainer(Cont& cont, const Val& val){
+	using std::begin;
+	using std::end;
+	return std::find(begin(cont), end(cont), val);
+  }
+  template<typename Cont, typename Pred,
+		   typename It = typename Cont::iterator>
+  It findIfInContainer(Cont& cont, Pred&& pred){
+	using std::begin;
+	using std::end;
+	return std::find_if(begin(cont), end(cont), std::forward<Pred>(pred));
+  }
+
+  template<typename T>
+  struct incomplete;
 }

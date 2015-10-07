@@ -12,7 +12,6 @@ using benlib::range;
 
 
 
-inline double cube(double x) { return x*x*x;}
 
 void World::loadFromJson(const std::string& _filename){
   elapsedTime = 0;
@@ -29,20 +28,34 @@ void World::loadFromJson(const std::string& _filename){
 	exit(1);
   }
 
-  ClusteringParams params;
+  clusteringParams.neighborRadius = root.get("neighborRadius", 0.1).asDouble();
+  clusteringParams.nClusters = root.get("nClusters", 1).asInt();
+  clusteringParams.neighborRadiusMax =
+	root.get("neighborRadiusMax", std::numeric_limits<double>::max()).asDouble();
+  clusteringParams.nClustersMax = root.get("nClustersMax", std::numeric_limits<int>::max()).asInt();
+  clusteringParams.clusterItersMax = root.get("clusterItersMax", 10000).asInt();
+  clusteringParams.clusteringAlgorithm = root.get("clusteringAlgorithm", 0).asInt();
+  clusteringParams.clusterOverlap = root.get("clusterOverlap", 0.0).asDouble();
+  clusteringParams.clusterKernel = root.get("clusterKernel", 0).asInt();
+  clusteringParams.kernelWeight = root.get("kernelWeight", 2.0).asDouble();
+  clusteringParams.blackhole = root.get("blackhole", 1.0).asDouble();
 
+
+
+  
   auto particleFilesIn = root["particleFiles"];
   for(auto i : range(particleFilesIn.size())){
 	auto particleInfo = readParticleFile(particleFilesIn[i].asString());
 
 	std::vector<Particle> newParticles;
+	newParticles.reserve(particleInfo.positions.size());
 	for(const auto & pos : particleInfo.positions){
 	  newParticles.emplace_back();
 	  newParticles.back().position = pos;
 	  newParticles.back().restPosition = pos;
 	  newParticles.back().velocity = Eigen::Vector3d::Zero();
 	}
-	auto newClusters = makeClusters(newParticles, params);
+	auto newClusters = makeClusters(newParticles, clusteringParams);
 	mergeClusters(newParticles, newClusters);
 
 	
@@ -60,7 +73,7 @@ void World::loadFromJson(const std::string& _filename){
 	  offset.y() = os[1].asDouble();
 	  offset.z() = os[2].asDouble();
 	}
-
+	
 	Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
 	auto& vel = movingP["velocity"];
 	if(!vel.isNull()){
@@ -68,13 +81,16 @@ void World::loadFromJson(const std::string& _filename){
 	  velocity.y() = vel[1].asDouble();
 	  velocity.z() = vel[2].asDouble();
 	}
+	std::vector<Particle> newParticles;
+	newParticles.reserve(particleInfo.positions.size());
 	for(const auto& pos : particleInfo.positions){
-	  particles.emplace_back();
-	  particles.back().position = scale*pos + offset;
-	  particles.back().restPosition = scale*pos + offset;
-	  particles.back().velocity = velocity;
+	  newParticles.emplace_back();
+	  newParticles.back().position = scale*pos + offset;
+	  newParticles.back().restPosition = scale*pos + offset;
+	  newParticles.back().velocity = velocity;
 	}
-
+	auto newClusters = makeClusters(newParticles, clusteringParams);
+	mergeClusters(newParticles, newClusters);
   }
 
 
@@ -106,16 +122,6 @@ void World::loadFromJson(const std::string& _filename){
 	}*/
 
   dt = root.get("dt",1/60.0).asDouble();
-  neighborRadius = root.get("neighborRadius", 0.1).asDouble();
-  nClusters = root.get("nClusters", 1).asInt();
-  neighborRadiusMax = root.get("neighborRadiusMax", std::numeric_limits<double>::max()).asDouble();
-  nClustersMax = root.get("nClustersMax", std::numeric_limits<int>::max()).asInt();
-  clusterItersMax = root.get("clusterItersMax", 10000).asInt();
-  clusteringAlgorithm = root.get("clusteringAlgorithm", 0).asInt();
-  clusterOverlap = root.get("clusterOverlap", 0.0).asDouble();
-  clusterKernel = root.get("clusterKernel", 0).asInt();
-  kernelWeight = root.get("kernelWeight", 2.0).asDouble();
-  blackhole = root.get("blackhole", 1.0).asDouble();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
   alpha = root.get("alpha", 1.0).asDouble();
   omega = root.get("omega", 1.0).asDouble();
@@ -162,7 +168,7 @@ void World::loadFromJson(const std::string& _filename){
 	  std::cout << "not a good plane... skipping" << std::endl;
 	  continue;
 	}
-
+	
 	//x, y, z, (of normal), then offset value
 	planes.push_back(Eigen::Vector4d{planesIn[i][0].asDouble(),
 		  planesIn[i][1].asDouble(),
@@ -311,24 +317,55 @@ void World::loadFromJson(const std::string& _filename){
 
   
   
-  sqrNeighborRadius = neighborRadius * neighborRadius;
-  poly6norm = 315.0 / (64.0 * M_PI * cube(cube(neighborRadius)));
-  while (!makeClusters()) {
-	nClusters = std::ceil(1.25*nClusters); 
-	neighborRadius *= 1.25; 
-	if (nClusters > nClustersMax && neighborRadius > neighborRadiusMax) {
-	  std::cout<<nClusters<<" "<<nClustersMax<<std::endl;
-	  std::cout<<neighborRadius<<" "<<neighborRadiusMax<<std::endl;
+
+
+  for (auto& c : clusters) {
+	Eigen::Matrix3d Aqq;
+	Aqq.setZero();
+	for (auto &member : c.members) {
+	  auto &p = particles[member.first];
+	  Eigen::Vector3d qj = p.restPosition - c.restCom;
+	  Aqq += qj * qj.transpose();
+	}
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(Aqq, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+	double min, max;
+	Eigen::Vector3d n;
+	for (unsigned int i=0; i<3; i++) {
+	  n = solver.matrixV().col(i);
+	  min = std::numeric_limits<double>::max();
+	  max = -std::numeric_limits<double>::max();
+	  for (auto &member : c.members) {
+		auto &p = particles[member.first];
+		double d = n.dot(p.restPosition);
+		if (d < min) min = d;
+		if (d > max) max = d;
+	  }
+	  double center = n.dot(c.cg.c);
+	  //std::cout<<max - min<<" "<<neighborRadius<<std::endl;
+	  //if (max - min < 1.5*neighborRadius) {
+	  if (max - center < collisionGeometryThreshold*neighborRadius) {
+		std::cout<<" adding plane: "<<n(0)<<"x + "<<n(1)<<"y + "<<n(2)<<"z + "<<-max<<std::endl;
+		c.cg.addPlane(n, -max);
+	  }
+	  if (center - min < collisionGeometryThreshold*neighborRadius) {
+		std::cout<<" adding plane: "<<-n(0)<<"x + "<<-n(1)<<"y + "<<-n(2)<<"z + "<<min<<std::endl;
+		c.cg.addPlane(-n, min);
+	  }
+	}
+  }
+
+  updateClusterProperties(benlib::range(clusters.size()));
+
+  for (auto& c : clusters) {
+	if (c.mass < 1e-5) {
+	  std::cout<<"Cluster has mass "<<c.mass<<" and position: "<<c.restCom<<std::endl;
 	  exit(0);
 	}
-	nClusters = std::min(nClusters, nClustersMax);
-	neighborRadius = std::min(neighborRadius, neighborRadiusMax);
-	sqrNeighborRadius = neighborRadius * neighborRadius;
-	poly6norm = 315.0 / (64.0 * M_PI * cube(cube(neighborRadius)));
-	std::cout<<"trying clustering again with nClusters = "<<nClusters<<" neighborRadius = "<<neighborRadius<<std::endl;
   }
-  std::cout<<"nClusters = "<<nClusters<<std::endl;
 
+
+  
   setupPlaneConstraints();
 
   
@@ -452,7 +489,7 @@ void World::dumpColors(const std::string& filename) const {
 
 	RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
 	//RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
-	if(clusters[min_cluster].neighbors.size() > 1) {
+	if(clusters[min_cluster].members.size() > 1) {
 	  //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
 	  //glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
 	  colors[3*i]  = rgb.r;
@@ -522,10 +559,10 @@ void World::setupPlaneConstraints(){
   for(auto& c : clusters){ 
 	bool crossingPlane = false;
 	for(auto& plane : movingPlanes){
-	  bool firstSide = particles[c.neighbors.front().first].position.dot(plane.normal) > plane.offset;
+	  bool firstSide = particles[c.members.front().first].position.dot(plane.normal) > plane.offset;
 	  
-	  for(auto n : c.neighbors){
-		bool thisSide = particles[n.first].position.dot(plane.normal) > plane.offset;
+	  for(const auto& member : c.members){
+		bool thisSide = particles[member.first].position.dot(plane.normal) > plane.offset;
 		if(thisSide != firstSide){
 		  crossingPlane = true;
 		  break;
@@ -535,10 +572,10 @@ void World::setupPlaneConstraints(){
 	}
 	for(auto& plane : twistingPlanes){
 	  if(crossingPlane){break;}
-	  bool firstSide = particles[c.neighbors.front().first].position.dot(plane.normal) > plane.offset;
+	  bool firstSide = particles[c.members.front().first].position.dot(plane.normal) > plane.offset;
 	  
-	  for(auto n : c.neighbors){
-		bool thisSide = particles[n.first].position.dot(plane.normal) > plane.offset;
+	  for(const auto& member : c.members){
+		bool thisSide = particles[member.first].position.dot(plane.normal) > plane.offset;
 		if(thisSide != firstSide){
 		  crossingPlane = true;
 		  break;
@@ -547,10 +584,10 @@ void World::setupPlaneConstraints(){
 	}
 	for(auto& plane : tiltingPlanes){
 	  if(crossingPlane){break;}
-	  bool firstSide = particles[c.neighbors.front().first].position.dot(plane.normal) > plane.offset;
+	  bool firstSide = particles[c.members.front().first].position.dot(plane.normal) > plane.offset;
 	  
-	  for(auto n : c.neighbors){
-		bool thisSide = particles[n.first].position.dot(plane.normal) > plane.offset;
+	  for(const auto& member : c.members){
+		bool thisSide = particles[member.first].position.dot(plane.normal) > plane.offset;
 		if(thisSide != firstSide){
 		  crossingPlane = true;
 		  break;
@@ -566,35 +603,26 @@ void World::setupPlaneConstraints(){
   
 }
 
-void World::mergeClusters(const std::vector<Particle> newParticles&,
+void World::mergeClusters(const std::vector<Particle>& newParticles,
 	const std::vector<Cluster>& newClusters){
 
-  //update indeces
   auto particleStart = particles.size();
   auto clusterStart = clusters.size();
-  for(auto& p : newParticles){
-	for(auto& n : p.neighbors){
-	  n += particleStart; //update the neighbors to use the correct indeces
-	}
-	for(auto& c : p.clusters){
-	  c += clustersStart;
-	}
-  }
-
-  for(auto& c : newClusters){
-	for(auto& m : c.neighbors){
-	  m.first += particleStart;
-	}
-  }
   
-  //stick them in there
+  //stick them in there and update indeces
   particles.insert(particles.end(), newParticles.begin(), newParticles.end());
   for(auto i : range(particleStart, particles.size())){
 	particles[i].id = i;
+	for(auto& c : particles[i].clusters){
+	  c += clusterStart;
+	}
   }
   
   clusters.insert(clusters.end(), newClusters.begin(), newClusters.end());
-  
-  
+  for(auto i : range(clusterStart, clusters.size())){
+	for(auto& member : clusters[i].members){
+	  member.first += particleStart;
+	}
+  }
   
 }

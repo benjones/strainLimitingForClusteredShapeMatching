@@ -11,6 +11,8 @@
 #include "profiler.hpp"
 #include <SDL.h>
 
+#include "clustering.h"
+
 class World{
 public:
   std::string filename; //for reloading the file
@@ -76,7 +78,7 @@ public:
   void drawPlanes() const;
   void drawPlanesPretty() const;
   void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
-  void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;
+  void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;clus
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,
 		   Eigen::Vector2i newPosition);
@@ -97,7 +99,7 @@ public:
 
   void countClusters();
   void mergeClusters(const std::vector<Particle>& newParticles,
-	  const std::vector<Cluster>* newClusters);
+	  const std::vector<Cluster>& newClusters);
 
   //pass a container of clusters to update
   template <typename Container>
@@ -184,15 +186,11 @@ public:
 
   double dt, elapsedTime;
   double neighborRadius, neighborRadiusMax;
-  int nClusters, nClustersMax, clusterItersMax;
-  double blackhole;
-  int clusteringAlgorithm;  // 0 = default (fuzzy c-means with weights); 1 = k-means; 2 = random
-  double clusterOverlap;
-  int clusterKernel; // 0 = 1 / (r^2 + eps), 1 = constant, 2 = poly6, 3 = constant/poly6 blend (with kernelweight), 4 = fuzzy c-means
-  double kernelWeight; // only for the blended kernel, and fuzzy c-means
+
+  ClusteringParams clusteringParams;
+
   bool fractureOn, selfCollisionsOn;
 
-  double kernel(const Eigen::Vector3d &x);
   
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
@@ -201,7 +199,7 @@ public:
   double collisionRestitution;
   double collisionGeometryThreshold;
   double outlierThreshold;
-  double poly6norm, sqrNeighborRadius;
+
 
 
   benlib::Profiler prof;

@@ -91,7 +91,7 @@ void drawWorldPretty(const World& world,
 		RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
 		//RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
 		if ((which_cluster == -1 || min_cluster == which_cluster) &&
-			clusters[min_cluster].neighbors.size() > 1) {
+			clusters[min_cluster].members.size() > 1) {
 		  //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
 		  glColor4d(rgb.r, rgb.g, rgb.b, 0.95);
 		} else {
@@ -305,8 +305,8 @@ void drawWorldPretty(const World& world,
 	
 	if (!settings.drawColoredParticles) {
 	  glBegin(GL_POINTS);
-	  for(auto &i : c.neighbors){
-		glVertex3dv(particles[i.first].position.data());
+	  for(auto &member : c.members){
+		glVertex3dv(particles[member.first].position.data());
 	  }
 	  glEnd();
 	}
@@ -537,7 +537,7 @@ void World::draw(SDL_Window* window) const {
 	  auto i = pr.first;
 	  glPushMatrix();
 
-	  auto com = sumWeightedWorldCOM(c.neighbors);
+	  auto com = sumWeightedWorldCOM(c.members);
 	  glTranslated(com.x(), com.y(), com.z());
 	  glColor4d(i/(2.0*clusters.size()), 1.0, 1.0, 0.3);
 	  utils::drawSphere(c.renderWidth, 10, 10);
@@ -608,7 +608,7 @@ auto& c = clusters[i];
 
 glPushMatrix();
 
-auto com = sumWeightedWorldCOM(c.neighbors);
+auto com = sumWeightedWorldCOM(c.members);
 glTranslated(com.x(), com.y(), com.z());
 glColor4d(static_cast<double>(i)/clusters.size(), 0, 1.0, 0.3);
 utils::drawSphere(c.width, 10, 10);
@@ -622,8 +622,8 @@ glColor3f(1,1,1);
 glPointSize(3);
   
 glBegin(GL_POINTS);
-for(auto &i : c.neighbors){
-glVertex3dv(particles[i.first].position.data());
+for(auto &member : c.members){
+glVertex3dv(particles[member.first].position.data());
 }
 glEnd();
 

@@ -16,7 +16,7 @@ template <typename ParticleType, typename Px>
 void AccelerationGrid<ParticleType, Px>::updateGrid(const std::vector<ParticleType>& particles){
   
   assert(numBuckets > 0);
-  const auto getter = Px{}
+  const auto getter = Px{};
   
   Eigen::Vector3d bbMin = 
 	std::accumulate(particles.begin(),
@@ -24,7 +24,7 @@ void AccelerationGrid<ParticleType, Px>::updateGrid(const std::vector<ParticleTy
 		Eigen::Vector3d{std::numeric_limits<double>::max(),
 			std::numeric_limits<double>::max(),
 			std::numeric_limits<double>::max()},
-		[](Eigen::Vector3d best, const ParticleType& p){
+		[&getter](Eigen::Vector3d best, const ParticleType& p){
 		  return Eigen::Vector3d{std::min(best(0),getter(p)(0)),
 								 std::min(best(1),getter(p)(1)),
 								 std::min(best(2),getter(p)(2))};
@@ -39,7 +39,7 @@ void AccelerationGrid<ParticleType, Px>::updateGrid(const std::vector<ParticleTy
 		Eigen::Vector3d{std::numeric_limits<double>::min(),
 			std::numeric_limits<double>::min(),
 			std::numeric_limits<double>::min()},
-		[](Eigen::Vector3d best, const ParticleType& p){
+		[&getter](Eigen::Vector3d best, const ParticleType& p){
 		  return Eigen::Vector3d{std::max(best(0),getter(p)(0)),
 								 std::max(best(1),getter(p)(1)),
 								 std::max(best(2),getter(p)(2))};
