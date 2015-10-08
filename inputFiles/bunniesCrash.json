@@ -1,0 +1,68 @@
+{
+	"particleFiles" : [ ],
+	"movingParticleFiles" : [
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
+		  "offset" : [ 0, 0, -0.8],
+		  "velocity" : [ 0, 0, 0.4],
+		  "scale" : 0.4
+		},
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
+		  "offset" : [ 0, 0, 0.8],
+		  "velocity" : [ 0, 0, -0.4],
+		  "scale" : 0.4
+		},
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
+		  "offset" : [ 0, 0.8, 0],
+		  "velocity" : [ 0, -0.4, 0],
+		  "scale" : 0.4
+		},
+		{ "filename" : "inputFiles/bunnyCoarse.txt",
+		  "offset" : [ 0, -0.8, 0],
+		  "velocity" : [ 0, 0.4,0 ],
+		  "scale" : 0.4
+		}
+
+
+	],
+
+	//"neighborRadius" : 0.09,
+	//"nClusters" : 50,
+	"collisionRestitution" : 1.0,
+	"neighborRadius" : 0.05,
+	"nClusters" : 150, //175,
+	"nClustersMax" : 1000, //175,
+	"clusteringAlgorithm" : 0,
+	"alpha" : 1.5,
+	"omega" : 0.3,
+	"numConstraintIters" : 5,
+	"maxStretch" : 0.1,
+	"springDamping": 0.3,
+	"toughness" : 1000, //0.05,
+	"yield" : 10000, //0.2,
+	"nu" : 0.0,
+	"clusterItersMax" : 600,
+	"planes" : [ 
+	],
+	/*"movingPlanes" : [
+		{ 
+			"normal" : [0, 1, 0],
+			"offset" : 0.28,
+			"velocity" : 0
+		},
+		{ 
+			"normal" : [0, -1, 0],
+			"offset" : 0.31,
+			"velocity" : 0
+		}
+	],*/
+/*	"projectiles" : [
+		{
+			"start" : [0,  0, -0.9],
+			"velocity" : [0, 0, 0.3],
+			"radius" : 0.1,
+			"momentumScale" : 10
+		}
+	],
+*/
+	"gravity" : [0, 0, 0]
+}

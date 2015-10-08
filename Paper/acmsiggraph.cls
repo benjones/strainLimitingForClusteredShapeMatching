@@ -39,14 +39,11 @@
 % - version 0.9  2013/12/06 Stephen Spencer
 %   - removed "abstract" environment for copyright space
 %   - renamed remaining environments to "tog" and "conference"
-% - version 0.91
-%   - removed the hyperlink icons
-%   - added date to the external class name
 %
 % ---------------------------------------------------------------------------
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{acmsiggraph}[2014/12/29 ACM SIGGRAPH class]
+\ProvidesClass{acmsiggraph}[2013/12/06 ACM SIGGRAPH class]
 
 % lots of options aren't allowed.
 
@@ -105,8 +102,6 @@
 \setlength{\headheight}{0.200in}
 \setlength{\headsep}{0.250in}
 \setlength{\footskip}{0.500in}
-
-\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
 
 % create a new length ``\ACMcopyrightspace'' and set its initial value.
 
@@ -457,46 +452,46 @@
 
 %%% Icon(s) with hyperlinks.
 
-%\newcommand{\@ACMurlWeb}{}
-%\newcommand{\TOGprojectURL}[1]{\renewcommand{\@ACMurlWeb}{#1}}
-%\newcommand{\@ACMurlVideo}{}
-%\newcommand{\TOGvideoURL}[1]{\renewcommand{\@ACMurlVideo}{#1}}
-%\newcommand{\@ACMurlData}{}
-%\newcommand{\TOGdataURL}[1]{\renewcommand{\@ACMurlData}{#1}}
-%\newcommand{\@ACMurlCode}{}
-%\newcommand{\TOGcodeURL}[1]{\renewcommand{\@ACMurlCode}{#1}}
+\newcommand{\@ACMurlWeb}{}
+\newcommand{\TOGprojectURL}[1]{\renewcommand{\@ACMurlWeb}{#1}}
+\newcommand{\@ACMurlVideo}{}
+\newcommand{\TOGvideoURL}[1]{\renewcommand{\@ACMurlVideo}{#1}}
+\newcommand{\@ACMurlData}{}
+\newcommand{\TOGdataURL}[1]{\renewcommand{\@ACMurlData}{#1}}
+\newcommand{\@ACMurlCode}{}
+\newcommand{\TOGcodeURL}[1]{\renewcommand{\@ACMurlCode}{#1}}
 
-%\newcommand{\icon@DL}{\raisebox{-.02in}{\includegraphics[width=.13in]{icons/iconacm}}\hspace{.01in}DL}
-%\newcommand{\icon@PDF}{\raisebox{-.02in}{\includegraphics[width=.11in]{icons/iconpdf}}\hspace{.015in}PDF}
-%\newcommand{\icon@Web}{\raisebox{-.025in}{\includegraphics[width=.11in]{icons/iconweb}}\hspace{.01in}Web}
-%\newcommand{\icon@Video}{\raisebox{-.01in}{\includegraphics[width=.11in]{icons/iconvideo}}\hspace{.007in}Video}
-%\newcommand{\icon@Data}{\raisebox{-.01in}{\includegraphics[width=.10in]{icons/icondata}}\hspace{.015in}Data}
-%\newcommand{\icon@Code}{\raisebox{-.005in}{\includegraphics[width=.10in]{icons/iconcode}}\hspace{.017in}Code}
+\newcommand{\icon@DL}{\raisebox{-.02in}{\includegraphics[width=.13in]{icons/iconacm}}\hspace{.01in}DL}
+\newcommand{\icon@PDF}{\raisebox{-.02in}{\includegraphics[width=.11in]{icons/iconpdf}}\hspace{.015in}PDF}
+\newcommand{\icon@Web}{\raisebox{-.025in}{\includegraphics[width=.11in]{icons/iconweb}}\hspace{.01in}Web}
+\newcommand{\icon@Video}{\raisebox{-.01in}{\includegraphics[width=.11in]{icons/iconvideo}}\hspace{.007in}Video}
+\newcommand{\icon@Data}{\raisebox{-.01in}{\includegraphics[width=.10in]{icons/icondata}}\hspace{.015in}Data}
+\newcommand{\icon@Code}{\raisebox{-.005in}{\includegraphics[width=.10in]{icons/iconcode}}\hspace{.017in}Code}
 
-%\newcommand{\TOGlinkslist}{%
-%  \if@ACMtog
-%  {%
-%    \ifx\@ACMarticleDOI\@ACMempty%
-%	  \ClassWarningNoLine{acmsiggraph}{Please set \noexpand\TOGarticleDOI.}%
-%	\fi%
-%    {\bf Links:}%
-%    \sc%
-%    \ifx\@ACMarticleDOI\@ACMempty\else%
-%      \hspace{0.09in}\href{http://doi.acm.org/10.1145/\@ACMarticleDOI}{\icon@DL}%
-%     \ifx\@ACMarticleDOIsuffix\@ACMempty\else%
-%       \hspace{0.09in}\href{http://portal.acm.org/ft_gateway.cfm?id=\@ACMarticleDOIsuffix&type=pdf}{\icon@PDF}\fi%
-%     \ifx\@ACMurlWeb\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlWeb}{\icon@Web}\fi%
-%     \ifx\@ACMurlVideo\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlVideo}{\icon@Video}\fi%
-%     \ifx\@ACMurlData\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlData}{\icon@Data}\fi%
-%     \ifx\@ACMurlCode\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlCode}{\icon@Code}\fi%
-%    \fi%
-%  }%
-%  \fi
-%}
+\newcommand{\TOGlinkslist}{%
+  \if@ACMtog
+  {%
+    \ifx\@ACMarticleDOI\@ACMempty%
+	  \ClassWarningNoLine{acmsiggraph}{Please set \noexpand\TOGarticleDOI.}%
+	\fi%
+    {\bf Links:}%
+    \sc%
+    \ifx\@ACMarticleDOI\@ACMempty\else%
+      \hspace{0.09in}\href{http://doi.acm.org/10.1145/\@ACMarticleDOI}{\icon@DL}%
+     \ifx\@ACMarticleDOIsuffix\@ACMempty\else%
+       \hspace{0.09in}\href{http://portal.acm.org/ft_gateway.cfm?id=\@ACMarticleDOIsuffix&type=pdf}{\icon@PDF}\fi%
+     \ifx\@ACMurlWeb\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlWeb}{\icon@Web}\fi%
+     \ifx\@ACMurlVideo\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlVideo}{\icon@Video}\fi%
+     \ifx\@ACMurlData\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlData}{\icon@Data}\fi%
+     \ifx\@ACMurlCode\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlCode}{\icon@Code}\fi%
+    \fi%
+  }%
+  \fi
+}
 
 % Package hyperref should come late in class file to properly apply to any modified commands.
 \RequirePackage{ifpdf}
@@ -520,13 +515,13 @@
 \AtBeginDocument{%
   \if@ACMreview%
   \hypersetup{
-    pdfcreator={LaTeX acmsiggraph.cls (2014)},
+    pdfcreator={LaTeX acmsiggraph.cls},
     pdfkeywords={\@ACMkeywords},
     pdftitle={\@title},
   }%
   \else%
   \hypersetup{
-    pdfcreator={LaTeX acmsiggraph.cls (2014)},
+    pdfcreator={LaTeX acmsiggraph.cls},
     pdfkeywords={\@ACMkeywords},
     pdftitle={\@title},
     pdfauthor={\@ACMpdfauthor},

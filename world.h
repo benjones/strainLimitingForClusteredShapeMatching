@@ -6,10 +6,12 @@
 #include "tiltingPlane.hpp"
 #include "projectile.hpp"
 #include "cylinderObstacle.hpp"
-#include "accelerationGrid.h"
+
 #include "preallocVector.hpp"
 #include "profiler.hpp"
 #include <SDL.h>
+
+#include "clustering.h"
 
 class World{
 public:
@@ -17,7 +19,13 @@ public:
 
   void loadFromJson(const std::string& _filename);
   
-  void readParticleFile(const std::string& _filename);
+
+  struct ParticleSet{ 
+	std::vector<Eigen::Vector3d> positions;
+	Eigen::Vector3d bbMin, bbMax;
+  };
+
+  ParticleSet readParticleFile(const std::string& _filename);
   void saveParticleFile(const std::string& _filename) const;
   
   void timestep();
@@ -31,13 +39,15 @@ public:
 
   using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
   void doFracture(std::vector<FractureInfo> potentialSplits);
-
+  void splitOutliers();
+  void cullSmallClusters();
+  void removeLonelyParticles();
 
   inline void restart(){ 
-	Eigen::Vector3d oldCameraPosition = cameraPosition;
+	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
 	Eigen::Vector3d oldCameraLookAt = cameraLookAt;
 	Eigen::Vector3d oldCameraUp = cameraUp;
-
+	*/
 	particles.clear(); 
 	planes.clear();
    movingPlanes.clear();
@@ -48,40 +58,48 @@ public:
 	cylinders.clear();
 
 	loadFromJson(filename);
-
+	/*
 	cameraPosition = oldCameraPosition;
 	cameraLookAt = oldCameraLookAt;
 	cameraUp = oldCameraUp;
+	*/
 	elapsedTime = 0;
   }
 
   void dumpParticlePositions(const std::string& filename) const;
+  void dumpClippedSpheres(const std::string& filename) const;
   void dumpColors(const std::string& filename) const;
 
-  void draw(SDL_Window* window) const ;
+
+  //refactored out into vis, camera/settings stuff
+  /*  void draw(SDL_Window* window) const ;
   void drawPretty(SDL_Window* window) const ;
   void drawSingleCluster(SDL_Window* window, int frame) const;
   void drawPlanes() const;
   void drawPlanesPretty() const;
-  void drawPlane(const Eigen::Vector3d& normal, double offset) const;
   void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
-  void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;
+  void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;clus
   void zoom(int amount);
   void pan(Eigen::Vector2i oldposition,
 		   Eigen::Vector2i newPosition);
 
   void move(bool forward);
-
+  */
   void bounceOutOfPlanes();
 
+  std::vector<std::vector<int> > clusterCollisionMap;
+  void buildClusterMaps();
   void selfCollisions();
 
   void solveConstraints();
   void updateNeighbors(size_t partIndex);
 
-  void makeClusters();
+
+  void setupPlaneConstraints();
 
   void countClusters();
+  void mergeClusters(const std::vector<Particle>& newParticles,
+	  const std::vector<Cluster>& newClusters);
 
   //pass a container of clusters to update
   template <typename Container>
@@ -92,7 +110,6 @@ public:
 
   void printCOM() const;
   
-  Eigen::Vector3d computeNeighborhoodCOM(const Cluster& c) const;
   Eigen::Vector3d computeClusterVelocity(const Cluster& c) const;
   
   template <typename cont>
@@ -103,55 +120,43 @@ public:
 		  return acc + particles[index].mass;
 		});
   }
-  
-  template <typename cont> 
-  //weighted by # clusters stuff belongs to
-  double sumWeightedMass(const cont& indices) const {
-	return std::accumulate(indices.begin(), indices.end(), 0.0,
-		[this](double acc, typename cont::value_type index){
-		  return acc + particles[index].mass/particles[index].numClusters;
-		});
+
+  double sumWeightedMass(const std::vector<Cluster::Member > &members) const {
+	double mass = 0.0;
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  mass += (member.weight / p.totalweight) * p.mass;
+	}
+	return mass;
   }
 
-  template <typename cont>
-  Eigen::Vector3d sumRestCOM(const cont& indices, double totalMass) const{
-	return std::accumulate(indices.begin(), indices.end(),
-		Eigen::Vector3d::Zero().eval(),
-		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
-		  return acc + particles[index].mass*
-			particles[index].restPosition;
-		})/totalMass;
+  Eigen::Vector3d sumWeightedRestCOM(const std::vector<Cluster::Member> &members) const {
+	double mass = 0.0;
+	Eigen::Vector3d com = Eigen::Vector3d::Zero();
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  double w = (member.weight / p.totalweight) * p.mass;
+	  mass += w;
+	  com += w * p.restPosition;
+	}
+	return (com / mass);
   }
 
-  template <typename cont>
-  Eigen::Vector3d sumWeightedRestCOM(const cont& indices, double totalMass) const{
-	return 
-	  std::accumulate(indices.begin(), indices.end(),
-		  Eigen::Vector3d::Zero().eval(),
-		  [this](const Eigen::Vector3d& acc, typename cont::value_type index){
-			return acc + (particles[index].mass/particles[index].numClusters)*
-			  particles[index].restPosition;
-		  }) /
-	  totalMass;
+  Eigen::Vector3d sumWeightedWorldCOM(const std::vector<Cluster::Member>& members) const {
+	double mass = 0.0;
+	Eigen::Vector3d com = Eigen::Vector3d::Zero();
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  double w = (member.weight / p.totalweight) * p.mass;
+	  mass += w;
+	  com += w * p.position;
+	}
+	return (com / mass);
   }
-
-
-
-  template <typename cont>
-  Eigen::Vector3d sumWorldCOM(const cont& indices, double totalMass) const{
-	return std::accumulate(indices.begin(), indices.end(),
-		Eigen::Vector3d::Zero().eval(),
-		[this](const Eigen::Vector3d& acc, typename cont::value_type index){
-		  return acc + particles[index].mass*
-			particles[index].position;
-		})/totalMass;
-  }
-
 
   //compute the APQ matrix (see meuller 2005)
-  Eigen::Matrix3d computeApq(const Cluster& c, 
-							 const Eigen::Matrix3d& init,
-							 const Eigen::Vector3d& worldCOM) const;
+  Eigen::Matrix3d computeApq(const Cluster& c) const;
+  void updateTransforms(Cluster& c) const;
   
   inline Eigen::Vector3d getMomentum(){
 	return std::accumulate(particles.begin(), particles.end(),
@@ -166,22 +171,7 @@ public:
 
 
 
-  struct PositionGetter{
-	Eigen::Vector3d operator()(const Particle& p){
-	  return p.position;
-	}
-  };
-  
-  struct RestPositionGetter{
-	Eigen::Vector3d operator()(const Particle& p){
-	  return p.position;
-	}
-  };
-  AccelerationGrid<Particle, PositionGetter> positionGrid;
-  AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
-  
-
-  Eigen::Vector3d cameraPosition, cameraLookAt, cameraUp, gravity;
+  Eigen::Vector3d gravity;
 
   std::vector<Eigen::Vector4d> planes;
   std::vector<MovingPlane> movingPlanes;
@@ -190,23 +180,27 @@ public:
   std::vector<Projectile> projectiles;
   std::vector<CylinderObstacle> cylinders;
   std::vector<size_t> clusterCenters;
+  bool dragWithPlanes = true;
+
+
 
   double dt, elapsedTime;
-  double neighborRadius;
-  int nClusters;
+  double neighborRadius, neighborRadiusMax;
 
+  ClusteringParams clusteringParams;
+
+  bool fractureOn, selfCollisionsOn;
+
+  
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
   double yield, nu, hardening; // plasticity parameters
   double toughness;
-  int maxNumClusters;
+  double collisionRestitution;
+  double collisionGeometryThreshold;
+  double outlierThreshold;
 
-  bool drawClusters = true;
-  bool drawColoredParticles = false;
-  bool colorByToughness = false;
-  bool dragWithPlanes = true;
-  bool paused = false;
-  int which_cluster = -1;
+
 
   benlib::Profiler prof;
 };

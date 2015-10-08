@@ -37,7 +37,9 @@ getPlaneTangents(const Eigen::Vector3d& normal){
 int main(int argc, char** argv){
 
 
-  const std::string usage = "mitsubafy <jsonFile> <formatStringForParticles> <outputDirectory> <radius/skinnedObjFormatString> [extraXMLStuff]";
+  const std::string usage = 
+	"mitsubafy <jsonFile> <formatStringForParticles> <outputDirectory> "
+	"<radius/skinnedObjFormatString> [extraXMLStuff]";
   
   if(argc < 5){ std::cout << usage << std::endl; return 1;}
   
