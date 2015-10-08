@@ -47,7 +47,8 @@ class Cluster {
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
   //contains the particle index and it's weight
-  std::vector<std::pair<int, double> > members;
+  struct Member{int index; double weight;};
+  std::vector<Member > members;
   double mass, width, renderWidth;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)

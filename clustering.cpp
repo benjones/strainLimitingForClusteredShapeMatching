@@ -46,7 +46,7 @@ std::vector<Cluster> makeRandomClusters(std::vector<Particle>& particles, double
 	  p.numClusters++; 
 	  p.totalweight += w; 
 	  p.clusters.push_back(clusters.size());
-	  c.members[i] = std::pair<int, double>(n, w);
+	  c.members[i] = {n, w};
 	}
 	clusters.push_back(c);
 
@@ -64,8 +64,8 @@ std::vector<Cluster> makeRandomClusters(std::vector<Particle>& particles, double
 	c.mass = 0.0;
 	c.restCom = Eigen::Vector3d::Zero();
 	for (auto &member : c.members) {
-	  auto &p = particles[member.first];
-	  double w = member.second / p.totalweight;
+	  auto &p = particles[member.index];
+	  double w = member.weight / p.totalweight;
 	  c.restCom += w * p.mass * p.position;
 	  c.mass += w * p.mass;
 	}
@@ -130,7 +130,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 			[&pRest](const Cluster& c){
 			  return (c.restCom - pRest).squaredNorm();
 			});
-		bestPair.first->members.push_back(std::make_pair(i, 1.0));
+		bestPair.first->members.push_back({i, 1.0});
 		int bestCluster = std::distance(clusters.begin(), bestPair.first);
 		
 		/*
@@ -153,8 +153,8 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		c.mass = 0.0;
 		c.restCom = Eigen::Vector3d::Zero();
 		for (const auto &member : c.members) {
-		  auto &p = particles[member.first];
-		  double w = member.second / p.totalweight;
+		  auto &p = particles[member.index];
+		  double w = member.weight / p.totalweight;
 		  c.restCom += w * p.mass * p.position;
 		  c.mass += w * p.mass;
 		}
@@ -177,7 +177,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		auto n = neighbors[i];
 		Particle &p = particles[n];
 		double w = params.kernel(c.restCom - p.restPosition);
-		c.members[i] = std::pair<int, double>(n, w);
+		c.members[i] = {n, w};
 		p.totalweight += w;
 		p.clusters.push_back(j);
 		p.numClusters++;
@@ -189,8 +189,8 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 	  c.mass = 0.0;
 	  c.restCom = Eigen::Vector3d::Zero();
 	  for (auto &member : c.members) {
-		auto &p = particles[member.first];
-		double w = member.second / p.totalweight;
+		auto &p = particles[member.index];
+		double w = member.weight / p.totalweight;
 		c.restCom += w * p.mass * p.position;
 		c.mass += w * p.mass;
 	  }
@@ -230,7 +230,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		  auto n = neighbors[i];
 		  Particle &p = particles[n];
 		  double w = params.kernel (c.restCom - p.restPosition);
-		  c.members[i] = std::pair<int, double>(n, w);
+		  c.members[i] = {n, w};
 		  p.totalweight += w;
 		  p.clusters.push_back(j);
 		  p.numClusters++;
@@ -248,7 +248,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		const auto& pRest = p.restPosition;
 		auto bestPair = utils::minProjectedElement(clusters,
 			[&pRest](const Cluster& c){ return (c.restCom - pRest).squaredNorm();});
-		bestPair.first->members.push_back(std::make_pair(i, params.blackhole));
+		bestPair.first->members.push_back({static_cast<int>(i), params.blackhole});
 		
 		/*
 		  int bestCluster = 0;
@@ -282,20 +282,20 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 			double sum = 0;
 			auto& c = clusters[cIndex];
 			auto pInC = utils::findIfInContainer(c.members,
-				[i](const std::pair<int, double>& member){
-				  return member.first == i;});
-			double xToC = pInC->second;
+				[i](const Cluster::Member& member){
+				  return member.index == i;});
+			double xToC = pInC->weight;
 
 			//only the clusters that p is part of
 			for(auto& dIndex: p.clusters){
 			  auto& d = clusters[dIndex];
 			  auto pInD = utils::findIfInContainer(d.members,
-				  [i](const std::pair<int, double>& member){
-					return member.first == i;
+				  [i](const Cluster::Member& member){
+					return member.index == i;
 				  });
 			  //it'd better be in there...
 			  assert(pInD != d.members.end());
-			  sum += pow(xToC/ pInD->second, 2.0/params.kernelWeight -1);
+			  sum += pow(xToC/ pInD->weight, 2.0/params.kernelWeight -1);
 			}
 			updatedWeights[cIndex] = 1.0/sum;
 		  }
@@ -304,11 +304,11 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		  for(auto&& cIndex : p.clusters){
 			auto& c = clusters[cIndex];
 			auto pInC = utils::findIfInContainer(c.members,
-				[i](const std::pair<int, double>& member){
-				  return member.first == i;
+				[i](const Cluster::Member& member){
+				  return member.index == i;
 				});
 			assert(pInC != c.members.end());
-			pInC->second = updatedWeights[cIndex];
+			pInC->weight = updatedWeights[cIndex];
 		  }
 		  
 		}
@@ -356,7 +356,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		  }*/
 		for (auto &c : clusters) {
 		  for (auto &member : c.members) {
-			particles[member.first].totalweight += member.second;
+			particles[member.index].totalweight += member.weight;
 		  }
 		}
 	  }
@@ -368,8 +368,8 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		c.mass = 0.0;
 		c.restCom = Eigen::Vector3d::Zero();
 		for (auto &member : c.members) {
-		  auto &p = particles[member.first];
-		  double w = member.second / p.totalweight;
+		  auto &p = particles[member.index];
+		  double w = member.weight / p.totalweight;
 		  c.restCom += w * p.mass * p.position;
 		  c.mass += w * p.mass;
 		}

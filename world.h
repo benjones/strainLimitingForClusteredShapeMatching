@@ -121,33 +121,33 @@ public:
 		});
   }
 
-  double sumWeightedMass(const std::vector<std::pair<int,double> > &neighbors) const {
+  double sumWeightedMass(const std::vector<Cluster::Member > &members) const {
 	double mass = 0.0;
-	for (auto &n : neighbors) {
-	  auto &p = particles[n.first];
-	  mass += (n.second / p.totalweight) * p.mass;
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  mass += (member.weight / p.totalweight) * p.mass;
 	}
 	return mass;
   }
 
-  Eigen::Vector3d sumWeightedRestCOM(const std::vector<std::pair<int,double> > &neighbors) const {
+  Eigen::Vector3d sumWeightedRestCOM(const std::vector<Cluster::Member> &members) const {
 	double mass = 0.0;
 	Eigen::Vector3d com = Eigen::Vector3d::Zero();
-	for (auto &n : neighbors) {
-	  auto &p = particles[n.first];
-	  double w = (n.second / p.totalweight) * p.mass;
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  double w = (member.weight / p.totalweight) * p.mass;
 	  mass += w;
 	  com += w * p.restPosition;
 	}
 	return (com / mass);
   }
 
-  Eigen::Vector3d sumWeightedWorldCOM(const std::vector<std::pair<int,double> > &neighbors) const {
+  Eigen::Vector3d sumWeightedWorldCOM(const std::vector<Cluster::Member>& members) const {
 	double mass = 0.0;
 	Eigen::Vector3d com = Eigen::Vector3d::Zero();
-	for (auto &n : neighbors) {
-	  auto &p = particles[n.first];
-	  double w = (n.second / p.totalweight) * p.mass;
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  double w = (member.weight / p.totalweight) * p.mass;
 	  mass += w;
 	  com += w * p.position;
 	}

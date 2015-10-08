@@ -325,7 +325,7 @@ void World::loadFromJson(const std::string& _filename){
 	Eigen::Matrix3d Aqq;
 	Aqq.setZero();
 	for (auto &member : c.members) {
-	  auto &p = particles[member.first];
+	  auto &p = particles[member.index];
 	  Eigen::Vector3d qj = p.restPosition - c.restCom;
 	  Aqq += qj * qj.transpose();
 	}
@@ -338,7 +338,7 @@ void World::loadFromJson(const std::string& _filename){
 	  min = std::numeric_limits<double>::max();
 	  max = -std::numeric_limits<double>::max();
 	  for (auto &member : c.members) {
-		auto &p = particles[member.first];
+		auto &p = particles[member.index];
 		double d = n.dot(p.restPosition);
 		if (d < min) min = d;
 		if (d > max) max = d;
@@ -561,10 +561,10 @@ void World::setupPlaneConstraints(){
   for(auto& c : clusters){ 
 	bool crossingPlane = false;
 	for(auto& plane : movingPlanes){
-	  bool firstSide = particles[c.members.front().first].position.dot(plane.normal) > plane.offset;
+	  bool firstSide = particles[c.members.front().index].position.dot(plane.normal) > plane.offset;
 	  
 	  for(const auto& member : c.members){
-		bool thisSide = particles[member.first].position.dot(plane.normal) > plane.offset;
+		bool thisSide = particles[member.index].position.dot(plane.normal) > plane.offset;
 		if(thisSide != firstSide){
 		  crossingPlane = true;
 		  break;
@@ -574,10 +574,10 @@ void World::setupPlaneConstraints(){
 	}
 	for(auto& plane : twistingPlanes){
 	  if(crossingPlane){break;}
-	  bool firstSide = particles[c.members.front().first].position.dot(plane.normal) > plane.offset;
+	  bool firstSide = particles[c.members.front().index].position.dot(plane.normal) > plane.offset;
 	  
 	  for(const auto& member : c.members){
-		bool thisSide = particles[member.first].position.dot(plane.normal) > plane.offset;
+		bool thisSide = particles[member.index].position.dot(plane.normal) > plane.offset;
 		if(thisSide != firstSide){
 		  crossingPlane = true;
 		  break;
@@ -586,10 +586,10 @@ void World::setupPlaneConstraints(){
 	}
 	for(auto& plane : tiltingPlanes){
 	  if(crossingPlane){break;}
-	  bool firstSide = particles[c.members.front().first].position.dot(plane.normal) > plane.offset;
+	  bool firstSide = particles[c.members.front().index].position.dot(plane.normal) > plane.offset;
 	  
 	  for(const auto& member : c.members){
-		bool thisSide = particles[member.first].position.dot(plane.normal) > plane.offset;
+		bool thisSide = particles[member.index].position.dot(plane.normal) > plane.offset;
 		if(thisSide != firstSide){
 		  crossingPlane = true;
 		  break;
@@ -623,7 +623,7 @@ void World::mergeClusters(const std::vector<Particle>& newParticles,
   clusters.insert(clusters.end(), newClusters.begin(), newClusters.end());
   for(auto i : range(clusterStart, clusters.size())){
 	for(auto& member : clusters[i].members){
-	  member.first += particleStart;
+	  member.index += particleStart;
 	}
   }
   

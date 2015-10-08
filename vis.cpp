@@ -306,7 +306,7 @@ void drawWorldPretty(const World& world,
 	if (!settings.drawColoredParticles) {
 	  glBegin(GL_POINTS);
 	  for(auto &member : c.members){
-		glVertex3dv(particles[member.first].position.data());
+		glVertex3dv(particles[member.index].position.data());
 	  }
 	  glEnd();
 	}
