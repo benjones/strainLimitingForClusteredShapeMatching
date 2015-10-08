@@ -6,6 +6,8 @@
 #include <random>
 #include <iostream>
 
+#include "accelerationGrid.h"
+
 #include "enumerate.hpp"
 using benlib::enumerate;
 #include "range.hpp"
@@ -595,9 +597,84 @@ inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
   return y;
 }
 
+struct ClusterComGetter{
+  Eigen::Vector3d operator()(const Cluster& c) const{
+	return c.worldCom;
+  }
+};
+
+struct ClusterRadiusGetter{
+  double operator()(const Cluster& c) const{
+	return c.width;
+  }
+};
+
+
 void World::selfCollisions() {
   const double alpha = collisionRestitution;
   buildClusterMaps();
+
+  AccelerationGrid<Cluster, ClusterComGetter> accelerationGrid;
+  accelerationGrid.numBuckets = 16; //todo, tune me
+  accelerationGrid.updateGridWithRadii(clusters, ClusterRadiusGetter{});
+  auto potentialClusterPairs = accelerationGrid.getPotentialPairs();
+  
+  for(auto& clusterPair : potentialClusterPairs){
+	auto i = clusterPair.first;
+	auto j = clusterPair.second;
+
+	if( utils::containsValue(clusterCollisionMap[i], j)){ continue; }
+
+	auto& c = clusters[i];
+	auto& d = clusters[j];
+	
+	if (d.members.size() < 10) continue;
+	if ((c.worldCom - d.worldCom).squaredNorm() < sqr(c.width + d.width)) {
+
+	  for (auto& member : c.members){
+		auto &p = particles[member.index];
+		//if (p.flags & Particle::SPLIT) continue;
+		if ((p.position - d.worldCom).squaredNorm() < sqr(d.width)) {
+		  // these next two lines look unnecessary with clustermaps
+		  // it = find(p.clusters.begin(), p.clusters.end(), j);
+		  // (it == p.clusters.end()) {
+		  if(!utils::containsValue(p.clusters, j)){ //easier to read... --Ben
+			Eigen::Vector3d x = worldToRest(d, p.position);
+			if (d.cg.project(x)) {
+			  x = restToWorld(d, x);
+
+			  Eigen::Vector3d y = d.worldCom + d.width * (p.position - d.worldCom).normalized();
+
+			  if ((x-p.position).squaredNorm() > (y-p.position).squaredNorm()) {x=y;}
+			  
+			  p.position = alpha*x + (1.0-alpha)*p.position;
+			}
+		  }
+		}
+	  }
+
+	  //swap c and d
+	  for (auto& member : d.members){
+		auto &p = particles[member.index];
+		//if (p.flags & Particle::SPLIT) continue;
+		if ((p.position - c.worldCom).squaredNorm() < sqr(c.width)) {
+		  // these next two lines look unnecessary with clustermaps
+		  if(!utils::containsValue(p.clusters, i)){
+			Eigen::Vector3d x = worldToRest(c, p.position);
+			if (c.cg.project(x)) {
+			  x = restToWorld(c, x);
+			  Eigen::Vector3d y = c.worldCom + c.width * (p.position - c.worldCom).normalized();
+			  if ((x-p.position).squaredNorm() > (y-p.position).squaredNorm()) {x=y;}
+			  
+			  p.position = alpha*x + (1.0-alpha)*p.position;
+			  
+			}
+		  }
+		}
+	  }
+	}
+  }
+	/*
   for (auto && en1 : benlib::enumerate(clusters)) {
 	auto &c = en1.second;
 	if (c.members.size() < 10) continue;
@@ -644,7 +721,7 @@ void World::selfCollisions() {
 		}
 	  }
 	}
-  }
+	}*/
 }
 
 

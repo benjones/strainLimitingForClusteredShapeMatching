@@ -15,6 +15,12 @@ public:
 									   const Eigen::Vector3d& x, double radius) const;
   
   void updateGrid(const std::vector<ParticleType>& particles);
+
+  template <typename RGetter>
+  void updateGridWithRadii(const std::vector<ParticleType>& particles, const RGetter& rGetter);
+
+  //return the pairs that might be colliding
+  std::vector<std::pair<int, int> > getPotentialPairs() const; 
   
   Eigen::Vector3d origin, delta;
   int numBuckets;

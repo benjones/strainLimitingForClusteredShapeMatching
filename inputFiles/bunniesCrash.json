@@ -29,7 +29,7 @@
 	//"nClusters" : 50,
 	"collisionRestitution" : 1.0,
 	"neighborRadius" : 0.05,
-	"nClusters" : 600, //175,
+	"nClusters" : 150, //175,
 	"nClustersMax" : 1000, //175,
 	"clusteringAlgorithm" : 0,
 	"alpha" : 1.5,
