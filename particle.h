@@ -56,9 +56,11 @@ class Cluster {
   Cluster(const Cluster &c) = default;
   void updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix3d &U, const Eigen::Matrix3d &V, 
 	  double yield, double nu, double hardening);
-
+  
+  
   CollisionGeometry cg;
   Eigen::Matrix3d worldToRestTransform, restToWorldTransform;
   Eigen::Matrix4d getVisTransform() const;
+  bool justFractured = false;
 };
 

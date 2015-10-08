@@ -62,12 +62,16 @@ void World::timestep(){
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
-	  if(fabs(sigma(0) - 1.0) > cluster.toughness){
+	  if(fabs(sigma(0) - 1.0) > cluster.toughness && !cluster.justFractured){
 		potentialSplits.emplace_back(en.first, 
 			sigma(0) - cluster.toughness, 
 			V.col(0));
+	  } else if (cluster.justFractured && fabs(sigma(0) - 1.0) <= cluster.toughness){
+		//can this just be an else? --Ben
+		cluster.justFractured = false;
 	  }
-
+	  
+	  
 	  {
 		auto timer = prof.timeName("plasticity");
 		cluster.updatePlasticity(sigma, U, V, yield, nu, hardening);
@@ -223,7 +227,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	
 	Eigen::Vector3d sigma = solver.singularValues();
-	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness){
+	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness || clusters[cIndex].justFractured){
 	  if(!aCancel){
 		aCancel = true;
 		std::cout << "cancelled fracture with updated stuff" << std::endl;
@@ -278,7 +282,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
 	
 	clusters.push_back(newCluster);	  
-
+	clusters[clusters.size()-1].justFractured = true;
+	clusters[cIndex].justFractured = true;
+	
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
 	{

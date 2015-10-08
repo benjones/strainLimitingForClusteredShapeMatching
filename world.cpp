@@ -17,6 +17,9 @@ void World::loadFromJson(const std::string& _filename){
   elapsedTime = 0;
   filename = _filename;
 
+  clusters.clear();
+  particles.clear();
+  
   std::ifstream ins(filename);
   
   Json::Value root;
