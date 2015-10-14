@@ -201,6 +201,7 @@ void World::strainLimitingIteration(){
 ///////////////////////////////
 
 void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
+std::cout << "- - - - - - - - - - - - - -  FRACTURE  - - - - - - - - - - - - - - - -" << std::endl;
   auto timer = prof.timeName("fracture");
   //do fracture
   std::sort(potentialSplits.begin(), potentialSplits.end(),
@@ -264,6 +265,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	newCluster.FpNew = c.FpNew;
 	newCluster.cstrain = c.cstrain; // plasticity
 	newCluster.toughness = c.toughness;
+	newCluster.neighbors = c.neighbors;
 
 	//delete the particles from the old one
 	c.members.erase(c.members.begin() + oldSize, c.members.end());
@@ -355,8 +357,54 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
+	  
+	  /* I'm pretty certain this is a safe way to update the neighbors list.
+		However, if we're getting weird artifacts, maybe I should double-check 
+		that this is actually doing what I think it's doing. -April  */	  
+		  
+	  for (int affectedIndex : affectedClusters)
+	  {
+	  	Cluster c = clusters[affectedIndex];
+	  	if ( 	((c.worldCom - worldCOM).dot(splitDirection) >= 0) != 
+	  			((clusters[cIndex].worldCom - worldCOM).dot(splitDirection) >= 0) ) {
+	  		c.neighbors.erase(cIndex);
+	  		clusters[cIndex].neighbors.erase(affectedIndex);
+	  	}
+	  	else
+	  	{
+	  		c.neighbors.erase(clusters.size()-1);
+	  		clusters[clusters.size()-1].neighbors.erase(affectedIndex);
+	  	}
+	  }
+	
+	
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
+
+	  
+	  /*
+	for (Particle &p : particles) {
+	for (int &c : p.clusters) {
+		  for (int &d : p.clusters) {
+			if (c == d) continue;
+			
+			Pair<int,int> clusterPair;
+			clusterPair.first = c;
+			clusterPair.second = d;
+			  if (clusterCollisionMap.count(clusterPair) < 1)
+			  {
+			  	clusterCollisionMap.insert(clusterPair);	// Insert pair(c,d)
+			  	clusterPair.first = d;
+			  	clusterPair.second = c;
+			  	clusterCollisionMap.insert(clusterPair);	// Insert pair(d,c)
+			  }
+			}
+		  }
+		}
+	 }
+	
+	*/
+	
 	
 	  //	for(auto& c : affectedClusters){
 	  //	  clusters[c].toughness *= 0.995;
@@ -524,7 +572,10 @@ void World::bounceOutOfPlanes(){
   }
 }
 
-void World::buildClusterMaps() {
+// Note: Used to be buildClusterMaps
+void World::initializeNeighbors() {
+
+/*
   countClusters();
   std::vector<std::vector<int > > idToClusters;
   idToClusters.resize(particles.size());
@@ -545,16 +596,19 @@ void World::buildClusterMaps() {
 	  }
 	}
   }
-	//for (auto &p : particles) {
-	//for (auto &c : p.clusters) {
-	//	  for (auto &d : p.clusters) {
-	//		if (c == d) continue;
-	//		if (!utils::containsValue(clusterCollisionMap[c], d)){
-	//		  clusterCollisionMap[c].push_back(d);
-	//		}
-	//	  }
-	//	}
-	// }
+  */
+  
+	for (Particle &p : particles) {
+	for (int &c : p.clusters) {
+		  for (int &d : p.clusters) {
+			if (c == d) continue;
+			  if (clusters[c].neighbors.count(d) < 1)
+			  {
+				clusters[c].neighbors.insert(d);
+			  }
+			}
+		  }
+		}
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
@@ -618,7 +672,6 @@ struct ClusterRadiusGetter{
 
 void World::selfCollisions() {
   const double alpha = collisionRestitution;
-  buildClusterMaps();
 
   AccelerationGrid<Cluster, ClusterComGetter> accelerationGrid;
   accelerationGrid.numBuckets = 16; //todo, tune me
@@ -629,8 +682,7 @@ void World::selfCollisions() {
 	auto i = clusterPair.first;
 	auto j = clusterPair.second;
 
-	if( utils::containsValue(clusterCollisionMap[i], j)){ continue; }
-
+	if (clusters[i].neighbors.count(j) > 0) { continue; }
 	auto& c = clusters[i];
 	auto& d = clusters[j];
 	

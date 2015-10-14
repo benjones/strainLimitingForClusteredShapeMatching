@@ -87,8 +87,10 @@ public:
   */
   void bounceOutOfPlanes();
 
-  std::vector<std::vector<int> > clusterCollisionMap;
-  void buildClusterMaps();
+ // std::vector<std::vector<int> > clusterCollisionMap;
+ //std::unordered_set<std::pair<int,int>> clusterCollisionMap;
+  //void buildClusterMaps();
+  void initializeNeighbors();
   void selfCollisions();
 
   void solveConstraints();
