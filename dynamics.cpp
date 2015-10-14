@@ -201,7 +201,6 @@ void World::strainLimitingIteration(){
 ///////////////////////////////
 
 void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
-std::cout << "- - - - - - - - - - - - - -  FRACTURE  - - - - - - - - - - - - - - - -" << std::endl;
   auto timer = prof.timeName("fracture");
   //do fracture
   std::sort(potentialSplits.begin(), potentialSplits.end(),
