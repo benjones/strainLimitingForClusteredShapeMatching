@@ -48,7 +48,13 @@ class Cluster {
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
   //contains the particle index and its weight
-  struct Member{int index; double weight;};
+  struct Member{
+  	int index; double weight;
+  		bool operator== (const Member &rhs){
+  		return (index == rhs.index) && (weight == rhs.weight);
+  	}
+
+  };
   std::vector<Member > members;
   std::unordered_set<int> neighbors;		// Note: this refers to neighboring CLUSTERS
   double mass, width, renderWidth;
