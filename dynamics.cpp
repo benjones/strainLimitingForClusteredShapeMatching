@@ -264,6 +264,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	newCluster.FpNew = c.FpNew;
 	newCluster.cstrain = c.cstrain; // plasticity
 	newCluster.toughness = c.toughness;
+	newCluster.neighbors = c.neighbors;
 
 	//delete the particles from the old one
 	c.members.erase(c.members.begin() + oldSize, c.members.end());
@@ -357,8 +358,75 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
+	  
+	  /* Numerical tests showed this was inaccurate, though it looked okay, so I made a 
+	  more stupid-but-sure-to-work version.  *	  
+	/*
+	  for (int affectedIndex : affectedClusters)
+	  {
+	  	Cluster c = clusters[affectedIndex];
+	  	if ( 	((c.worldCom - worldCOM).dot(splitDirection) >= 0) != 
+	  			((clusters[cIndex].worldCom - worldCOM).dot(splitDirection) >= 0) ) {
+	  		temp1 = c.neighbors.erase(cIndex);
+	  		temp2 = clusters[cIndex].neighbors.erase(affectedIndex);
+	  	}
+	  	else
+	  	{
+	  		c.neighbors.erase(clusters.size()-1);
+	  		clusters[clusters.size()-1].neighbors.erase(affectedIndex);
+	  	}
+	  }
+	*/
+
+
+	// More stupid-but-sure-to-work version:
+	
+	for (int indexA: affectedClusters){
+		Cluster a = clusters[indexA];	
+		for (int indexB: affectedClusters){
+			Cluster b = clusters[indexB];
+			
+			// Look for shared particles between the two clusters
+			bool foundSharedParticle = false;
+			for (Cluster::Member p : a.members){
+			
+				std::vector<Cluster::Member>::iterator it;
+				it = find ( b.members.begin(), b.members.end(), p);
+				if (it != b.members.end()) {		// If we find a shared particle,					
+					foundSharedParticle = true;		// stop comparing these two clusters.
+					break;
+				}
+			}
+			if (!foundSharedParticle){ a.neighbors.erase(indexB); }
+		}
+	}
+	
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
+	  
+	  /*
+	for (Particle &p : particles) {
+	for (int &c : p.clusters) {
+		  for (int &d : p.clusters) {
+			if (c == d) continue;
+			
+			Pair<int,int> clusterPair;
+			clusterPair.first = c;
+			clusterPair.second = d;
+			  if (clusterCollisionMap.count(clusterPair) < 1)
+			  {
+			  	clusterCollisionMap.insert(clusterPair);	// Insert pair(c,d)
+			  	clusterPair.first = d;
+			  	clusterPair.second = c;
+			  	clusterCollisionMap.insert(clusterPair);	// Insert pair(d,c)
+			  }
+			}
+		  }
+		}
+	 }
+	
+	*/
+	
 	
 	  //	for(auto& c : affectedClusters){
 	  //	  clusters[c].toughness *= 0.995;
@@ -526,7 +594,10 @@ void World::bounceOutOfPlanes(){
   }
 }
 
-void World::buildClusterMaps() {
+// Note: Used to be buildClusterMaps
+void World::initializeNeighbors() {
+
+/*
   countClusters();
   std::vector<std::vector<int > > idToClusters;
   idToClusters.resize(particles.size());
@@ -547,16 +618,19 @@ void World::buildClusterMaps() {
 	  }
 	}
   }
-	//for (auto &p : particles) {
-	//for (auto &c : p.clusters) {
-	//	  for (auto &d : p.clusters) {
-	//		if (c == d) continue;
-	//		if (!utils::containsValue(clusterCollisionMap[c], d)){
-	//		  clusterCollisionMap[c].push_back(d);
-	//		}
-	//	  }
-	//	}
-	// }
+  */
+  
+	for (Particle &p : particles) {
+	for (int &c : p.clusters) {
+		  for (int &d : p.clusters) {
+			if (c == d) continue;
+			  if (clusters[c].neighbors.count(d) < 1)
+			  {
+				clusters[c].neighbors.insert(d);
+			  }
+			}
+		  }
+		}
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
@@ -620,19 +694,21 @@ struct ClusterRadiusGetter{
 
 void World::selfCollisions() {
   const double alpha = collisionRestitution;
-  buildClusterMaps();
 
   AccelerationGrid<Cluster, ClusterComGetter> accelerationGrid;
   accelerationGrid.numBuckets = 16; //todo, tune me
   accelerationGrid.updateGridWithRadii(clusters, ClusterRadiusGetter{});
   auto potentialClusterPairs = accelerationGrid.getPotentialPairs();
   
+    int wereNeighbors = 0;
+  int collided = 0;
+  
   for(auto& clusterPair : potentialClusterPairs){
 	auto i = clusterPair.first;
 	auto j = clusterPair.second;
 
-	if( utils::containsValue(clusterCollisionMap[i], j)){ continue; }
-
+	if (clusters[i].neighbors.count(j) > 0) { wereNeighbors++; continue; }
+	collided++;
 	auto& c = clusters[i];
 	auto& d = clusters[j];
 	
@@ -730,6 +806,12 @@ void World::selfCollisions() {
 	  }
 	}
 	}*/
+
+	std::cout << "<><><><><><><><><><><><><><><><><><><><><><><><><><><><>" << std::endl;
+	std::cout << "COLLIDED:        " << collided << std::endl;
+	std::cout << "WERE NEIGHBORS:  " << wereNeighbors << std::endl;
+	std::cout << "<><><><><><><><><><><><><><><><><><><><><><><><><><><><>" << std::endl;
+
 }
 
 

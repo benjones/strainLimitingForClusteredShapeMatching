@@ -31,7 +31,7 @@ int main(int argc, char** argv){
 
   World world;
   world.loadFromJson(argv[1]);
-
+	world.initializeNeighbors();
 
 
   if(SDL_Init(SDL_INIT_EVERYTHING) < 0){
@@ -188,13 +188,13 @@ void loop(SDL_Window* window, World& world){
 	  if(frame % 60 == 0){std::cout << frame << std::endl;}
 	
 	// Uncomment the following for uniform-length clips
-
-	  if (frame == 480)
+/*
+	  if (frame == 150)
 	{
 		readyToExit = true;
 		break;
 	}
-	  
+*/	  
    }
    
    

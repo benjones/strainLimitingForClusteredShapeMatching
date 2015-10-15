@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Dense>
 #include <vector>
+#include <unordered_set>
 
 class Particle {
 public:
@@ -46,9 +47,16 @@ class Cluster {
   Eigen::Vector3d restCom;
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
-  //contains the particle index and it's weight
-  struct Member{int index; double weight;};
+  //contains the particle index and its weight
+  struct Member{
+  	int index; double weight;
+  		bool operator== (const Member &rhs){
+  		return (index == rhs.index) && (weight == rhs.weight);
+  	}
+
+  };
   std::vector<Member > members;
+  std::unordered_set<int> neighbors;		// Note: this refers to neighboring CLUSTERS
   double mass, width, renderWidth;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
