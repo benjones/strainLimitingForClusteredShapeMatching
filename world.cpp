@@ -153,6 +153,12 @@ void World::loadFromJson(const std::string& _filename){
 	std::cout<<"Fracture off"<<std::endl;
   } else fractureOn = true;
 
+  auto delayRepeatedFractureIn = root["delayRepeatedFracture"];
+  if (!delayRepeatedFractureIn.isNull() && delayRepeatedFractureIn.asString().compare("off") == 0) {
+	delayRepeatedFracture = false;
+	std::cout<<"delayRepeatedFracture off"<<std::endl;
+  } else delayRepeatedFracture = true;
+
   auto selfCollisionsIn = root["selfCollisions"];
   if (!selfCollisionsIn.isNull() && selfCollisionsIn.asString().compare("off") == 0) {
 	selfCollisionsOn = false;

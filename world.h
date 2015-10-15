@@ -189,7 +189,7 @@ public:
 
   ClusteringParams clusteringParams;
 
-  bool fractureOn, selfCollisionsOn;
+  bool fractureOn, selfCollisionsOn, delayRepeatedFracture;
 
   
   int numConstraintIters;

@@ -282,8 +282,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
 	
 	clusters.push_back(newCluster);	  
-	clusters[clusters.size()-1].justFractured = true;
-	clusters[cIndex].justFractured = true;
+	if (delayRepeatedFracture) {
+	  clusters[clusters.size()-1].justFractured = true;
+	  clusters[cIndex].justFractured = true;
+	}
 	
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
