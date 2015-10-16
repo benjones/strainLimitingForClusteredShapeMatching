@@ -50,9 +50,9 @@ class Cluster {
   //contains the particle index and its weight
   struct Member{
   	int index; double weight;
-  		bool operator== (const Member &rhs){
-  		return (index == rhs.index) && (weight == rhs.weight);
-  	}
+	//bool operator== (const Member &rhs){
+	//return (index == rhs.index) && (weight == rhs.weight);
+  	//}
 
   };
   std::vector<Member > members;

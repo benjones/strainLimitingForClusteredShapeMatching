@@ -212,6 +212,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
   }
 
+  std::unordered_set<int> updateClusterNeighbors;
+
   bool aCancel = false;
   for(auto &ps : potentialSplits){
 	size_t cIndex = std::get<0>(ps);
@@ -288,6 +290,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  clusters[cIndex].justFractured = true;
 	}
 	
+	if (updateClusterNeighbors.count(cIndex) < 1) updateClusterNeighbors.insert(cIndex);
+	if (updateClusterNeighbors.count(clusters.size()-1) < 1) updateClusterNeighbors.insert(clusters.size()-1);
+	
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
 	{
@@ -308,9 +313,12 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
 		  if(it == affectedClusters.end() || *it != thisIndex){
 			affectedClusters.insert(it, thisIndex);
+			if (updateClusterNeighbors.count(thisIndex) < 1) updateClusterNeighbors.insert(thisIndex);
 		  }
 		  
 		  auto& thisCluster = clusters[thisIndex];
+		  if (thisIndex != clusters.size()-1) 
+			thisCluster.neighbors.insert(clusters.size()-1); // make sure both clusters are in there.  We only delete clusters later.
 
 		  if (thisIndex >= clusters.size()) {
 			std::cout<<particle.clusters.size()<<std::endl;
@@ -358,10 +366,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
-	  
+
 	  /* Numerical tests showed this was inaccurate, though it looked okay, so I made a 
-	  more stupid-but-sure-to-work version.  *	  
-	/*
+		 more stupid-but-sure-to-work version.  *
+		 /*
 	  for (int affectedIndex : affectedClusters)
 	  {
 	  	Cluster c = clusters[affectedIndex];
@@ -380,7 +388,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
 
 	// More stupid-but-sure-to-work version:
-	
+	  /*	
 	for (int indexA: affectedClusters){
 		Cluster a = clusters[indexA];	
 		for (int indexB: affectedClusters){
@@ -400,7 +408,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			if (!foundSharedParticle){ a.neighbors.erase(indexB); }
 		}
 	}
-	
+	  */
+	  
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
 	  
@@ -434,7 +443,35 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	
 	//break;
 	}
-	
+  }
+  
+  for (int i : updateClusterNeighbors) {
+	Cluster &a = clusters[i];
+	std::vector<int> eraseFromA;
+
+	for (int j : a.neighbors) {
+	  if (a.neighbors.count(j) == 0) continue;
+	  Cluster &b = clusters[j];
+	  bool stillNeighbors = false;
+	  for (auto &p : a.members) {
+		for (auto &q : b.members) {
+		  if (particles[p.index].id == particles[q.index].id) {
+			stillNeighbors = true;
+			break;
+		  }
+		}
+		if (stillNeighbors) break;
+	  }
+	  if (!stillNeighbors) {
+		eraseFromA.push_back(j);
+		b.neighbors.erase(i);
+		//std::cout<<b.neighbors.count(i)<<" "<<i<<" "<<j<<std::endl;
+	  }
+	}
+	for (int j : eraseFromA) {
+	  a.neighbors.erase(j);
+	  //std::cout<<a.neighbors.count(j)<<" "<<j<<" "<<i<<std::endl;
+	}
   }
 }	
 
@@ -486,6 +523,26 @@ void World::cullSmallClusters() {
   }
 
 
+  std::vector<int> mapping;
+  mapping.resize(clusters.size());
+  int i1=0, i2=0;
+  for (auto &c : clusters) {
+	if (c.members.size() < 4 || c.mass < threshold) {
+	  mapping[i1++] = -1;
+	} else {
+	  mapping[i1++] = i2++;
+	}
+  }
+
+  for (auto &c : clusters) {
+	std::unordered_set<int> newNeighbors;
+	for (auto &n : c.neighbors) {
+	  if (mapping[n] != -1)
+		newNeighbors.insert(mapping[n]);
+	}
+	c.neighbors = newNeighbors;
+  }
+  
   utils::actuallyEraseIf(clusters,
 	  [](const Cluster& c){
 		return (c.members.size() < 4 || c.mass < 1e-4);
@@ -620,7 +677,7 @@ void World::initializeNeighbors() {
   }
   */
   
-	for (Particle &p : particles) {
+  for (Particle &p : particles) {
 	for (int &c : p.clusters) {
 		  for (int &d : p.clusters) {
 			if (c == d) continue;
@@ -693,6 +750,33 @@ struct ClusterRadiusGetter{
 
 
 void World::selfCollisions() {
+  //for (auto &c : clusters) {
+  //c.oldNeighbors = c.neighbors;
+	//for (auto &n : c.oldNeighbors)
+	//std::cout<<n<<" ";
+	//std::cout<<std::endl;
+	//c.neighbors.clear();
+  //}
+  //initializeNeighbors();
+
+  //for (unsigned int i=0; i< clusters.size(); i++) {
+  //auto &c = clusters[i];
+	//for (auto &c : clusters) {
+	//for (auto &n : c.neighbors) {
+  //if (c.neighbors.count(n) < 1) continue;
+  //if (c.oldNeighbors.count(n) < 1) std::cout<<n<<" not in oldNeighbors "<<i<<std::endl;
+	  //std::cout<<n<<" ";
+  //}
+	//std::cout<<std::endl;
+	//for (auto &n : c.oldNeighbors) {
+  //if (c.oldNeighbors.count(n) < 1) continue;
+  //if (c.neighbors.count(n) < 1) std::cout<<n<<" not in neighbors "<<i<<std::endl;
+	  //std::cout<<n<<" ";
+  //}
+	//std::cout<<std::endl;
+	//std::cout<<std::endl;
+  //}  
+
   const double alpha = collisionRestitution;
 
   AccelerationGrid<Cluster, ClusterComGetter> accelerationGrid;
