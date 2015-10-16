@@ -1,0 +1,34 @@
+{
+	"particleFiles" : [ "inputFiles/blue_noise/swiss_cheese1-bn.txt"],
+
+	"neighborRadius" : 0.15,
+	"alpha" : 0.8,
+	"omega" : 0.3,
+	"numConstraintIters" : 4,
+	"maxStretch" : 0.5,
+	"nClusters" : 63,
+	"springDamping": 0.5,
+	"toughness" : 0.1,
+	"yield" : 0.1,
+	"nu" : 1.0,
+	"toughnessBoost" : 5.0,
+	"toughnessFallof" : 30.0,
+	
+
+	"planes" : [ 
+	],
+	"movingPlanes" : [
+		{ 
+			"normal" : [0, 1, 0],
+			"offset" : 0.28,
+			"velocity" : 0.05
+		},
+		{ 
+			"normal" : [0, -1, 0],
+			"offset" : 0.31,
+			"velocity" : 0.05
+		}
+	],
+
+	"gravity" : [0, 0, 0]
+}

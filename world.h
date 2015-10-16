@@ -197,7 +197,7 @@ public:
   int numConstraintIters;
   double omega, gamma, alpha, springDamping;
   double yield, nu, hardening; // plasticity parameters
-  double toughness;
+  double toughness, toughnessBoost, toughnessFalloff;
   double collisionRestitution;
   double collisionGeometryThreshold;
   double outlierThreshold;

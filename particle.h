@@ -70,5 +70,6 @@ class Cluster {
   Eigen::Matrix3d worldToRestTransform, restToWorldTransform;
   Eigen::Matrix4d getVisTransform() const;
   bool justFractured = false;
+  double timeSinceLastFracture;
 };
 

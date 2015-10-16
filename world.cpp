@@ -136,6 +136,8 @@ void World::loadFromJson(const std::string& _filename){
   gamma = root.get("gamma", gamma).asDouble();
   springDamping = root.get("springDamping", 0.0).asDouble();
   toughness = root.get("toughness", std::numeric_limits<double>::infinity()).asDouble();
+  toughnessBoost = root.get("toughnessBoost", 0.0).asDouble();
+  toughnessFalloff = root.get("toughnessFalloff", std::numeric_limits<double>::infinity()).asDouble();
 
   // plasticity parameters
   yield = root.get("yield", 0.0).asDouble();

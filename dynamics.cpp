@@ -32,6 +32,13 @@ void World::timestep(){
   }
 
 
+  if (toughnessBoost > 0.0) {
+	for (auto &c : clusters) {
+	  c.toughness = toughness * (1.0 + toughnessBoost*exp(-toughnessFalloff*c.timeSinceLastFracture));
+	  c.timeSinceLastFracture += dt;
+	}
+  }
+
   //scope block for profiler
   std::vector<FractureInfo> potentialSplits;
   {
@@ -288,6 +295,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	if (delayRepeatedFracture) {
 	  clusters[clusters.size()-1].justFractured = true;
 	  clusters[cIndex].justFractured = true;
+	}
+	if (toughnessBoost > 0.0) {
+	  clusters[clusters.size()-1].timeSinceLastFracture = 0.0;
+	  clusters[cIndex].timeSinceLastFracture = 0.0;
 	}
 	
 	if (updateClusterNeighbors.count(cIndex) < 1) updateClusterNeighbors.insert(cIndex);
