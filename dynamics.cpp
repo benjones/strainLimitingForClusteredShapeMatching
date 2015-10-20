@@ -303,6 +303,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	
 	if (updateClusterNeighbors.count(cIndex) < 1) updateClusterNeighbors.insert(cIndex);
 	if (updateClusterNeighbors.count(clusters.size()-1) < 1) updateClusterNeighbors.insert(clusters.size()-1);
+	for (auto &i : clusters[cIndex].neighbors) {
+	  clusters[i].neighbors.insert(clusters.size()-1);
+	  if (updateClusterNeighbors.count(i) < 1) updateClusterNeighbors.insert(i);
+	}
+		
 	
 	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
 	
@@ -324,7 +329,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
 		  if(it == affectedClusters.end() || *it != thisIndex){
 			affectedClusters.insert(it, thisIndex);
-			if (updateClusterNeighbors.count(thisIndex) < 1) updateClusterNeighbors.insert(thisIndex);
+			if (updateClusterNeighbors.count(thisIndex) < 1) {
+			  std::cout<<"This shouldn't happen"<<std::endl;
+			  updateClusterNeighbors.insert(thisIndex);
+			}
 		  }
 		  
 		  auto& thisCluster = clusters[thisIndex];
@@ -379,7 +387,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  }
 
 	  /* Numerical tests showed this was inaccurate, though it looked okay, so I made a 
-		 more stupid-but-sure-to-work version.  *
+		 more stupid-but-sure-to-work version.  */
 		 /*
 	  for (int affectedIndex : affectedClusters)
 	  {
@@ -665,7 +673,7 @@ void World::bounceOutOfPlanes(){
 // Note: Used to be buildClusterMaps
 void World::initializeNeighbors() {
 
-/*
+
   countClusters();
   std::vector<std::vector<int > > idToClusters;
   idToClusters.resize(particles.size());
@@ -673,21 +681,20 @@ void World::initializeNeighbors() {
 	idToClusters[p.id].insert(idToClusters[p.id].end(), p.clusters.begin(), p.clusters.end());
   }
 
-  clusterCollisionMap.clear();
-  clusterCollisionMap.resize(clusters.size());
+  //clusterCollisionMap.clear();
+  //clusterCollisionMap.resize(clusters.size());
 
   for (auto &i : idToClusters) {
 	for (auto &c : i) {
 	  for (auto &d : i) {
 		if (c == d) continue;
-		if (!utils::containsValue(clusterCollisionMap[c], d)){
-		  clusterCollisionMap[c].push_back(d);
+		if (clusters[c].neighbors.count(d) < 1){
+		  clusters[c].neighbors.insert(d);
 		}
 	  }
 	}
   }
-  */
-  
+  /*  
   for (Particle &p : particles) {
 	for (int &c : p.clusters) {
 		  for (int &d : p.clusters) {
@@ -699,6 +706,7 @@ void World::initializeNeighbors() {
 			}
 		  }
 		}
+  */
 }
 
 bool CollisionGeometry::project(Eigen::Vector3d &x) {
@@ -761,32 +769,34 @@ struct ClusterRadiusGetter{
 
 
 void World::selfCollisions() {
-  //for (auto &c : clusters) {
-  //c.oldNeighbors = c.neighbors;
+  /*  This code is good for debugging the clusters.neighbors lists.
+  for (auto &c : clusters) {
+	c.oldNeighbors = c.neighbors;
 	//for (auto &n : c.oldNeighbors)
 	//std::cout<<n<<" ";
 	//std::cout<<std::endl;
-	//c.neighbors.clear();
-  //}
-  //initializeNeighbors();
+	c.neighbors.clear();
+  }
+  initializeNeighbors();
 
-  //for (unsigned int i=0; i< clusters.size(); i++) {
-  //auto &c = clusters[i];
+  for (unsigned int i=0; i< clusters.size(); i++) {
+	auto &c = clusters[i];
 	//for (auto &c : clusters) {
-	//for (auto &n : c.neighbors) {
-  //if (c.neighbors.count(n) < 1) continue;
-  //if (c.oldNeighbors.count(n) < 1) std::cout<<n<<" not in oldNeighbors "<<i<<std::endl;
-	  //std::cout<<n<<" ";
-  //}
-	//std::cout<<std::endl;
-	//for (auto &n : c.oldNeighbors) {
+	  for (auto &n : c.neighbors) {
+		//if (c.neighbors.count(n) < 1) continue;
+		if (c.oldNeighbors.count(n) < 1) std::cout<<n<<" not in oldNeighbors "<<i<<std::endl;
+		//std::cout<<n<<" ";
+	  }
+	  //std::cout<<std::endl;
+	  for (auto &n : c.oldNeighbors) {
   //if (c.oldNeighbors.count(n) < 1) continue;
-  //if (c.neighbors.count(n) < 1) std::cout<<n<<" not in neighbors "<<i<<std::endl;
+	  if (c.neighbors.count(n) < 1) std::cout<<n<<" not in neighbors "<<i<<std::endl;
 	  //std::cout<<n<<" ";
-  //}
+	  }
 	//std::cout<<std::endl;
 	//std::cout<<std::endl;
-  //}  
+  }  
+  */
 
   const double alpha = collisionRestitution;
 
@@ -902,10 +912,10 @@ void World::selfCollisions() {
 	}
 	}*/
 
-	std::cout << "<><><><><><><><><><><><><><><><><><><><><><><><><><><><>" << std::endl;
-	std::cout << "COLLIDED:        " << collided << std::endl;
-	std::cout << "WERE NEIGHBORS:  " << wereNeighbors << std::endl;
-	std::cout << "<><><><><><><><><><><><><><><><><><><><><><><><><><><><>" << std::endl;
+    //std::cout << "<><><><><><><><><><><><><><><><><><><><><><><><><><><><>" << std::endl;
+	//std::cout << "COLLIDED:        " << collided << std::endl;
+	//std::cout << "WERE NEIGHBORS:  " << wereNeighbors << std::endl;
+	//std::cout << "<><><><><><><><><><><><><><><><><><><><><><><><><><><><>" << std::endl;
 
 }
 
