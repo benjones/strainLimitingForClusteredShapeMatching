@@ -251,6 +251,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::Vector3d splitDirection = solver.matrixV().col(0);
 
 	auto& c = clusters[cIndex];	  
+	//std::cout<<"SPLITTING "<<cIndex<<std::endl;
 
 	auto it = std::partition(c.members.begin(), c.members.end(),
 		[&worldCOM, &splitDirection, this](const Cluster::Member& a){
@@ -305,11 +306,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  clusters[cIndex].timeSinceLastFracture = 0.0;
 	}
 	
-	if (updateClusterNeighbors.count(cIndex) < 1) updateClusterNeighbors.insert(cIndex);
-	if (updateClusterNeighbors.count(clusters.size()-1) < 1) updateClusterNeighbors.insert(clusters.size()-1);
+	//if (updateClusterNeighbors.count(cIndex) < 1) updateClusterNeighbors.insert(cIndex);
+	//if (updateClusterNeighbors.count(clusters.size()-1) < 1) updateClusterNeighbors.insert(clusters.size()-1);
 	for (auto &i : clusters[cIndex].neighbors) {
 	  clusters[i].neighbors.insert(clusters.size()-1);
-	  if (updateClusterNeighbors.count(i) < 1) updateClusterNeighbors.insert(i);
+	//if (updateClusterNeighbors.count(i) < 1) updateClusterNeighbors.insert(i);
 	}
 		
 	setupTimer.stopTiming();
@@ -336,15 +337,15 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
 		  if(it == affectedClusters.end() || *it != thisIndex){
 			affectedClusters.insert(it, thisIndex);
-			if (updateClusterNeighbors.count(thisIndex) < 1) {
-			  std::cout<<"This shouldn't happen"<<std::endl;
-			  updateClusterNeighbors.insert(thisIndex);
-			}
+			//if (updateClusterNeighbors.count(thisIndex) < 1) {
+			//std::cout<<"This shouldn't happen"<<std::endl;
+			//updateClusterNeighbors.insert(thisIndex);
+			//}
 		  }
 		  
 		  auto& thisCluster = clusters[thisIndex];
-		  if (thisIndex != clusters.size()-1) 
-			thisCluster.neighbors.insert(clusters.size()-1); // make sure both clusters are in there.  We only delete clusters later.
+		  //if (thisIndex != clusters.size()-1) 
+		  //thisCluster.neighbors.insert(clusters.size()-1); // make sure both clusters are in there.  We only delete clusters later.
 
 		  if (thisIndex >= clusters.size()) {
 			std::cout<<particle.clusters.size()<<std::endl;
@@ -360,7 +361,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 			unsigned int i = 0;
 			while (thisCluster.members[i].index != member && i < thisCluster.members.size()) i++;
-			if (i == thisCluster.members.size()) break;
+			if (i == thisCluster.members.size()) {std::cout<<"This really shouldn't happen!"<<std::endl; break;}
 
 			double w = thisCluster.members[i].weight;
 
@@ -395,37 +396,42 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
+	  
+	  
+
+
+	  //for (int i : updateClusterNeighbors) {
+	  for (auto i : std::initializer_list<size_t>{cIndex, clusters.size()-1}) {
+		Cluster &a = clusters[i];
+		std::vector<int> eraseFromA;
+		
+		for (int j : a.neighbors) {
+		  if (a.neighbors.count(j) == 0) continue;
+		  Cluster &b = clusters[j];
+		  bool stillNeighbors = false;
+		  for (auto &p : a.members) {
+			for (auto &q : b.members) {
+			  if (particles[p.index].id == particles[q.index].id) {
+				stillNeighbors = true;
+				break;
+			  }
+			}
+			if (stillNeighbors) break;
+		  }
+		  if (!stillNeighbors) {
+			eraseFromA.push_back(j);
+			b.neighbors.erase(i);
+			//std::cout<<b.neighbors.count(i)<<" "<<i<<" "<<j<<std::endl;
+		  }
+		}
+		for (int j : eraseFromA) {
+		  a.neighbors.erase(j);
+		  //std::cout<<a.neighbors.count(j)<<" "<<j<<" "<<i<<std::endl;
+		}
+	  }
 	}
   }
   
-  for (int i : updateClusterNeighbors) {
-	Cluster &a = clusters[i];
-	std::vector<int> eraseFromA;
-
-	for (int j : a.neighbors) {
-	  if (a.neighbors.count(j) == 0) continue;
-	  Cluster &b = clusters[j];
-	  bool stillNeighbors = false;
-	  for (auto &p : a.members) {
-		for (auto &q : b.members) {
-		  if (particles[p.index].id == particles[q.index].id) {
-			stillNeighbors = true;
-			break;
-		  }
-		}
-		if (stillNeighbors) break;
-	  }
-	  if (!stillNeighbors) {
-		eraseFromA.push_back(j);
-		b.neighbors.erase(i);
-		//std::cout<<b.neighbors.count(i)<<" "<<i<<" "<<j<<std::endl;
-	  }
-	}
-	for (int j : eraseFromA) {
-	  a.neighbors.erase(j);
-	  //std::cout<<a.neighbors.count(j)<<" "<<j<<" "<<i<<std::endl;
-	}
-  }
   auto endTime = std::chrono::high_resolution_clock::now();
   double secsElapsed = std::chrono::duration<double>(endTime - start).count();
   if(secsElapsed > 0.001){
@@ -709,7 +715,8 @@ struct ClusterRadiusGetter{
 
 
 void World::selfCollisions() {
-  /*  This code is good for debugging the clusters.neighbors lists.
+  //  This code is good for debugging the clusters.neighbors lists.
+  /*
   for (auto &c : clusters) {
 	c.oldNeighbors = c.neighbors;
 	//for (auto &n : c.oldNeighbors)
@@ -735,8 +742,8 @@ void World::selfCollisions() {
 	  }
 	//std::cout<<std::endl;
 	//std::cout<<std::endl;
-  }  
-  */
+	} */ 
+  
 
   const double alpha = collisionRestitution;
 
