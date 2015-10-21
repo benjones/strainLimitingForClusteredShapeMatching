@@ -208,6 +208,7 @@ void World::strainLimitingIteration(){
 ///////////////////////////////
 
 void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
+  auto start = std::chrono::high_resolution_clock::now();
   auto timer = prof.timeName("fracture");
   //do fracture
   std::sort(potentialSplits.begin(), potentialSplits.end(),
@@ -491,6 +492,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  a.neighbors.erase(j);
 	  //std::cout<<a.neighbors.count(j)<<" "<<j<<" "<<i<<std::endl;
 	}
+  }
+  auto endTime = std::chrono::high_resolution_clock::now();
+  double secsElapsed = std::chrono::duration<double>(endTime - start).count();
+  if(secsElapsed > 0.001){
+	std::cout << "fracture took more than 1ms: " << secsElapsed << std::endl;
   }
 }	
 

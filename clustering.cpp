@@ -205,15 +205,17 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
   }
 
   // fuzzy c-means loop
-    if (params.clusteringAlgorithm < 1) {
+  if (params.clusteringAlgorithm < 1) {
 	std::cout << "starting c means loop..." << std::endl;
 	iters = 0;
 
-	
+
 	while ((!converged || iters < 5) && iters < params.clusterItersMax) {
 	  converged = true;
 	  iters++;
-
+	  if(iters % 100 == 0){
+		std::cout << "starting cmeans iteration " << iters << std::endl;
+	  }
 	  for (auto& p : particles){
 		p.clusters.clear();
 		p.numClusters = 0;
@@ -317,43 +319,6 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 
 
 
-		/*
-		for (auto m = 0; m < particles.size(); m++) {
-		  auto &p = particles[m];
-		  p.totalweight = 0.0;
-		  std::vector<double> updatedweights;
-		  updatedweights.resize(p.clusters.size());
-
-		  for (auto i=0; i<p.clusters.size(); i++) {
-			double sum = 0.0;
-
-			//k = the member number of x in cluster i
-			for (;k < clusters[p.clusters[i]].members.size() &&
-				   clusters[p.clusters[i]].members[k].first != m;
-				 k++);
-			
-			for (auto j=0; j<p.clusters.size(); j++) {
-
-			  //l is the index of m in cluster j
-			  int l = 0;
-			  for (;l < clusters[p.clusters[j]].members.size() &&
-					 clusters[p.clusters[j]].members[l].first != m;
-				   l++);
-			  sum += pow(
-				  clusters[p.clusters[i]].members[k].second /
-				  clusters[p.clusters[j]].members[l].second,
-				  2.0/kernelWeight-1.0);
-			}
-			updatedweights[i] = 1.0/sum;
-		  }
-		  for (auto i=0; i<p.clusters.size(); i++) {
-			int k = 0;
-			for (;k < clusters[p.clusters[i]].members.size() &&
-				   clusters[p.clusters[i]].members[k].first != m;
-				 k++);
-			clusters[p.clusters[i]].members[k].second = updatedweights[i];
-		  }
-		  }*/
 		for (auto &c : clusters) {
 		  for (auto &member : c.members) {
 			particles[member.index].totalweight += member.weight;

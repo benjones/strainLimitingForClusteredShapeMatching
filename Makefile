@@ -24,6 +24,8 @@ EIGEN_INCLUDE=-I/usr/local/opt/eigen/include/eigen3/ -I/usr/local/include/eigen3
 SDL_LIB = -L/usr/local/opt/sdl2/lib  -framework OpenGL -F/Library/Frameworks -framework SDL2
 
 
+OGRE_INCS = -I/Users/ben/libs/ogre/OgreMain/include -I/Users/ben/libs/ogre/build/include -I/usr/local/include
+OGRE_LIBS = -F/Users/ben/libs/ogre/build/lib/macosx/ -framework Ogre
 
 
 
@@ -53,6 +55,12 @@ clean:
 
 runSimulator: $(OBJECTS) libshapematch.a main.o vis.o
 	$(CC) $(LDOPTS) -o runSimulator -L. -lshapematch $(SDL_LIB) $(EIGEN_INCLUDE) $(INCS) $(FLAGS) main.o vis.o
+
+ogreApp.o: ogreApp.cpp libshapematch.a
+	$(CC) -c -o ogreApp.o -std=c++ $(OGRE_INCS) $(FLAGS) $(OPT) ogreApp.cpp
+
+ogreApp: libshapematch.a ogreApp.o
+	$(CC) -o ogreApp $(OGRE_LIBS) ogreApp.o
 
 
 #-----------------------------------------

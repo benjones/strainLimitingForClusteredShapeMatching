@@ -31,8 +31,9 @@ int main(int argc, char** argv){
 
   World world;
   world.loadFromJson(argv[1]);
-	world.initializeNeighbors();
+  world.initializeNeighbors();
 
+  //exit(0);
 
   if(SDL_Init(SDL_INIT_EVERYTHING) < 0){
 	std::cout << "couldn't init SDL" << std::endl;
@@ -64,7 +65,8 @@ void loop(SDL_Window* window, World& world){
 
   Camera camera;
   VisSettings visSettings;
-
+  visSettings.drawClusters = false;
+  visSettings.drawFracturePlanes = false;
   std::ifstream eyeIn(".eye.txt");
   if(eyeIn){
 	Eigen::Vector3d eye;

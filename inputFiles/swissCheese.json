@@ -1,12 +1,15 @@
 {
 	"particleFiles" : [ "inputFiles/blue_noise/swiss_cheese1-bn.txt"],
 
-	"neighborRadius" : 0.12,
+	"neighborRadius" : 0.15,
+	"neighborRadiusMax" : 0.5,
 	"alpha" : 0.8,
 	"omega" : 0.3,
 	"numConstraintIters" : 4,
 	"maxStretch" : 0.5,
-	"nClusters" : 50,
+	"nClusters" : 20,
+	"nClustersMax" : 50,
+	"clusterItersMax" : 50,
 	"springDamping": 0.5,
 	"toughness" : 0.1,
 	"yield" : 0.1,
