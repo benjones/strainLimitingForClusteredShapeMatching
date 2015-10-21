@@ -37,7 +37,12 @@ public:
   }
 
 
-  using FractureInfo = std::tuple<size_t, double,Eigen::Vector3d>;
+  struct FractureInfo{
+	size_t clusterIndex;
+	double effectiveToughness;
+	Eigen::Vector3d fractureNormal;
+	 
+  };
   void doFracture(std::vector<FractureInfo> potentialSplits);
   void splitOutliers();
   void cullSmallClusters();

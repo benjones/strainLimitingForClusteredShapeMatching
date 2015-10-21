@@ -18,15 +18,24 @@ namespace benlib{
 	class ScopeTimer{
 	  public:
 	  ScopeTimer(size_t _index, Profiler& _owner) 
-		:index{_index}, owner{_owner}, start{high_resolution_clock::now()} {}
+		:index{_index}, owner{_owner}, finished{false}, start{high_resolution_clock::now()} {}
+
+	  void stopTiming(){
+		assert(!finished);
+		owner.addTime(index, high_resolution_clock::now() - start);
+		finished = true;
+	  }
 	  
 	  ~ScopeTimer(){
-		owner.addTime(index, high_resolution_clock::now() - start);
+		if(!finished){
+		  owner.addTime(index, high_resolution_clock::now() - start);
+		}
 	  }
 	  
 	private:
 	  size_t index;
 	  Profiler& owner;
+	  bool finished;
 	  high_resolution_clock::time_point start;
 	  
 	};

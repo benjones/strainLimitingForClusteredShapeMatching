@@ -70,9 +70,9 @@ void World::timestep(){
 	  //std::cout << "sigma " << sigma << std::endl;
 
 	  if(fabs(sigma(0) - 1.0) > cluster.toughness && !cluster.justFractured){
-		potentialSplits.emplace_back(en.first, 
-			sigma(0) - cluster.toughness, 
-			V.col(0));
+		potentialSplits.push_back({en.first, 
+				sigma(0) - cluster.toughness, 
+				V.col(0)});
 	  } else if (cluster.justFractured && fabs(sigma(0) - 1.0) <= cluster.toughness){
 		//can this just be an else? --Ben
 		cluster.justFractured = false;
@@ -210,10 +210,12 @@ void World::strainLimitingIteration(){
 void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   auto start = std::chrono::high_resolution_clock::now();
   auto timer = prof.timeName("fracture");
+
+  benlib::Profiler fractureProf;
   //do fracture
   std::sort(potentialSplits.begin(), potentialSplits.end(),
 	  [](const FractureInfo& a, const FractureInfo& b){
-		return std::get<1>(a) < std::get<1>(b);
+		return a.effectiveToughness < b.effectiveToughness;
 	  });
 
   if(!potentialSplits.empty()){
@@ -224,7 +226,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
   bool aCancel = false;
   for(auto &ps : potentialSplits){
-	size_t cIndex = std::get<0>(ps);
+	auto setupTimer = fractureProf.timeName("setup");
+	size_t cIndex = ps.clusterIndex;
 
 	auto worldCOM = clusters[cIndex].worldCom;
 
@@ -309,10 +312,13 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  if (updateClusterNeighbors.count(i) < 1) updateClusterNeighbors.insert(i);
 	}
 		
-	
-	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
-	
+	setupTimer.stopTiming();
 	{
+	auto updateClusterTimer = fractureProf.timeName("updateClusterProperties");
+	updateClusterProperties(std::initializer_list<size_t>{cIndex, clusters.size()-1});
+	}
+	{
+	  auto propTimer = fractureProf.timeName("propagate");
 	  auto timerTwo = prof.timeName("propagate");
 	  //split from other clusters
 	  std::vector<int> allParticles;
@@ -386,82 +392,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
-
-	  /* Numerical tests showed this was inaccurate, though it looked okay, so I made a 
-		 more stupid-but-sure-to-work version.  */
-		 /*
-	  for (int affectedIndex : affectedClusters)
-	  {
-	  	Cluster c = clusters[affectedIndex];
-	  	if ( 	((c.worldCom - worldCOM).dot(splitDirection) >= 0) != 
-	  			((clusters[cIndex].worldCom - worldCOM).dot(splitDirection) >= 0) ) {
-	  		temp1 = c.neighbors.erase(cIndex);
-	  		temp2 = clusters[cIndex].neighbors.erase(affectedIndex);
-	  	}
-	  	else
-	  	{
-	  		c.neighbors.erase(clusters.size()-1);
-	  		clusters[clusters.size()-1].neighbors.erase(affectedIndex);
-	  	}
-	  }
-	*/
-
-
-	// More stupid-but-sure-to-work version:
-	  /*	
-	for (int indexA: affectedClusters){
-		Cluster a = clusters[indexA];	
-		for (int indexB: affectedClusters){
-			Cluster b = clusters[indexB];
-			
-			// Look for shared particles between the two clusters
-			bool foundSharedParticle = false;
-			for (Cluster::Member p : a.members){
-			
-				std::vector<Cluster::Member>::iterator it;
-				it = find ( b.members.begin(), b.members.end(), p);
-				if (it != b.members.end()) {		// If we find a shared particle,					
-					foundSharedParticle = true;		// stop comparing these two clusters.
-					break;
-				}
-			}
-			if (!foundSharedParticle){ a.neighbors.erase(indexB); }
-		}
-	}
-	  */
 	  
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
-	  
-	  /*
-	for (Particle &p : particles) {
-	for (int &c : p.clusters) {
-		  for (int &d : p.clusters) {
-			if (c == d) continue;
-			
-			Pair<int,int> clusterPair;
-			clusterPair.first = c;
-			clusterPair.second = d;
-			  if (clusterCollisionMap.count(clusterPair) < 1)
-			  {
-			  	clusterCollisionMap.insert(clusterPair);	// Insert pair(c,d)
-			  	clusterPair.first = d;
-			  	clusterPair.second = c;
-			  	clusterCollisionMap.insert(clusterPair);	// Insert pair(d,c)
-			  }
-			}
-		  }
-		}
-	 }
-	
-	*/
-	
-	
-	  //	for(auto& c : affectedClusters){
-	  //	  clusters[c].toughness *= 0.995;
-	//	}
-	
-	//break;
 	}
   }
   
@@ -497,6 +430,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   double secsElapsed = std::chrono::duration<double>(endTime - start).count();
   if(secsElapsed > 0.001){
 	std::cout << "fracture took more than 1ms: " << secsElapsed << std::endl;
+	fractureProf.dump<std::chrono::duration<double>>(std::cout);
   }
 }	
 
