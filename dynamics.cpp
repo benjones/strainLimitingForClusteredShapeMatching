@@ -368,6 +368,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
 
+	  // This loop will remove clusters that do not span the fracture plane
+	  // from neighbor lists.  It looks for a certificate particle
+	  // to retain the connection.  It could be faster.
 	  for (auto i : std::initializer_list<size_t>{cIndex, clusters.size()-1}) {
 		Cluster &a = clusters[i];
 		std::vector<int> eraseFromA;
