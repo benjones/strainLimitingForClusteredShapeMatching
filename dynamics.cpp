@@ -322,12 +322,60 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  for (auto &member : clusters[cIndex].members) allParticles.push_back(member.index);
 	  for (auto &member : newCluster.members) allParticles.push_back(member.index);
 
-	  std::vector<size_t> affectedClusters; //keep sorted
-
-	  // Adam found a segfault from an invalidated iterator here on 6/29 and applied a "quick fix" since Ben was going to redo this logic anyway.
 	  std::vector<Particle> newParticles;
+#if 1
+	  for(auto& member : allParticles){
+		auto& p = particles[member];
+		double w1 = 0.0;
+		int n = 0;
+		std::unordered_set<int> qclusters;		  
+		
+		for (auto &i : p.clusters) {
+		  if (i == cIndex || i == clusters.size()-1) continue;
+		  auto &c = clusters[(i)];
+		  if(((p.position - worldCOM).dot(splitDirection) >= 0) !=
+			  ((c.worldCom - worldCOM).dot(splitDirection) >= 0 )){
+			unsigned int j = 0;
+			while (c.members[j].index != member && j < c.members.size()) j++;
+			assert (j != c.members.size());
+			w1 += c.members[j].weight;
+			n++;
+			c.members[j].index = particles.size()+newParticles.size();
+			qclusters.insert(i);
+		  }
+		}
+		if (n == 0) continue;
+		p.flags |= Particle::SPLIT;
+		Particle q(p);
+		
+		q.numClusters = n;
+		q.mass = (w1 / p.totalweight) * p.mass;
+		q.totalweight = w1;
+		
+		p.numClusters -= n;
+		p.mass = ((p.totalweight - w1) / p.totalweight) * p.mass;
+		p.totalweight -= w1;
+		
+		// deleted because we call count clusters shortly
+		/*q.clusters.clear();		
+		for (auto &i : qclusters) {
+		  q.clusters.push_back(i);
+		  for (std::vector<int>::const_iterator j = p.clusters.begin(); j != p.clusters.end(); j++) {
+			if (*j == i) {
+			  p.clusters.erase(j);
+			  break;
+			}
+		  }
+		  }*/
+		newParticles.push_back(q);
+	  }
+	  std::vector<size_t> affectedClusters = std::initializer_list<size_t>{cIndex, clusters.size()-1};
+	  affectedClusters.insert(affectedClusters.end(), clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end());
+#else
+	  std::vector<size_t> affectedClusters;
 	  for(auto& member : allParticles){
 		auto& particle = particles[member];
+
 		for(auto thisIndex : particle.clusters){
 		  //insert into sorted array
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
@@ -364,9 +412,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
+#endif
+	  //std::cout<<newParticles.size()<<" new particles out of "<<allParticles.size()<<std::endl;
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
-
+	  
 	}
 	{
 	  auto neighborTimer = fractureProf.timeName("updateClusterNeighbors");
