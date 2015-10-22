@@ -364,41 +364,40 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
-	  
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
 
+	}
+	{
+	  auto neighborTimer = fractureProf.timeName("updateClusterNeighbors");
 	  // This loop will remove clusters that do not span the fracture plane
 	  // from neighbor lists.  It looks for a certificate particle
-	  // to retain the connection.  It could be faster.
+	  // to retain the connection.  
 	  for (auto i : std::initializer_list<size_t>{cIndex, clusters.size()-1}) {
+		std::unordered_set<int> eraseFromA, ids;
 		Cluster &a = clusters[i];
-		std::vector<int> eraseFromA;
-		
+		for (auto &p : a.members) ids.insert(particles[p.index].id);
+
 		for (int j : a.neighbors) {
-		  if (a.neighbors.count(j) == 0) continue;
 		  Cluster &b = clusters[j];
 		  bool stillNeighbors = false;
-		  for (auto &p : a.members) {
-			for (auto &q : b.members) {
-			  if (particles[p.index].id == particles[q.index].id) {
-				stillNeighbors = true;
-				break;
-			  }
+		  for (auto &p : b.members) {
+			if (ids.count(particles[p.index].id) > 0) {
+			  stillNeighbors = true;
+			  break;
 			}
-			if (stillNeighbors) break;
 		  }
 		  if (!stillNeighbors) {
-			eraseFromA.push_back(j);
+			eraseFromA.insert(j);
 			b.neighbors.erase(i);
 		  }
 		}
-		for (int j : eraseFromA) a.neighbors.erase(j);
+		for (auto &j : eraseFromA) a.neighbors.erase(j);
 	  }
-	  // Adam added these lines on 10/21.  Maybe fractured clusters shouldn't collide.
-	  clusters[clusters.size()-1].neighbors.insert(cIndex);
-	  clusters[cIndex].neighbors.insert(clusters.size()-1);
 	}
+	// Adam added these lines on 10/21.  Maybe fractured clusters shouldn't collide.
+	clusters[clusters.size()-1].neighbors.insert(cIndex);
+	clusters[cIndex].neighbors.insert(clusters.size()-1);
   }
   
   auto endTime = std::chrono::high_resolution_clock::now();
@@ -711,8 +710,8 @@ void World::selfCollisions() {
 	  }
 	//std::cout<<std::endl;
 	//std::cout<<std::endl;
-	} */ 
-  
+	}  
+  */
 
   const double alpha = collisionRestitution;
 
