@@ -25,7 +25,7 @@ SDL_LIB = -L/usr/local/opt/sdl2/lib  -framework OpenGL -F/Library/Frameworks -fr
 
 
 OGRE_INCS = -I/Users/ben/libs/ogre/OgreMain/include -I/Users/ben/libs/ogre/build/include -I/usr/local/include
-OGRE_LIBS = -F/Users/ben/libs/ogre/build/lib/macosx/ -framework Ogre
+OGRE_LIBS = -framework CoreFoundation -framework Cocoa -L/usr/local/lib -ltbb -L/Users/ben/libs/ogre/build/lib/macosx -lOgreMainStatic #-F/Library/Frameworks -framework Ogre
 
 
 

@@ -397,8 +397,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  updateClusterProperties(affectedClusters);
 	}
   }
-  
+
+  {
+	auto updateTime = fractureProf.timeName("lastUpdateLoop");
   for (int i : updateClusterNeighbors) {
+
 	Cluster &a = clusters[i];
 	std::vector<int> eraseFromA;
 
@@ -425,6 +428,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  a.neighbors.erase(j);
 	  //std::cout<<a.neighbors.count(j)<<" "<<j<<" "<<i<<std::endl;
 	}
+  }
   }
   auto endTime = std::chrono::high_resolution_clock::now();
   double secsElapsed = std::chrono::duration<double>(endTime - start).count();
