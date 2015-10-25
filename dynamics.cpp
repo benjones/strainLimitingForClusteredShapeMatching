@@ -222,8 +222,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
   }
 
-  std::unordered_set<int> updateClusterNeighbors;
-
   bool aCancel = false;
   for(auto &ps : potentialSplits){
 	auto setupTimer = fractureProf.timeName("setup");
@@ -306,11 +304,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  clusters[cIndex].timeSinceLastFracture = 0.0;
 	}
 	
-	//if (updateClusterNeighbors.count(cIndex) < 1) updateClusterNeighbors.insert(cIndex);
-	//if (updateClusterNeighbors.count(clusters.size()-1) < 1) updateClusterNeighbors.insert(clusters.size()-1);
+	// add new cluster as a neighbor.  We may delete it later.
 	for (auto &i : clusters[cIndex].neighbors) {
 	  clusters[i].neighbors.insert(clusters.size()-1);
-	//if (updateClusterNeighbors.count(i) < 1) updateClusterNeighbors.insert(i);
 	}
 		
 	setupTimer.stopTiming();
@@ -326,42 +322,75 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	  for (auto &member : clusters[cIndex].members) allParticles.push_back(member.index);
 	  for (auto &member : newCluster.members) allParticles.push_back(member.index);
 
-	  std::vector<size_t> affectedClusters; //keep sorted
-
-	  // Adam found a segfault from an invalidated iterator here on 6/29 and applied a "quick fix" since Ben was going to redo this logic anyway.
 	  std::vector<Particle> newParticles;
+#if 1
+	  for(auto& member : allParticles){
+		auto& p = particles[member];
+		double w1 = 0.0;
+		int n = 0;
+		std::unordered_set<int> qclusters;		  
+		
+		for (auto &i : p.clusters) {
+		  if (i == cIndex || i == clusters.size()-1) continue;
+		  auto &c = clusters[(i)];
+		  if(((p.position - worldCOM).dot(splitDirection) >= 0) !=
+			  ((c.worldCom - worldCOM).dot(splitDirection) >= 0 )){
+			unsigned int j = 0;
+			while (c.members[j].index != member && j < c.members.size()) j++;
+			assert (j != c.members.size());
+			w1 += c.members[j].weight;
+			n++;
+			c.members[j].index = particles.size()+newParticles.size();
+			qclusters.insert(i);
+		  }
+		}
+		if (n == 0) continue;
+		p.flags |= Particle::SPLIT;
+		Particle q(p);
+		
+		q.numClusters = n;
+		q.mass = (w1 / p.totalweight) * p.mass;
+		q.totalweight = w1;
+		
+		p.numClusters -= n;
+		p.mass = ((p.totalweight - w1) / p.totalweight) * p.mass;
+		p.totalweight -= w1;
+		
+		// deleted because we call count clusters shortly
+		/*q.clusters.clear();		
+		for (auto &i : qclusters) {
+		  q.clusters.push_back(i);
+		  for (std::vector<int>::const_iterator j = p.clusters.begin(); j != p.clusters.end(); j++) {
+			if (*j == i) {
+			  p.clusters.erase(j);
+			  break;
+			}
+		  }
+		  }*/
+		newParticles.push_back(q);
+	  }
+	  std::vector<size_t> affectedClusters = std::initializer_list<size_t>{cIndex, clusters.size()-1};
+	  affectedClusters.insert(affectedClusters.end(), clusters[cIndex].neighbors.begin(), clusters[cIndex].neighbors.end());
+#else
+	  std::vector<size_t> affectedClusters;
 	  for(auto& member : allParticles){
 		auto& particle = particles[member];
+
 		for(auto thisIndex : particle.clusters){
 		  //insert into sorted array
 		  auto it = std::lower_bound(affectedClusters.begin(), affectedClusters.end(), thisIndex);
 		  if(it == affectedClusters.end() || *it != thisIndex){
 			affectedClusters.insert(it, thisIndex);
-			//if (updateClusterNeighbors.count(thisIndex) < 1) {
-			//std::cout<<"This shouldn't happen"<<std::endl;
-			//updateClusterNeighbors.insert(thisIndex);
-			//}
 		  }
 		  
 		  auto& thisCluster = clusters[thisIndex];
-		  //if (thisIndex != clusters.size()-1) 
-		  //thisCluster.neighbors.insert(clusters.size()-1); // make sure both clusters are in there.  We only delete clusters later.
-
-		  if (thisIndex >= clusters.size()) {
-			std::cout<<particle.clusters.size()<<std::endl;
-			std::cout<<thisIndex<<">="<<clusters.size()<<std::endl<<member<<" "<<particles.size()<<std::endl;
-			for (auto foo : particle.clusters) {
-			  std::cout<<foo<<" ";
-			}
-			std::cout<<std::endl;
-		  }
 		  assert(thisIndex < clusters.size());
 
 		  if(((particle.position - worldCOM).dot(splitDirection) >= 0) !=
 			  ((thisCluster.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 			unsigned int i = 0;
 			while (thisCluster.members[i].index != member && i < thisCluster.members.size()) i++;
-			if (i == thisCluster.members.size()) {std::cout<<"This really shouldn't happen!"<<std::endl; break;}
+			assert (i != thisCluster.members.size());
 
 			double w = thisCluster.members[i].weight;
 
@@ -372,16 +401,6 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			q.mass = (w / particle.totalweight) * particle.mass;
 			q.totalweight = w;
 			double newMass = ((particle.totalweight - w) / particle.totalweight) * particle.mass;
-			//if (newMass < 0.1*particle.mass || q.mass < 0.1*particle.mass) {
-			  // in this case we should just delete the particle from the cluster and let the mass be lost...
-			  //std::cout<<"mass low "<<n<<" "<<newMass<<" "<<q.mass<<" "<<p.numClusters<<std::endl;
-			  //continue;
-			//}
-
-			// This seems like a good idea, but it invalidates the iterator to particle.clusters
-			//particle.clusters.erase(
-			//	std::remove(particle.clusters.begin(), particle.clusters.end(),
-			//		thisIndex), particle.clusters.end());
 			particle.numClusters--;
 			particle.mass = newMass;
 			particle.totalweight -= w;
@@ -393,43 +412,42 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		  }
 		}
 	  }
-	  
+#endif
+	  //std::cout<<newParticles.size()<<" new particles out of "<<allParticles.size()<<std::endl;
 	  particles.insert(particles.end(),newParticles.begin(), newParticles.end());
 	  updateClusterProperties(affectedClusters);
 	  
-	  
-
-
-	  //for (int i : updateClusterNeighbors) {
+	}
+	{
+	  auto neighborTimer = fractureProf.timeName("updateClusterNeighbors");
+	  // This loop will remove clusters that do not span the fracture plane
+	  // from neighbor lists.  It looks for a certificate particle
+	  // to retain the connection.  
 	  for (auto i : std::initializer_list<size_t>{cIndex, clusters.size()-1}) {
+		std::unordered_set<int> eraseFromA, ids;
 		Cluster &a = clusters[i];
-		std::vector<int> eraseFromA;
-		
+		for (auto &p : a.members) ids.insert(particles[p.index].id);
+
 		for (int j : a.neighbors) {
-		  if (a.neighbors.count(j) == 0) continue;
 		  Cluster &b = clusters[j];
 		  bool stillNeighbors = false;
-		  for (auto &p : a.members) {
-			for (auto &q : b.members) {
-			  if (particles[p.index].id == particles[q.index].id) {
-				stillNeighbors = true;
-				break;
-			  }
+		  for (auto &p : b.members) {
+			if (ids.count(particles[p.index].id) > 0) {
+			  stillNeighbors = true;
+			  break;
 			}
-			if (stillNeighbors) break;
 		  }
 		  if (!stillNeighbors) {
-			eraseFromA.push_back(j);
+			eraseFromA.insert(j);
 			b.neighbors.erase(i);
-			//std::cout<<b.neighbors.count(i)<<" "<<i<<" "<<j<<std::endl;
 		  }
 		}
-		for (int j : eraseFromA) {
-		  a.neighbors.erase(j);
-		  //std::cout<<a.neighbors.count(j)<<" "<<j<<" "<<i<<std::endl;
-		}
+		for (auto &j : eraseFromA) a.neighbors.erase(j);
 	  }
 	}
+	// Adam added these lines on 10/21.  Maybe fractured clusters shouldn't collide.
+	clusters[clusters.size()-1].neighbors.insert(cIndex);
+	clusters[cIndex].neighbors.insert(clusters.size()-1);
   }
   
   auto endTime = std::chrono::high_resolution_clock::now();
@@ -742,8 +760,8 @@ void World::selfCollisions() {
 	  }
 	//std::cout<<std::endl;
 	//std::cout<<std::endl;
-	} */ 
-  
+	}  
+  */
 
   const double alpha = collisionRestitution;
 
