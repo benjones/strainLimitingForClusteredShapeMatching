@@ -8,8 +8,8 @@
 	"maxStretch" : 0.5,
 	"nClusters" : 157,
 	"springDamping": 0.5,
-	"toughness" : 0.18,
-	"yield" : 0.05,
+	"toughness" : 0.15,
+	"yield" : 0.06,
 	"nu" : 1.0,
 
 	"planes" : [ 
