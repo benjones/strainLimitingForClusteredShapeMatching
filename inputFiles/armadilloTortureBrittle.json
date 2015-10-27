@@ -3,14 +3,14 @@
 	
 	//"dt" : 0.00833333333,
 	
-	"neighborRadius" : 0.09,
+	"neighborRadius" : 0.15,
 	"alpha" : 0.6,
 	"omega" : 0.4,
 	"numConstraintIters" : 4,
 	"maxStretch" : 0.6,
-	"nClusters" : 100,
+	"nClusters" : 157,
 	"springDamping": 0.5,
-	"toughness" : 0.6,
+	"toughness" : 0.3,
 	"yield" : 8e100,
 	"nu" : 0.1,
 
