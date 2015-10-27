@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "particle.h"
 #include "movingPlane.hpp"
 #include "twistingPlane.hpp"
@@ -54,20 +55,24 @@ public:
 	Eigen::Vector3d oldCameraUp = cameraUp;
 	*/
 	particles.clear(); 
+	clusters.clear();
 	planes.clear();
-   movingPlanes.clear();
-   twistingPlanes.clear();
-   tiltingPlanes.clear();
-	clusterCenters.clear();
+	movingPlanes.clear();
+	twistingPlanes.clear();
+	tiltingPlanes.clear();
 	projectiles.clear();
 	cylinders.clear();
+	clusterCenters.clear();
 
 	loadFromJson(filename);
+	initializeNeighbors();
 	/*
 	cameraPosition = oldCameraPosition;
 	cameraLookAt = oldCameraLookAt;
 	cameraUp = oldCameraUp;
 	*/
+	prof.dump<std::chrono::duration<double>>(std::cout);
+	prof.reset();
 	elapsedTime = 0;
   }
 
