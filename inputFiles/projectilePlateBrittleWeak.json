@@ -5,7 +5,7 @@
 	"alpha" : 1.9,
 	"omega" : 0.3,
 	"numConstraintIters" : 4,
-	"maxStretch" : 0.1,
+	"maxStretch" : 0.3,
 	"nClusters" : 63,
 	"springDamping": 0.5,
 	"toughness" : 0.001,
