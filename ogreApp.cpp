@@ -11,8 +11,15 @@
 #include <OgreSceneNode.h>
 #include <OgreEntity.h>
 
-int main(){
+#include "world.h"
+#include "particle.h"
 
+int main(int argc, char** argv){
+  if(argc < 2){
+	std::cout << "usage: ./ogreApp <input.json>" << std::endl;
+	return 1;
+  }
+  
 
 
   auto octreePlugin = std::unique_ptr<Ogre::OctreePlugin>(new Ogre::OctreePlugin());
@@ -60,7 +67,7 @@ int main(){
 
   auto camera = sceneManager->createCamera("theCamera");
   //todo use stuff from runSimulator
-  camera->setPosition(Ogre::Vector3(0,0,10));
+  camera->setPosition(Ogre::Vector3(0,0,3));
   camera->lookAt(Ogre::Vector3(0,0,0));
   camera->setNearClipDistance(0.5);
 
@@ -76,15 +83,61 @@ int main(){
 	addResourceLocation("/Users/ben/libs/ogre/Samples/Media/models", "FileSystem", "General");
   Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 
-  Ogre::MovableObject* sphereEntity = sceneManager->createEntity("Sphere", "sphere.mesh");
 
-  auto* headNode = sceneManager->getRootSceneNode()->createChildSceneNode();
-  headNode->attachObject(sphereEntity);
-   
+  auto* keyLight = sceneManager->createLight("key");
+  keyLight->setPosition(20, 15, 20);
+
+
+  //load stuff
+  World world;
+  world.loadFromJson(argv[1]);
+  world.initializeNeighbors();
+
+  const double sphereSize = 0.1;
+  const double scaleFactor = sphereSize/200.0;
+
+  //SM should outlive particles...
+  auto cleanupParticle =
+	[&sceneManager](Particle& p){
+	/*if(p.sceneNode != nullptr){
+	  p.sceneNode->setVisible(false);
+	  }*/
+	
+	if(p.entity == nullptr){return;}
+	p.sceneNode->detachObject(p.entity);
+	sceneManager->destroySceneNode(p.sceneNode);
+	sceneManager->destroyEntity(p.entity);
+	//std::cout << "cleaning up a particle " << std::endl;
+	
+	
+  };
   
+  for(auto& p : world.particles){
+	p.cleanup = cleanupParticle;
+	p.sceneNode = sceneManager->getRootSceneNode()->createChildSceneNode();
+	p.sceneNode->setScale(scaleFactor, scaleFactor, scaleFactor);
+	p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
+	p.entity = sceneManager->createEntity("sphere.mesh");
+	p.sceneNode->attachObject(p.entity);
+
+  }
   
   bool readyToExit = false;
   while(!readyToExit){
+
+	world.timestep();
+	for(auto& p : world.particles){
+	  if(p.sceneNode == nullptr){
+		p.cleanup = cleanupParticle;
+		p.sceneNode = sceneManager->getRootSceneNode()->createChildSceneNode();
+		p.sceneNode->setScale(scaleFactor, scaleFactor, scaleFactor);
+		p.entity = sceneManager->createEntity("sphere.mesh");
+		p.sceneNode->attachObject(p.entity);
+	  }
+	  p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
+	}
+
+	
 	// Pump window messages for nice behaviour
 	Ogre::WindowEventUtilities::messagePump();
 	

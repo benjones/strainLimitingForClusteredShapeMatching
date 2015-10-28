@@ -3,6 +3,13 @@
 #include <vector>
 #include <unordered_set>
 
+
+namespace Ogre{
+  class SceneManager;
+  class SceneNode;
+  class Entity;
+}
+
 class Particle {
 public:
   Eigen::Vector3d position, 
@@ -25,6 +32,11 @@ public:
   //	oldPosition(p.oldPosition), goalPosition(p.goalPosition), goalVelocity(p.goalVelocity), mass(p.mass),
   //	totalweight(p.totalweight), numClusters(p.numClusters), outsideSomeMovingPlane(p.outsideSomeMovingPlane),
   //	clusters(p.clusters){};
+  Ogre::SceneNode* sceneNode = nullptr;
+  Ogre::Entity* entity = nullptr;
+  //cleanup stuff without knowing anything about ogre
+  std::function<void(Particle&)> cleanup = [](Particle&){};
+  
 };
 
 class CollisionGeometry {

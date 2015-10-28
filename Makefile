@@ -57,10 +57,10 @@ runSimulator: $(OBJECTS) libshapematch.a main.o vis.o
 	$(CC) $(LDOPTS) -o runSimulator -L. -lshapematch $(SDL_LIB) $(EIGEN_INCLUDE) $(INCS) $(FLAGS) main.o vis.o
 
 ogreApp.o: ogreApp.cpp libshapematch.a
-	$(CC) -c -o ogreApp.o -std=c++ $(OGRE_INCS) $(FLAGS) -O0 -g ogreApp.cpp
+	$(CC) -c -o ogreApp.o -std=c++ $(OGRE_INCS) $(EIGEN_INCLUDE) $(FLAGS) $(INCS) -O0 -g ogreApp.cpp
 
 ogreApp: libshapematch.a ogreApp.o
-	$(CC) -o ogreApp $(OGRE_LIBS) ogreApp.o
+	$(CC) -o ogreApp $(OGRE_LIBS) -L. -lshapematch ogreApp.o
 
 
 #-----------------------------------------
