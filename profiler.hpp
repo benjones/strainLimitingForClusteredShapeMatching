@@ -14,6 +14,7 @@ namespace benlib{
 	public: 
 
 	Profiler(){}
+	void reset() {counts.clear();}
 	
 	class ScopeTimer{
 	  public:
@@ -55,13 +56,13 @@ namespace benlib{
 	}
 	
 	template <typename units>
-	void dump(std::ostream& outs){
+	void dump(std::ostream& outs = std::cout){
 	  for(auto i = 0; i < counts.size(); ++i){
 		outs << nameMap[i] << '\t' << std::chrono::duration_cast<units>(counts[i]).count() << '\n';
 	  }
 	}
 
-	void dumpPercentages(std::ostream& outs){
+	void dumpPercentages(std::ostream& outs = std::cout){
 	  auto total = std::accumulate(counts.begin(), 
 								   counts.end(),
 								   duration<double>{});

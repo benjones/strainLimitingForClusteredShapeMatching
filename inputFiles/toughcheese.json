@@ -12,7 +12,7 @@
 	"yield" : 0.1,
 	"nu" : 1.0,
 	"toughnessBoost" : 5.0,
-	"toughnessFallof" : 30.0,
+	"toughnessFalloff" : 30.0,
 	
 
 	"planes" : [ 

@@ -991,8 +991,14 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	Eigen::Vector3d sigInv;
 	for(auto i : range(3)){
 	  if (solver.singularValues()(i) < 1e-6) c.Fp.setIdentity();
-	  //if (solver.singularValues()(i) < 1e-6) std::cout<<"yikes "<<solver.singularValues()(i)<<std::endl;
-	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-12 ? 1.0/solver.singularValues()(i) : 0;
+
+	  // adam says: on 10/27 I changed this from 0 to 1.0/1.0e-12.  This seemed to resolve an inf issue during self collisions.
+	  // But, I left in the deletion code below anyway.
+	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-12 ? 1.0/solver.singularValues()(i) : 1.0/1.0e-12;
+
+	  if (solver.singularValues()(i) < 1e-12) {
+		c.mass = 0.0; // mark the cluster for deletion
+	  };
 	}
 	c.aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
 	if(!c.aInv.allFinite()){
