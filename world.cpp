@@ -381,6 +381,20 @@ void World::loadFromJson(const std::string& _filename){
   
   setupPlaneConstraints();
 
+  //color the particles... hopefully the clusters have the COMS correct here
+  for(auto& p : particles){
+	auto closestCluster = std::min_element(
+		p.clusters.begin(), p.clusters.end(),
+		[&p,this](int a, int b){
+		  return (p.position - clusters[a].worldCom).squaredNorm() <
+		  (p.position - clusters[b].worldCom).squaredNorm();
+		});
+	
+	p.color = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();
+
+	
+  }
+  
   
   for (auto &p : particles) {
 	p.position.x() *= initialStretch[0];
@@ -482,7 +496,7 @@ void World::dumpColors(const std::string& filename) const {
   outs.write(reinterpret_cast<const char*>(&numParticles), sizeof(numParticles));
   std::vector<float> colors(3*numParticles);
   for(auto&& pr : benlib::enumerate(particles)) {
-	//find nearest cluster
+	/*	//find nearest cluster
 	auto i = pr.first;
 	auto& p = pr.second;
 
@@ -500,19 +514,22 @@ void World::dumpColors(const std::string& filename) const {
 	  }
 	}
 
-	RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();
+	RGBColor rgb = HSLColor(2.0*acos(-1)*(min_cluster%12)/12.0, 0.7, 0.7).to_rgb();*/
 	//RGBColor rgb = HSLColor(2.0*acos(-1)*min_cluster/clusters.size(), 0.7, 0.7).to_rgb();
-	if(clusters[min_cluster].members.size() > 1) {
+	//if(clusters[min_cluster].members.size() > 1) {
 	  //      sqrt(min_sqdist) < 0.55*clusters[min_cluster].renderWidth) {
 	  //glColor4d(rgb.r, rgb.g, rgb.b, 0.8);
-	  colors[3*i]  = rgb.r;
-	  colors[3*i+ 1]  = rgb.g;
-	  colors[3*i+ 2]  = rgb.b;
-	} else {
+	auto i = pr.first;
+	auto& p = pr.second;
+	  colors[3*i]  = p.color.r;//rgb.r;
+	  colors[3*i+ 1]  = p.color.g;//rgb.g;
+	  colors[3*i+ 2]  = p.color.b;//rgb.b;
+	  //always use the color...
+	  /*} else {
 	  colors[3*i] = 1;
 	  colors[3*i + 1] = 1;
 	  colors[3*i + 2] = 1;
-	}
+	  }*/
   }
   outs.write(reinterpret_cast<const char*>(colors.data()),
 	  3*numParticles*sizeof(float));

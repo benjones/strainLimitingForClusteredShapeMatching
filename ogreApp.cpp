@@ -10,8 +10,13 @@
 #include <OgreViewport.h>
 #include <OgreSceneNode.h>
 #include <OgreEntity.h>
+#include <OgreMaterialManager.h>
+#include <OgreMaterial.h>
+#include <OgreTechnique.h>
+#include <OgreFreeimageCodec.h>
 
 #include "world.h"
+#include "color_spaces.h"
 #include "particle.h"
 
 int main(int argc, char** argv){
@@ -21,12 +26,17 @@ int main(int argc, char** argv){
   }
   
 
+  bool dumpFrames = argc > 2;
+  
 
   auto octreePlugin = std::unique_ptr<Ogre::OctreePlugin>(new Ogre::OctreePlugin());
   auto glPlugin = std::unique_ptr<Ogre::GLPlugin>(new Ogre::GLPlugin());
   //the top two must outlive root
   auto ogreRoot = std::unique_ptr<Ogre::Root>(new Ogre::Root("","","ogreLog.log"));
 
+  Ogre::FreeImageCodec::startup();
+
+  
   ogreRoot->installPlugin(octreePlugin.get());
   octreePlugin->initialise();
 
@@ -57,13 +67,13 @@ int main(int argc, char** argv){
 
   rs->setConfigOption("Full Screen", "No");
   rs->setConfigOption("VSync", "No");
-  rs->setConfigOption("Video Mode", "800 x 600 @ 32-bit");
+  rs->setConfigOption("Video Mode", "960 x 540 @ 32-bit");
 
   ogreRoot->setRenderSystem(rs);
 
   auto* window = ogreRoot->initialise(true, "Ductile Fracture for Shape Matching");
 
-  sceneManager->setAmbientLight(Ogre::ColourValue(0.5, 0.5, 0.5));
+  sceneManager->setAmbientLight(Ogre::ColourValue(0.1, 0.1, 0.1));
 
   auto camera = sceneManager->createCamera("theCamera");
   //todo use stuff from runSimulator
@@ -93,7 +103,7 @@ int main(int argc, char** argv){
   world.loadFromJson(argv[1]);
   world.initializeNeighbors();
 
-  const double sphereSize = 0.1;
+  const double sphereSize = 0.05;
   const double scaleFactor = sphereSize/200.0;
 
   //SM should outlive particles...
@@ -119,10 +129,29 @@ int main(int argc, char** argv){
 	p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
 	p.entity = sceneManager->createEntity("sphere.mesh");
 	p.sceneNode->attachObject(p.entity);
+	auto material = Ogre::MaterialManager::getSingleton().create(
+		"aMat",
+		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
 
+	//find closest color:
+	/*	auto closestCluster = std::min_element(
+		p.clusters.begin(), p.clusters.end(),
+		[&p,&world](int a, int b){
+		  return (p.position - world.clusters[a].worldCom).squaredNorm() <
+		  (p.position - world.clusters[b].worldCom).squaredNorm();
+		});
+	
+		RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
+	material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
+	p.entity->setMaterial(material);
   }
   
   bool readyToExit = false;
+
+  std::string fileBase = "ogreFrames/frame.%04d.png";
+  char fname[1024];
+
+  int frame = 0;
   while(!readyToExit){
 
 	world.timestep();
@@ -133,6 +162,21 @@ int main(int argc, char** argv){
 		p.sceneNode->setScale(scaleFactor, scaleFactor, scaleFactor);
 		p.entity = sceneManager->createEntity("sphere.mesh");
 		p.sceneNode->attachObject(p.entity);
+		auto material = Ogre::MaterialManager::getSingleton().create(
+			"aMat",
+			Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+		
+		//find closest color:
+		/*		auto closestCluster = std::min_element(
+			p.clusters.begin(), p.clusters.end(),
+			[&p,&world](int a, int b){
+			  return (p.position - world.clusters[a].worldCom).squaredNorm() <
+			  (p.position - world.clusters[b].worldCom).squaredNorm();
+			});
+		
+			RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
+		material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
+		p.entity->setMaterial(material);
 	  }
 	  p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
 	}
@@ -143,6 +187,13 @@ int main(int argc, char** argv){
 	
 	// Render a frame
 	ogreRoot->renderOneFrame();
+	if(dumpFrames){
+	  sprintf(fname, fileBase.c_str(), frame);
+
+	  window->writeContentsToFile(fname);
+	}
+	std::cout << "finished frame: " << frame << std::endl;
+	frame++;
 	
 	if(window->isClosed()){
 	  readyToExit = true;

@@ -3,11 +3,13 @@
 #include <vector>
 #include <unordered_set>
 
+#include "color_spaces.h"
 
 namespace Ogre{
   class SceneManager;
   class SceneNode;
   class Entity;
+  class Material;
 }
 
 class Particle {
@@ -34,8 +36,10 @@ public:
   //	clusters(p.clusters){};
   Ogre::SceneNode* sceneNode = nullptr;
   Ogre::Entity* entity = nullptr;
+  //Ogre::Material* material = nullptr;
   //cleanup stuff without knowing anything about ogre
   std::function<void(Particle&)> cleanup = [](Particle&){};
+  RGBColor color;
   
 };
 

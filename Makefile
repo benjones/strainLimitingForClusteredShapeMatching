@@ -6,7 +6,7 @@ FLAGS=-Wall -Wno-c++11-extensions -std=c++11 -Wno-deprecated-declarations
 
 #-----------------------------------------
 #Optimization ----------------------------
-OPT = -O2 -g
+OPT = -O3 -g
 
 #-----------------------------------------
 #-----------------------------------------
@@ -25,7 +25,7 @@ SDL_LIB = -L/usr/local/opt/sdl2/lib  -framework OpenGL -F/Library/Frameworks -fr
 
 
 OGRE_INCS = -I/Users/ben/libs/ogre/OgreMain/include -I/Users/ben/libs/ogre/build/include -I/usr/local/include -I/Users/ben/libs/ogre/PlugIns/OctreeSceneManager/include -I/Users/ben/libs/ogre/RenderSystems/GL/include
-OGRE_LIBS = -framework CoreFoundation -framework Cocoa -framework OpenGL -framework AGL -L/usr/local/lib -ltbb -L/Users/ben/libs/ogre/build/lib/macosx -lOgreMainStatic -lPlugin_OctreeSceneManagerStatic -lRenderSystem_GLStatic #-F/Library/Frameworks -framework Ogre
+OGRE_LIBS = -framework CoreFoundation -framework Cocoa -framework OpenGL -framework AGL -L/usr/local/lib -ltbb -lfreeimage -L/Users/ben/libs/ogre/build/lib/macosx -lOgreMainStatic -lPlugin_OctreeSceneManagerStatic -lRenderSystem_GLStatic #-F/Library/Frameworks -framework Ogre
 
 
 
@@ -57,7 +57,7 @@ runSimulator: $(OBJECTS) libshapematch.a main.o vis.o
 	$(CC) $(LDOPTS) -o runSimulator -L. -lshapematch $(SDL_LIB) $(EIGEN_INCLUDE) $(INCS) $(FLAGS) main.o vis.o
 
 ogreApp.o: ogreApp.cpp libshapematch.a
-	$(CC) -c -o ogreApp.o -std=c++ $(OGRE_INCS) $(EIGEN_INCLUDE) $(FLAGS) $(INCS) -O0 -g ogreApp.cpp
+	$(CC) -c -o ogreApp.o -std=c++ $(OGRE_INCS) $(EIGEN_INCLUDE) $(FLAGS) $(INCS) -O3 -g ogreApp.cpp
 
 ogreApp: libshapematch.a ogreApp.o
 	$(CC) -o ogreApp $(OGRE_LIBS) -L. -lshapematch ogreApp.o
