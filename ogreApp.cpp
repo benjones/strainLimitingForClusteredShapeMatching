@@ -18,6 +18,7 @@
 #include "world.h"
 #include "color_spaces.h"
 #include "particle.h"
+#include "range.hpp"
 
 int main(int argc, char** argv){
   if(argc < 2){
@@ -103,8 +104,9 @@ int main(int argc, char** argv){
   world.loadFromJson(argv[1]);
   world.initializeNeighbors();
 
+  const double meshSize = 100;
   const double sphereSize = 0.05;
-  const double scaleFactor = sphereSize/200.0;
+  const double scaleFactor = sphereSize/meshSize;
 
   //SM should outlive particles...
   auto cleanupParticle =
@@ -121,6 +123,28 @@ int main(int argc, char** argv){
 	
 	
   };
+
+
+  auto projectileMaterial = Ogre::MaterialManager::getSingleton().create(
+	  "projMat",
+	  Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+
+  projectileMaterial->getTechnique(0)->setDiffuse(0,0,1,1);
+  
+  
+  std::vector<std::pair<Ogre::Entity*, Ogre::SceneNode*> > ogreProjectiles;
+  for(auto & p : world.projectiles){
+	ogreProjectiles.emplace_back();
+	auto& op = ogreProjectiles.back();
+	op.second = sceneManager->getRootSceneNode()->createChildSceneNode();
+	op.second->setScale(p.radius/meshSize,p.radius/meshSize,p.radius/meshSize);
+	op.second->setPosition(p.start.x(), p.start.y(), p.start.z());
+	op.first = sceneManager->createEntity("sphere.mesh");
+	op.second->attachObject(op.first);
+	op.first->setMaterial(projectileMaterial);
+  }
+  
+  
   
   for(auto& p : world.particles){
 	p.cleanup = cleanupParticle;
@@ -180,6 +204,14 @@ int main(int argc, char** argv){
 	  }
 	  p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
 	}
+
+	for(auto i : benlib::range(world.projectiles.size())){
+	  Eigen::Vector3d posNow = world.projectiles[i].start + world.elapsedTime*
+		world.projectiles[i].velocity;
+	  ogreProjectiles[i].second->setPosition(posNow.x(), posNow.y(), posNow.z());
+	  
+	}
+	
 
 	
 	// Pump window messages for nice behaviour
