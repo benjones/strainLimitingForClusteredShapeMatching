@@ -2,14 +2,14 @@
 	//"particleFiles" : [ "inputFiles/thinBox.txt"],
 	"particleFiles" : [ "inputFiles/blue_noise/thinBox-bn.txt"],
 
-	"neighborRadius" : 0.1,
+	"neighborRadius" : 0.1875,
 	"alpha" : 1.0,
 	"omega" : 0.3,
 	"numConstraintIters" : 8,
 	"maxStretch" : 0.5,
-	"nClusters" : 40,
-	"springDamping": 0.1,
-	"toughness" : 0.06,
+	"nClusters" : 50,
+	"springDamping": 0.5,
+	"toughness" : 0.03,
 	"twistingPlanes" : [
 		{ 
 			"normal" : [1, 0, 0],
@@ -27,7 +27,10 @@
 		}
 	],
 	"nu" : 1.0,
-	"yield" : 0.01,
-	"hardening" : 0.005,
-	"gravity" : [0, 0, 0]
+	"yield" : 0.0,
+	"hardening" : 0.01,
+	"gravity" : [0, 0, 0],
+	"toughnessBoost" : 3.0,
+	"toughnessFalloff" : 0.05,
+	"collisionRestitution" : 0.5
 }
