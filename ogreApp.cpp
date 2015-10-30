@@ -22,12 +22,28 @@
 
 int main(int argc, char** argv){
   if(argc < 2){
-	std::cout << "usage: ./ogreApp <input.json>" << std::endl;
+	std::cout << "usage: ./ogreApp <input.json> [dump eye ex ey ex [lx ly lz]]" << std::endl;
 	return 1;
   }
   
+  
+  
 
   bool dumpFrames = argc > 2;
+
+  Eigen::Vector3d eye{0,0,3};
+  if(argc >= 7){
+	eye.x() = atof(argv[4]);
+	eye.y() = atof(argv[5]);
+	eye.z() = atof(argv[6]);
+  }
+
+  Eigen::Vector3d lPos{20,25,20};
+  if(argc >= 10){
+	lPos.x() = atof(argv[7]);
+	lPos.y() = atof(argv[8]);
+	lPos.z() = atof(argv[9]);
+  }
   
 
   auto octreePlugin = std::unique_ptr<Ogre::OctreePlugin>(new Ogre::OctreePlugin());
@@ -78,12 +94,12 @@ int main(int argc, char** argv){
 
   auto camera = sceneManager->createCamera("theCamera");
   //todo use stuff from runSimulator
-  camera->setPosition(Ogre::Vector3(0,0,3));
+  camera->setPosition(Ogre::Vector3(eye.x(),eye.y(),eye.z()));
   camera->lookAt(Ogre::Vector3(0,0,0));
   camera->setNearClipDistance(0.5);
 
   auto* viewport = window->addViewport(camera);
-  viewport->setBackgroundColour(Ogre::ColourValue(0,0,0));
+  viewport->setBackgroundColour(Ogre::ColourValue(0.3,0.3,0.3));
 
   camera->setAspectRatio(
 	  Ogre::Real(viewport->getActualWidth()) /
@@ -96,7 +112,10 @@ int main(int argc, char** argv){
 
 
   auto* keyLight = sceneManager->createLight("key");
-  keyLight->setPosition(20, 15, 20);
+
+  
+  
+  keyLight->setPosition(lPos.x(), lPos.y(), lPos.z());
 
 
   //load stuff
@@ -105,7 +124,7 @@ int main(int argc, char** argv){
   world.initializeNeighbors();
 
   const double meshSize = 100;
-  const double sphereSize = 0.05;
+  const double sphereSize = 0.03;
   const double scaleFactor = sphereSize/meshSize;
 
   //SM should outlive particles...
