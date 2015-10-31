@@ -7,12 +7,13 @@
 	"numConstraintIters" : 4,
 	"maxStretch" : 0.2,
 	"nClusters" : 63,
-	"springDamping": 0.5,
-	"toughness" : 0.03,
-	"yield" : 0.01,
+	"springDamping": 0.6,
+	"toughness" : 0.025,
+	"yield" : 0.015,
 	"nu" : 100.0,
 	"hardening" : 0.01,
 
+	
 	"planes" : [ 
 	],
 	"movingPlanes" : [

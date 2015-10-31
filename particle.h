@@ -38,7 +38,7 @@ public:
   Ogre::Entity* entity = nullptr;
   //Ogre::Material* material = nullptr;
   //cleanup stuff without knowing anything about ogre
-  std::function<void(Particle&)> cleanup = [](Particle&){};
+  std::function<void(Particle&)> cleanup;
   RGBColor color;
   
 };

@@ -14,6 +14,7 @@
 #include <OgreMaterial.h>
 #include <OgreTechnique.h>
 #include <OgreFreeimageCodec.h>
+#include <OgreMeshManager.h>
 
 #include "world.h"
 #include "color_spaces.h"
@@ -124,16 +125,17 @@ int main(int argc, char** argv){
   world.initializeNeighbors();
 
   const double meshSize = 100;
-  const double sphereSize = 0.03;
+  const double sphereSize = 0.01; //.03 for broken heart, armadillo
   const double scaleFactor = sphereSize/meshSize;
 
   //SM should outlive particles...
   auto cleanupParticle =
 	[&sceneManager](Particle& p){
 	/*if(p.sceneNode != nullptr){
+	  std::cout << "make invisible" << std::endl;
 	  p.sceneNode->setVisible(false);
-	  }*/
-	
+	}
+	return;*/
 	if(p.entity == nullptr){return;}
 	p.sceneNode->detachObject(p.entity);
 	sceneManager->destroySceneNode(p.sceneNode);
@@ -162,6 +164,54 @@ int main(int argc, char** argv){
 	op.second->attachObject(op.first);
 	op.first->setMaterial(projectileMaterial);
   }
+
+  auto planeMaterial = Ogre::MaterialManager::getSingleton().create(
+	  "planeMat",
+	  Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+  planeMaterial->getTechnique(0)->setDiffuse(1,0,0,1);
+  
+
+  std::vector<std::pair<Ogre::Entity*, Ogre::SceneNode*> > ogreMovingPlanes;
+  int planeCount = 0;
+  for(auto & mp : world.movingPlanes){
+	
+	std::string name = "movingPlane" + std::to_string(planeCount++);
+	std::cout << "making moving plane: " << name << std::endl;
+	ogreMovingPlanes.emplace_back();
+	auto& omp = ogreMovingPlanes.back();
+	omp.second = sceneManager->getRootSceneNode()->createChildSceneNode();
+	Ogre::Plane plane(-Ogre::Vector3(mp.normal.x(), mp.normal.y(), mp.normal.z()), -mp.offset);
+	if(fabs(1.0 - fabs(mp.normal.dot(Eigen::Vector3d(0,1,0)))) < .001){
+	  std::cout << "pointing up" << std::endl;
+	  //it points up, ogre is dumb here...
+	  Ogre::MeshManager::getSingleton().createPlane(
+		  name,
+		  Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		  plane,
+		  2, 2,
+		  20,20,
+		  true, 1, 5, 5,
+		  Ogre::Vector3::UNIT_Z);
+
+
+	} else {
+	  std::cout << "pointing somewhere else" << std::endl;
+	  Ogre::MeshManager::getSingleton().createPlane(
+		  name,
+		  Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		  plane,
+		  2, 2,
+		  20,20);
+	}
+	omp.first = sceneManager->createEntity(name);
+	omp.second->attachObject(omp.first);
+	omp.first->setMaterial(planeMaterial);
+	
+
+	
+  }
+  
+  
   
   
   
@@ -221,7 +271,9 @@ int main(int argc, char** argv){
 		material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
 		p.entity->setMaterial(material);
 	  }
+	  
 	  p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
+	  //p.sceneNode->setVisible(frame % 2 == 0);
 	}
 
 	for(auto i : benlib::range(world.projectiles.size())){
@@ -229,6 +281,12 @@ int main(int argc, char** argv){
 		world.projectiles[i].velocity;
 	  ogreProjectiles[i].second->setPosition(posNow.x(), posNow.y(), posNow.z());
 	  
+	}
+	
+	for(auto i : benlib::range(world.movingPlanes.size())){
+	  Eigen::Vector3d positionNow = world.movingPlanes[i].velocity*world.elapsedTime*
+		world.movingPlanes[i].normal;
+	  ogreMovingPlanes[i].second->setPosition(positionNow.x(), positionNow.y(), positionNow.z());
 	}
 	
 

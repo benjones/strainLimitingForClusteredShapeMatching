@@ -350,6 +350,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		//init ogre stuff to null
 		q.sceneNode  = nullptr;
 		q.entity = nullptr;
+		q.cleanup = p.cleanup;
 		
 		q.numClusters = n;
 		q.mass = (w1 / p.totalweight) * p.mass;
@@ -400,6 +401,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			Particle q(particle);
 			q.sceneNode = nullptr;
 			q.entity = nullptr;
+			q.cleanup = particle.cleanup;
 			q.clusters.clear();
 			q.clusters.push_back(thisIndex);
 			q.numClusters = 1;
@@ -474,6 +476,7 @@ void World::splitOutliers() {
 		Particle q(p);
 		q.entity = nullptr;
 		q.sceneNode = nullptr;
+		q.cleanup = p.cleanup;
 		q.clusters.clear();
 		q.clusters.push_back(en.first);
 		q.numClusters = 1;
@@ -571,11 +574,12 @@ void World::removeLonelyParticles() {
 		return (p.numClusters == 0);
 		});*/
   //need to call cleanup on the reved particles...
-  auto it = std::remove_if(particles.begin(), particles.end(),
-	  [](const Particle& p){return p.numClusters == 0;});
+  auto it = std::stable_partition(particles.begin(), particles.end(),
+	  [](const Particle& p){return p.numClusters > 0;});
 
   std::for_each(it, particles.end(),
 	  [](Particle& p){ p.cleanup(p);});
+  
   particles.erase(it, particles.end());
   
 }
