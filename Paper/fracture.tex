@@ -414,9 +414,11 @@ are given in table~\tref{table:timing}.
 In all particle renderings, particle color is used to indicate the nearest cluster center.  
 We stress that clusters overlap and that particles typically belong to more than one cluster.
 
+Though particles decrease in mass when the split during fracture, we do not modify the size of particles in our renderings.  In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
+
 \begin{figure}[t]
 \includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
-\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation.  }
+\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
 \label{fig:projectile}
 %\vspace{-1.5in}
 \end{figure}
@@ -443,9 +445,9 @@ swiss cheese & 25032 & 27 & $<$ 1 & $<$1 & 39 \\
 In our first example, an armadillo is tortured by simultaneously pulling on and firing
 cannonballs at its arms (see~\fref{fig:teaser}).
 Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
-plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture.  This twisting deformation causes the bar to fracture violently, spraying small pieces away from the object.
+plastic deformation, which allows the bar to maintain its twisted shape, then we enable fracture.  This twisting deformation causes the two large tears in the material, one which separates the object into two pieces, and a large partial tear.
 In our third example a projectile is fired through a thin sheet of material with various material properties (see~\fref{fig:projectile}).  The weak, brittle material 
-breaks into many small pieces.  The strong, brittle material breaks into larger pieces.  The ductile material deforms plastically near the impact before fracturing, bending permanently in the wake of the projectile.
+breaks into many small pieces.  The strong, brittle material breaks into larger pieces.  The ductile material deforms plastically near the impact before fracturing, bending permanently in the wake of the projectile.  
 In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
 where the tear begins and how it propagates.  Similarly, in our final example the holes in a 
 slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
