@@ -11,7 +11,7 @@
 %%% - use ``conference'' for final content accepted to a sponsored event
 %%%   (hint: If you don't know, you should use ``conference.'')
 
-\documentclass[review]{acmsiggraph}
+\documentclass[conference]{acmsiggraph}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{wasysym}
@@ -25,7 +25,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{enumitem}
-\usepackage{authblk}
+%\usepackage{authblk}
 
 \input{adamscommands}
 %%% Make the ``BibTeX'' word pretty...
@@ -44,14 +44,11 @@
 \TOGnumber{0}
 
 \title{Ductile Fracture for Clustered Shape Matching}
-\author[*]{Ben Jones}
-\author[**]{Joshua A. Levine}
-\author[***]{Tamar Shinar}
-\author[*]{Adam W. Bargteil}
-\affil[*]{University of Utah}
-\affil[**]{Clemson University}
-\affil[***]{University of California, Riverside}
-\pdfauthor{}
+\author{Ben Jones\thanks{email: benjones@cs.du.edu}\\University of Denver \and April Martin\\University of Utah
+\and Joshua A. Levine\\Clemson University
+\and Tamar Shinar\\University of California, Riverside\vspace{0.1in}
+\and Adam W. Bargteil\thanks{email: adamb@umbc.edu}\\Univeristy of Maryland, Baltimore County}
+\pdfauthor{Ben Jones}
 
 \keywords{Shape Matching, Ductile Fracture}
 
@@ -62,7 +59,7 @@
 
  \teaser{
    \includegraphics[width=\linewidth]{Figures/teaserI3d.pdf}
-   \caption{Left: An armadillo is tortured by being torn apart by the arms while being fired upon by spherical projectiles.  Center: A heartbreaking example.  Right: Tearing a slice of swiss cheese.}
+   \caption{Left: An armadillo is tortured by being torn apart by the arms while being fired upon by spherical projectiles.  Center:A heartbreaking example.  Right: Tearing a slice of swiss cheese.}
    \label{fig:teaser}
  }
 
@@ -93,8 +90,9 @@ a decade ago by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.
 \fref{fig:shapematching} summarizes the approach.
 In their seminal work, \Mueller and colleagues~\shortcite{Mueller:2005:MDB} introduced a simple plasticity
 model and, in follow up work, Rivers and James~\shortcite{Rivers:2007:FFL}
-incorporated a simple fracture model.  However, ductile fracture has not yet been addressed in the
-shape matching literature.
+incorporated a simple fracture model.  \adam{However, {\em ductile fracture}, the combination of plastic deformation
+and fracture, has not yet been addressed in the
+shape matching literature.}
 
 \begin{figure*}
 \includegraphics[width=\linewidth]{Figures/shapematching.png}
@@ -132,18 +130,23 @@ Two years later, Rivers and James~\shortcite{Rivers:2007:FFL} introduced lattice
 which used a set of hierarchical lattices to define the shape matching clusters.  They took advantage
 of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
 simple fracture model that removed over-extended links in the lattice.  
-
-In order to improve stability for non-volumetric objects (i.e. shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.
-
-Despite impressive results and substantial promise,
-the shape matching framework has been largely disregarded by the research community in favor of position-based
-dynamics~\cite{Mueller:2007:PBD,Bender:2013:PBM,Bender:2014:ASO,Macklin:2014:UPP}.  Recently, however,
+\adam{More recently,
 Bargteil and Jones~\shortcite{Bargteil:2014:SLF} incorporated strain-limiting into clustered shape matching
-and pointed out several advantages of shape matching over position-based dynamics.  In follow-up work, Jones
+In follow-up work, Jones
 and colleagues~\shortcite{Jones:2015:CAC} explored improved clustering strategies and introduced
 simple collision proxies for the clusters.
 We incorporate our ductile fracture approach into their open-source framework and use their approach
-for strain limiting, clustering, and collision detection.
+for strain limiting, clustering, and collision detection.}
+
+In order to improve stability for non-volumetric objects (i.e. shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.
+
+\adam{Other popular approaches to real-time animation of deformable solids include position-based
+dynamics~\cite{Mueller:2007:PBD,Bender:2014:ASO,Macklin:2014:UPP,Kelager:2010:ATB}, 
+frame-based models~\cite{Gilles:2011:FEM,Faure:2011:SMM}, and projective dynamics~\cite{Liu:2013:FSM,Bouaziz:2014:PDF}.  
+While plasticity and fracture have been demonstrated for position-based dynamics, such phenomena invalidate
+the precomputations that make frame-based models and projective dynamics computationally efficient.
+As argued by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, the shape matching framework has some advantages
+over position-based dynamics.  }
 
 Ductile fracture is distinguished from brittle fracture by the inclusion of plastic deformation.  Materials undergoing ductile
 fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  Most
@@ -185,7 +188,7 @@ vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimizes
 \label{eq:sm}
 \sum_i m_i \| \B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\|^2.
 \end{equation}
-The best translation is given by the center-of-mass in the rest and world space.  
+\adam{The best translation is given by the center-of-mass in the rest ($\B{r}_{cm}$) and world ($\B{x}_{cm}$) space.}
 Computing the rotation, $\B{R}$, is more involved.  
 We first compute the least-squares best-fit linear deformation gradient, $\B{F}$.
 Specifically, we seek the $\B{F}$ that minimizes
@@ -216,10 +219,12 @@ where $\B{S}=\B{V\Sigma V}^T$ is a symmetric matrix and $\B{U\Sigma V}^T$ is the
 While several researchers (e.g.~\cite{Rivers:2007:FFL}) have pointed out that polar decompositions can be computed faster than the SVD,
 especially when warm started, we use the SVD for its robustness and for our plasticity and fracture models 
 (see~\srefs{sec:Plasticity}{sec:Fracture}).  
-We also note that we compute the polar decomposition of $\B{F}$, not
-the left matrix ($\B{A}_{xr}$)
+\adam{We also note that we diverge slightly from 
+\Mueller and colleagues~\shortcite{Mueller:2005:MDB}, following instead Jones and colleagues~\shortcite{Jones:2015:CAC}, and
+compute the polar decomposition of $\B{F}$, not
+the left matrix ($\B{A}_{xr}$).
 %($\sum_im_i\B{O}(\B{x}_i,\B{r}_i)$) 
-as done by \Mueller and colleagues~\shortcite{Mueller:2005:MDB}.  This modification
+This modification}
 is particularly important if the distribution of mass in the cluster is non-uniform and $\B{F}$ is not a pure rotation.
 
 Given $\B{R}$ and $\B{x}_{cm}-\B{r}_{cm}$, we define goal positions, $\B{g}_i$, as
@@ -246,8 +251,16 @@ average of the goal positions given by each cluster it is a part of.  That is,
 \begin{equation}
 \B{g}_i = \sum_c w_{i,c} ~\B{g}_{i,c},
 \end{equation}
-where $\B{g}_{i,c}$ is the goal position for particle $p_i$ in cluster $c$.  For details
-details see the paper by Jones and colleagues~\shortcite{Jones:2015:CAC}.
+where $\B{g}_{i,c}$ is the goal position for particle $p_i$ in cluster $c$.  
+
+\adam{\paragraph{Clustering}
+We use the clustering method of Jones and colleagues~\shortcite{Jones:2015:CAC}.  This method is a 
+variation of the fuzzy $c$-means algortithm and produces overlapping clusters where each particle may 
+belong to several clusters to varying degrees.  As in the popular $k$-means clustering algorithm, this
+algorithm alternates between updating cluster membership and updating cluster centers.  However,
+updating membership involves updating weights, $w_{ic}$, and cluster centers are the weighted center-of-mass
+of members.  Please see Jones and colleagues~\shortcite{Jones:2015:CAC} for more details including analysis
+of different weighting functions, varying cluster size, degree of overlap, etc.}
 
 \paragraph{Strain Limiting}
 To maintain stability we adopt the strain limiting approach advocated by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}.
@@ -272,6 +285,8 @@ the surface.
 
 \subsection{Plasticity}
 \label{sec:Plasticity}
+Our approach to plastic deformation adapts the model of Bargteil and colleagues~\shortcite{Bargteil:2007:AFE}
+to the clustered shape matching framework.
 To accommodate plastic deformation we store and update an additional matrix, $\B{F}^p_c$, for each cluster, $c$.
 For readability we drop the subscript, but the following is computed for each cluster.
 We then compute the elastic part of the deformation gradient
@@ -363,7 +378,7 @@ in additional fracture.  This process tends to continue leading to clusters brea
 in a few timesteps---an artifact we refer to as ``particle
 spray.''  This artifact is less problematic for animations of brittle fracture, but is undesirable in ductile
 fracture.  We have developed two approaches to addressing the artifact.  The simplest is to
-disallow fracture for a cluster that has fractured until $\B{V}_{\max} < \tau_c$.  The second, more flexible,
+disallow fracture for a cluster that has fractured until \adam{$\Sigma_{\max} < \tau_c$.}  The second, more flexible,
 approach boosts $\tau_c$ after a fracture.  Specifically,
 \begin{equation}
 \tau_c = \tau_0 (1+\tau_b)e^{\tau_ft},
@@ -413,15 +428,9 @@ taken on a Macbook Pro with a 2.4GHz Intel i5 processor.
 are given in table~\tref{table:timing}.
 In all particle renderings, particle color is used to indicate the nearest cluster center.  
 We stress that clusters overlap and that particles typically belong to more than one cluster.
-
-Though particles decrease in mass when the split during fracture, we do not modify the size of particles in our renderings.  In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
-
-\begin{figure}[t]
-\includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
-\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
-\label{fig:projectile}
-%\vspace{-1.5in}
-\end{figure}
+\adam{Furthermore, though particles decrease in mass when they split during fracture, 
+we do not modify the size of particles in our renderings.  Consequently, fractured clusters
+may appear to have much larger mass than they actually do.}%In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
 
 \begin{table*}
 \begin{center}
@@ -466,10 +475,15 @@ Our approach has a number of limitations that provide ample potential for future
 %One limitation of our implementation is that we only handle simple collision geometry and do not handle self-collisions.
 %More complicated collision geometry should be easily handled using well-established signed-distance field approaches~\cite{Guendelman:2003:NRB}.
 %Handling self-collisions would require further research; the sphere-packing approach of Budsberg and colleagues~\shortcite{Budsberg:2014:EPD}
-%seems particularly promising.  
-One limitation of our current implementation is that the computational cost is somewhat unpredictable; many fractures occurring at once
+%seems particularly promising.
+\adam{While our examples typically run at or near real-time,}
+one limitation of our current implementation is that the computational cost is somewhat variable; 
+many fractures occurring at once
 can have a very significant impact on performance.  In the future it would be interesting to explore asynchronous fracturing
 where, instead of emptying the priority queue every timestep, it is processed as computational resources allow.
+\adam{Moreover, the clustered shape matching framework is particularly amenable to parallelization, but we have
+not yet explored this topic.}
+
 
 Like many fracture methods in computer animation, we do not have a good solution to generating fractured
 geometry.  Like previous work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
@@ -525,8 +539,17 @@ to the animation of ductile fracture.
 
 
 
+\begin{figure}[h!]
+\includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
+\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
+\label{fig:projectile}
+%\vspace{-1.5in}
+\end{figure}
+
 \section*{Acknowledgements}
-Removed for anonymous review.
+The authors wish to thank the anonymous reviewers for their time and helpful comments.
+This work was supported in part by National Science Foundation awards
+IIS-1314896, IIS-1314757, and IIS-1314813 
 
 \bibliographystyle{acmsiggraph}
 \bibliography{csm}
