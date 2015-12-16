@@ -30,16 +30,18 @@ void MovingPlane::dragParticle(Particle& particle, double timeElapsed) const {
    }
 }
 
-void MovingPlane::backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
+bool MovingPlane::backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
    //JAL believes this needs to be debug, it causes weird offsetting
-   double w = -1*(offset + timeElapsed*velocity);
+  if (outside(particle)) return false;
+   double w = (offset + timeElapsed*velocity);
 
-   if (particle.position.dot(normal) < w) {
+   if (particle.position.dot(normal) > w) {
       particle.position += (epsilon + w - particle.position.dot(normal))*normal;
 
       //zero velocity in the normalal direction
       particle.velocity -= particle.velocity.dot(normal)*normal;
       particle.velocity *= 0.4; //friction
+	  return true;
    }
-
+   return false;
 }

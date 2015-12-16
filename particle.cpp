@@ -9,6 +9,13 @@ void Cluster::updatePlasticity(const Eigen::Vector3d &sigma, const Eigen::Matrix
   FpNew = Fp;
   if (nu > 0.0) {
 	if (sigma(2) >= 1e-4) { // adam says: the second clause is a quick hack to avoid plasticity when sigma is degenerate
+	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(Fp, 
+		  Eigen::ComputeFullU | Eigen::ComputeFullV);
+	  
+	  // Adam says (11/4): This might help, but I don't have time to test at the moment
+	  //if (solver.singularValues()(0)/solver.singularValues()(2) < 1e-4) return;  
+
+
 	  Eigen::Vector3d FpHat = sigma;
 	  //std::cout<<FpHat(0)<<" "<<FpHat(1)<<" "<<FpHat(2)<<" => ";
 	  FpHat *= 1.0/cbrt(FpHat(0) * FpHat(1) * FpHat(2));
