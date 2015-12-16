@@ -15,6 +15,8 @@
 	"yield" : 0.1,
 	"nu" : 1.0,
 
+	"gravity" : [0, -1, 0],
+	
 	"planes" : [ 
 	],
 	"movingPlanes" : [
@@ -28,7 +30,7 @@
 			"offset" : 0.31,
 			"velocity" : 0.05
 		}
-	],
+	]
 
-	"gravity" : [0, 0, 0]
+
 }
