@@ -96,7 +96,7 @@ int main(int argc, char** argv){
   auto camera = sceneManager->createCamera("theCamera");
   //todo use stuff from runSimulator
   camera->setPosition(Ogre::Vector3(eye.x(),eye.y(),eye.z()));
-  camera->lookAt(Ogre::Vector3(0,0,0));
+  camera->lookAt(Ogre::Vector3(0,-2,0));
   camera->setNearClipDistance(0.5);
 
   auto* viewport = window->addViewport(camera);

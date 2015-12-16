@@ -1,6 +1,4 @@
 {
-	"particleFiles" : [ "inputFiles/blue_noise/thinBox-bn.txt"],
-
 	"movingParticleFiles" : [
 		{ "filename" : "inputFiles/blue_noise/sphericalShell5k.txt",
 		  "offset" : [0,1.5, 0]
@@ -14,23 +12,18 @@
 	"maxStretch" : 0.1,
 	"nClusters" : 30,
 	"springDamping": 0.1,
-	"toughness" : 1e100,
-//	"planes" : [ 
-//		[0, 1, 0, -2],
+	"toughness" : 0.25,
+	"planes" : [ 
+		[0, 1, 0, -2]//,
 //		[1, 1, 0, -2],
 //		[-1, 1, 0, -2]
-//	],
-	"movingPlanes" : [
-		{ 
-			"normal" : [1, 0, 0],
-			"offset" : 0.7,
-			"velocity" : 0.0
-		},
-		{ 
-			"normal" : [-1, 0, 0],
-			"offset" : 0.7,
-			"velocity" : 0.0
-		}
 	],
-	"gravity" : [0, -1, 0]
+/*	"movingPlanes" : [
+		{ 
+			"normal" : [0, 1, 0],
+			"offset" : -2,
+			"velocity" : 0
+		}
+	],*/
+	"gravity" : [0, -10, 0]
 }

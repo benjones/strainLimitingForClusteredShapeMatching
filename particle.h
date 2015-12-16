@@ -12,6 +12,9 @@ namespace Ogre{
   class Material;
 }
 
+class Particle;
+inline void noop(Particle&){}
+
 class Particle {
 public:
   Eigen::Vector3d position, 
@@ -38,7 +41,7 @@ public:
   Ogre::Entity* entity = nullptr;
   //Ogre::Material* material = nullptr;
   //cleanup stuff without knowing anything about ogre
-  std::function<void(Particle&)> cleanup;
+  std::function<void(Particle&)> cleanup = noop;
   RGBColor color;
   
 };
