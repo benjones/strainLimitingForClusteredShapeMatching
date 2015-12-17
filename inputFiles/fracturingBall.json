@@ -1,18 +1,18 @@
 {
 	"movingParticleFiles" : [
 		{ "filename" : "inputFiles/blue_noise/sphericalShell5k.txt",
-		  "offset" : [0,1.5, 0]
+		  "offset" : [0,0.4, 0]
 		}
 	],
 
-	"neighborRadius" : 0.25,
-	"alpha" : 0.2,
-	"omega" : 0.3,
+	"neighborRadius" : 0.24,
+	"alpha" : 0.3,
+	"omega" : 0.2,
 	"numConstraintIters" : 8,
 	"maxStretch" : 0.1,
 	"nClusters" : 30,
-	"springDamping": 0.1,
-	"toughness" : 0.25,
+	"springDamping": 0.18,
+	"toughness" : 0.22,
 	"planes" : [ 
 		[0, 1, 0, -2]//,
 //		[1, 1, 0, -2],
