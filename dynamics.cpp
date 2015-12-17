@@ -621,10 +621,11 @@ void World::bounceOutOfPlanes(){
   for(auto& movingPlane : movingPlanes){
 	for(auto& p : particles){
       if (dragWithPlanes) {
-   	  movingPlane.dragParticle(p, elapsedTime);
+		movingPlane.dragParticle(p, elapsedTime);
       } else {
    	  movingPlane.bounceParticle(p, elapsedTime);
       }
+	  if (movingPlane.backsideReflectBounceParticle(p, elapsedTime, 0.0)) bounced = true;
    }
   }
 

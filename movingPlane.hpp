@@ -12,7 +12,7 @@ public:
   bool outside(Particle& particle) const;
   void bounceParticle(Particle& particle, double timeElapsed) const;
   void dragParticle(Particle& particle, double timeElapsed) const;
-  void backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const;
+  bool backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const;
 
   Eigen::Vector3d normal;
   double offset, velocity;
