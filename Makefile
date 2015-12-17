@@ -13,7 +13,7 @@ OPT = -O3 -g
 
 TARGETS = runSimulator mitsubafy mitsubafyClusters
 
-OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o clustering.o
+OBJECTS =  particle.o world.o jsoncpp.o planes.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o clustering.o
 
 #-----------------------------------------
 # Update to point to your eigen headers, sdl headers

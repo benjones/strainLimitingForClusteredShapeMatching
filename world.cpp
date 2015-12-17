@@ -177,19 +177,18 @@ void World::loadFromJson(const std::string& _filename){
 	gravity = Eigen::Vector3d{0, -9.81, 0};
   }
 
-  auto& planesIn =  root["planes"];
+  auto& planesIn = root["planes"];
   for(auto i : range(planesIn.size())){
 	if(planesIn[i].size() != 4){
 	  std::cout << "not a good plane... skipping" << std::endl;
 	  continue;
 	}
-	
-	//x, y, z, (of normal), then offset value
-	planes.push_back(Eigen::Vector4d{planesIn[i][0].asDouble(),
-		  planesIn[i][1].asDouble(),
-		  planesIn[i][2].asDouble(),
-		  planesIn[i][3].asDouble()});
-	planes.back().head(3).normalize();
+   Eigen::Vector3d normal(planesIn[i][0].asDouble(),
+		planesIn[i][1].asDouble(),
+		planesIn[i][2].asDouble());
+   normal.normalize();
+	planes.emplace_back(normal, 
+		planesIn[i][3].asDouble());
   }
 
 

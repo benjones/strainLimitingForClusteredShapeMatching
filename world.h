@@ -2,9 +2,7 @@
 
 #include <iostream>
 #include "particle.h"
-#include "movingPlane.hpp"
-#include "twistingPlane.hpp"
-#include "tiltingPlane.hpp"
+#include "planes.hpp"
 #include "projectile.hpp"
 #include "cylinderObstacle.hpp"
 
@@ -185,7 +183,7 @@ public:
 
   Eigen::Vector3d gravity;
 
-  std::vector<Eigen::Vector4d> planes;
+  std::vector<Plane> planes;
   std::vector<MovingPlane> movingPlanes;
   std::vector<TwistingPlane> twistingPlanes;
   std::vector<TiltingPlane> tiltingPlanes;

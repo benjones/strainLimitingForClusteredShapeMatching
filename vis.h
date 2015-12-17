@@ -5,9 +5,7 @@
 #include <SDL.h>
 
 class World;
-class MovingPlane;
-class TwistingPlane;
-class TiltingPlane;
+#include "planes.hpp"
 
 struct Camera{
   Eigen::Vector3d position = Eigen::Vector3d{0,7, -5}, 
@@ -33,7 +31,7 @@ void drawWorldPretty(const World& world,
 					   const VisSettings& settings, 
 					   SDL_Window* window);
 
-void drawPlanesPretty(const std::vector<Eigen::Vector4d>& planes,
+void drawPlanesPretty(const std::vector<Plane>& planes,
 						const std::vector<MovingPlane>& movingPlanes,
 						const std::vector<TwistingPlane>& twistingPlanes,
 						const std::vector<TiltingPlane>& tiltingPlanes,

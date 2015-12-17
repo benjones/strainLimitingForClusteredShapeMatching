@@ -337,7 +337,7 @@ void drawWorldPretty(const World& world,
 	
 	
 
-void drawPlanesPretty(const std::vector<Eigen::Vector4d>& planes,
+void drawPlanesPretty(const std::vector<Plane>& planes,
 	const std::vector<MovingPlane>& movingPlanes,
 	const std::vector<TwistingPlane>& twistingPlanes,
 	const std::vector<TiltingPlane>& tiltingPlanes,
@@ -350,7 +350,7 @@ void drawPlanesPretty(const std::vector<Eigen::Vector4d>& planes,
 	RGBColor rgb = HSLColor(0.25*acos(-1)*i/planes.size()+0.0*acos(-1), 0.3, 0.7).to_rgb();
 	glColor4d(rgb.r, rgb.g, rgb.b, 1.0);
 
-	utils::drawPlane(plane.head(3), plane.w(),100);
+	utils::drawPlane(plane.normal, plane.offset,100);
   }
   for(auto&& pr : enumerate(movingPlanes)){
 	const auto i = pr.first; 

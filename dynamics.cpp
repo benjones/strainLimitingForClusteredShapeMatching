@@ -596,51 +596,54 @@ void World::bounceOutOfPlanes(){
   const double epsilon = 1e-5;
   
   while(bounced){
-	bounced = false;
-	
-	for(auto & plane : planes){
-	  Eigen::Vector3d norm = plane.head(3);
-	  for(auto & p : particles){
-		if(p.position.dot(norm) < plane.w()){
-		  bounced = true;
-		  p.position += (epsilon + plane.w() - p.position.dot(norm))*norm;
-		  
-		  //zero velocity in the normal direction
-		  p.velocity -= p.velocity.dot(norm)*norm;
-		  p.velocity *= 0.4; //friction
-		  
-		}
-		
-	  }
-	}
-	
-	++iters;
+     bounced = false;
+
+     for(auto & plane : planes){
+        for(auto & p : particles){
+           bounced = plane.bounceParticle(p, elapsedTime, epsilon);
+        }
+     }
+
+     for(auto & plane : movingPlanes){
+        for(auto & p : particles){
+           bounced = plane.bounceParticle(p, elapsedTime, epsilon);
+        }
+     }
+
+     for(auto & plane : twistingPlanes){
+        for(auto & p : particles){
+           bounced = plane.bounceParticle(p, elapsedTime, epsilon);
+        }
+     }
+
+     for(auto & plane : tiltingPlanes){
+        for(auto & p : particles){
+           bounced = plane.bounceParticle(p, elapsedTime, epsilon);
+        }
+     }
+
+     ++iters;
   }
 
    //handle moving planes
   for(auto& movingPlane : movingPlanes){
-	for(auto& p : particles){
-      if (dragWithPlanes) {
-		movingPlane.dragParticle(p, elapsedTime);
-      } else {
-   	  movingPlane.bounceParticle(p, elapsedTime);
-      }
-	  if (movingPlane.backsideReflectBounceParticle(p, elapsedTime, 0.0)) bounced = true;
-   }
+     for(auto& p : particles){
+        movingPlane.moveParticle(p, elapsedTime);
+     }
   }
 
-   //handle twisting planes
+  //handle twisting planes
   for(auto& twistingPlane : twistingPlanes){
-	for(auto& p : particles){
-   	  twistingPlane.twistParticle(p, elapsedTime);
-   }
+     for(auto& p : particles){
+        twistingPlane.twistParticle(p, elapsedTime);
+     }
   }
 
-   //handle tilting planes
- for(auto& tiltingPlane : tiltingPlanes){
-	for(auto& p : particles){
-   	  tiltingPlane.tiltParticle(p, elapsedTime);
-   }
+  //handle tilting planes
+  for(auto& tiltingPlane : tiltingPlanes){
+     for(auto& p : particles){
+        tiltingPlane.tiltParticle(p, elapsedTime);
+     }
   }
 
 
