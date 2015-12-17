@@ -96,6 +96,12 @@ void MovingPlane::moveParticle(Particle& particle, double timeElapsed) const {
 }
 
 
+bool TwistingPlane::bounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
+   if (timeElapsed > lifetime) return false;
+
+   return DynamicPlane::bounceParticle(particle, timeElapsed, epsilon);
+}
+
 
 void TwistingPlane::twistParticle(Particle& particle, double timeElapsed) const {
    if (timeElapsed > lifetime) return;
@@ -138,10 +144,12 @@ void TwistingPlane::twistParticle(Particle& particle, double timeElapsed) const 
 
 
 bool TiltingPlane::bounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
+   bool bounced = false;
+   if (timeElapsed > lifetime) return bounced;
+
    double currOffset = offset;
    Eigen::AngleAxisd t(timeElapsed*angularVelocity,tilt);
    Eigen::Vector3d currNormal = t * normal;
-   bool bounced = false;
 
    //Only inside particles can bounce
    if(!outside(particle)){

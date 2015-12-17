@@ -33,7 +33,7 @@ class TwistingPlane : public DynamicPlane {
          : DynamicPlane(_normal, _offset), angularVelocity(_angularVelocity), width(_width), lifetime(_lifetime)
       {}
 
-      //twisting planes inherit the bounce
+      virtual bool bounceParticle(Particle& particle, double timeElapsed, double epsilon) const;
       void twistParticle(Particle& particle, double timeElapsed) const;
 
       double angularVelocity;
