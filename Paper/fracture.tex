@@ -377,7 +377,7 @@ In this case, we create a new particle associated only with the cluster and diss
 
 
 \begin{figure}
-\includegraphics[width=\linewidth]{Figures/fractureFigure}
+\includegraphics[width=0.825\linewidth]{Figures/fractureFigure}
 \caption{Left: a cluster is fractured along a splitting plane defined by its center of mass and the vector $\mathbf{V}_{max}$.  Right: splits are propagated to nearby clusters.   Since the blue particle is a member of clusters on both sides of the fracture plane, it is split into two new particles, one in cluster $c1$, one in cluster $c2$.  }
 \label{fig:fractureFig}
 \end{figure}
@@ -445,24 +445,6 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
 }
 %\josh{what else needs to be said here?}
 
-\section{Results and Discussion}
-\begin{figure}
-\includegraphics[width=\linewidth]{Figures/twistingBarI3d.pdf}
-\caption{A bar is twisted and then the clamps are released.  Top: A tough plastic bar does not fracture.  Bottom: The bar fractures before the clamps are released.}
-\label{fig:twistedbar}
-\end{figure}
-
-We have used our method to animate a number of examples of ductile fracture.  Timing results
-taken on a Macbook Pro with a 2.4GHz Intel i5 processor
-are given in table~\tref{table:timing}.
-In all particle renderings, particle color is used to indicate the nearest cluster center.  
-We stress that clusters overlap and that particles typically belong to more than one cluster.
-\adam{Furthermore, though particles decrease in mass when they split during fracture, 
-we do not modify the size of particles in our renderings.  Consequently, fractured clusters
-may appear to have much larger mass than they actually do.  We also note that, to better demonstrate 
-our technique many of our examples are simplified and do
-not include gravity; this choice was made consciously and does not reflect any limitation of our technique.}%In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
-
 \begin{table*}
 \begin{center}
 \caption{Timing results in ms per frame taken on a Macbook Pro with a 2.4Ghz Intel i5 processor.}
@@ -482,6 +464,25 @@ swiss cheese & 25032 & 27 & $<$ 1 & $<$1 & 39 \\
 \end{center}
 \end{table*}
 
+\section{Results and Discussion}
+\begin{figure}
+\includegraphics[width=\linewidth]{Figures/twistingBarFinal.pdf}
+\caption{A bar is twisted and then the clamps are released.  Top: A tough plastic bar does not fracture.  Bottom: The bar fractures before the clamps are released.}
+\label{fig:twistedbar}
+\end{figure}
+
+We have used our method to animate a number of examples of ductile fracture.  Timing results
+taken on a Macbook Pro with a 2.4GHz Intel i5 processor
+are given in table~\tref{table:timing}.
+In all particle renderings, particle color is used to indicate the nearest cluster center.  
+We stress that clusters overlap and that particles typically belong to more than one cluster.
+\adam{Furthermore, though particles decrease in mass when they split during fracture, 
+we do not modify the size of particles in our renderings.  Consequently, fractured clusters
+may appear to have much larger mass than they actually do.  We also note that, to better demonstrate 
+our technique many of our examples are simplified and do
+not include gravity; this choice was made consciously and does not reflect any limitation of our technique.}%In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
+
+
 In our first example, an armadillo is tortured by simultaneously pulling on and firing
 cannonballs at its arms (see~\fref{fig:teaser}).
 Our second example is more didactic; a simple bar is twisted (see~\fref{fig:twistedbar}).  First we demonstrate 
@@ -491,6 +492,7 @@ breaks into many small pieces.  The strong, brittle material breaks into larger 
 In our heartbreaking fourth example a complex shape is pulled apart (see~\fref{fig:teaser}).  The complex shape determines
 where the tear begins and how it propagates.  Similarly, in our final example the holes in a 
 slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
+In our final example, a hollow ball is dropped on the ground and fractures (see~\fref{fig:hollowball}).
 
 %Timing stuff: make a table shell and I can fill it in.  Probably makes sense to do average time/frame of simulation (shape matching/strain limiting), fracture, plasticity.
 
@@ -499,6 +501,20 @@ slice of swiss cheese determine how the model is torn (see~\fref{fig:teaser}).
 %while integrations units lead to computational cost.
 
 %We could compare our approaches to plasticity and fracture to Irving2004,Barteil2007 and O'Brien1999. 
+
+\begin{figure}[h!]
+\includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
+\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
+\label{fig:projectile}
+%\vspace{-1.5in}
+\end{figure}
+
+\begin{figure}[h!]
+\includegraphics[width=\linewidth]{Figures/fracturedball.pdf}
+\caption{Three frames from a sequence where a hollow ball is dropped on the ground and fractures.  }
+\label{fig:hollowball}
+%\vspace{-1.5in}
+\end{figure}
 
 \paragraph{Limitations and Future Work}
 %\ben{limitation: variable framerate, fracture can slow down the simulation IMMENSELY in current implementation}
@@ -556,13 +572,6 @@ researchers develop mathematical tools for analysis.
 %is particularly useful for graphical applications, especially interactive applications, 
 %where visual detail
 %and computational efficiency are of paramount importance.
-
-\begin{figure}[h!]
-\includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
-\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
-\label{fig:projectile}
-%\vspace{-1.5in}
-\end{figure}
 
 \paragraph{Conclusion} 
 One of the primary advantages of the clustered shape matching approach is that the number of degrees of freedom
