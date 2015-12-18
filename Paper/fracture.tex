@@ -25,6 +25,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{enumitem}
+\usepackage{acmcopyright}
 %\usepackage{authblk}
 
 \input{adamscommands}
@@ -63,6 +64,13 @@
    \label{fig:teaser}
  }
 
+\conferenceinfo{I3D '16,}{March 01 2016, TBA, }
+\isbn{978-1-4503-4043-4/16/03}
+\doi{http://dx.doi.org/10.1145/2856400.2856415...$15.00}
+\setcopyright{acmlicensed}
+\copyrightyear{2016}
+
+
 \maketitle
 
 \begin{abstract}
@@ -73,12 +81,33 @@ but are adapted to the clustered shape matching framework.
 The resulting approach is fast, versatile, and simple to implement.
 \end{abstract}
 
-\begin{CRcatlist}
-  \CRcat{I.3.7}{Computer Graphics}{Three-Dimensional Graphics and Realism}{Animation};
-  \CRcat{I.6.8}{Simulation and Modeling}{Types of Simulation}{Animation}.
-\end{CRcatlist}
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10010147.10010341.10010349.10011310</concept_id>
+<concept_desc>Computing methodologies~Simulation by animation</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10010147.10010371.10010352.10010379</concept_id>
+<concept_desc>Computing methodologies~Physical simulation</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computing methodologies~Simulation by animation}
+\ccsdesc[500]{Computing methodologies~Physical simulation}
+%\begin{CRcatlist}
+%  \CRcat{I.3.7}{Computer Graphics}{Three-Dimensional Graphics and Realism}{Anim%ation};
+%  \CRcat{I.6.8}{Simulation and Modeling}{Types of Simulation}{Animation}.
+%\end{CRcatlist}
 
 \keywordlist
+
+\conceptlist
+
+\printcopyright
 
 %% Required for all content. 
 
@@ -108,7 +137,7 @@ to their world positions, $\B{x}_i$ is computed.  The dotted red circles are the
 %for deformable bodies, thus filling a gap in the shape matching literature. 
 In this paper, we enable the animation of ductile fracture 
 by incorporating plasticity and fracture models into the clustered shape matching framework.
-Our models are inspired by finite element approaches to animating deformable bodies, but are adapted to 
+Our models are inspired by finite element approaches for animating deformable bodies, but are adapted to 
 clustered shape matching.
 Specifically, inspired by the work of Irving and colleagues~\shortcite{Irving:2004:IFE} and Bargteil and 
 colleagues~\shortcite{Bargteil:2007:AFE}, we introduce a multiplicative plasticity model that incorporates
@@ -131,11 +160,11 @@ which used a set of hierarchical lattices to define the shape matching clusters.
 of the regular structure of the lattices to achieve extremely high performance.  They also incorporated a 
 simple fracture model that removed over-extended links in the lattice.  
 \adam{More recently,
-Bargteil and Jones~\shortcite{Bargteil:2014:SLF} incorporated strain-limiting into clustered shape matching
+Bargteil and Jones~\shortcite{Bargteil:2014:SLF} incorporated strain-limiting into clustered shape matching.
 In follow-up work, Jones
 and colleagues~\shortcite{Jones:2015:CAC} explored improved clustering strategies and introduced
 simple collision proxies for the clusters.
-We incorporate our ductile fracture approach into their open-source framework and use their approach
+We incorporate our ductile fracture approach into their open-source framework and use their approaches
 for strain limiting, clustering, and collision detection.}
 
 In order to improve stability for non-volumetric objects (i.e. shells and strands) and to simplify sampling, \Mueller and Chentanez extended shape matching to track particle orientation \cite{muller2011solid}.   They also introduced a simple model for plastic deformation.  This approach proved to be useful for animating clothing and hair attached to animated characters \cite{muller2011adding}.
@@ -146,7 +175,7 @@ frame-based models~\cite{Gilles:2011:FEM,Faure:2011:SMM}, and projective dynamic
 While plasticity and fracture have been demonstrated for position-based dynamics, such phenomena invalidate
 the precomputations that make frame-based models and projective dynamics computationally efficient.
 As argued by Bargteil and Jones~\shortcite{Bargteil:2014:SLF}, the shape matching framework has some advantages
-over position-based dynamics.  }
+over position-based dynamics; in particular better adherence to Newton's first and second laws of motion.}
 
 Ductile fracture is distinguished from brittle fracture by the inclusion of plastic deformation.  Materials undergoing ductile
 fracture (e.g. play dough) appear to {\em tear}, while brittle materials (e.g. glass) appear to {\em shatter}.  Most
@@ -247,7 +276,7 @@ to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$, is
 \end{equation}
 where $\mathcal{P}_c$ is the set of particles in cluster $c$.
 Furthermore, when computing the goal position, $\B{g}_i$, for a particle we perform a weighted
-average of the goal positions given by each cluster it is a part of.  That is,
+average of the goal positions given by each cluster \adam{to which it belongs}.  That is,
 \begin{equation}
 \B{g}_i = \sum_c w_{i,c} ~\B{g}_{i,c},
 \end{equation}
@@ -374,7 +403,7 @@ Because cluster membership may have changed due to the fracturing of a different
 $\Sigma_{\max} > \tau_c$ before fracturing and also recompute $\B{V}_{\max}$.  A remaining issue is that
 after fracture it may take several timesteps for elastic forces to reduce the strain in fractured
 clusters.  Consequently, at the next timestep $\Sigma_{\max}$ may still be greater than $\tau_c$ resulting
-in additional fracture.  This process tends to continue leading to clusters breaking up into individual particles
+in additional fracture.  This process tends to continue, leading to clusters breaking up into individual particles
 in a few timesteps---an artifact we refer to as ``particle
 spray.''  This artifact is less problematic for animations of brittle fracture, but is undesirable in ductile
 fracture.  We have developed two approaches to addressing the artifact.  The simplest is to
@@ -424,13 +453,15 @@ p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
 \end{figure}
 
 We have used our method to animate a number of examples of ductile fracture.  Timing results
-taken on a Macbook Pro with a 2.4GHz Intel i5 processor.
+taken on a Macbook Pro with a 2.4GHz Intel i5 processor
 are given in table~\tref{table:timing}.
 In all particle renderings, particle color is used to indicate the nearest cluster center.  
 We stress that clusters overlap and that particles typically belong to more than one cluster.
 \adam{Furthermore, though particles decrease in mass when they split during fracture, 
 we do not modify the size of particles in our renderings.  Consequently, fractured clusters
-may appear to have much larger mass than they actually do.}%In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
+may appear to have much larger mass than they actually do.  We also note that, to better demonstrate 
+our technique many of our examples are simplified and do
+not include gravity; this choice was made consciously and does not reflect any limitation of our technique.}%In this work, we focus on creating compelling motion, not production quality visualization.  Generating compelling, real-time renderings from particle data is an open problem that we do not address in this paper.
 
 \begin{table*}
 \begin{center}
@@ -486,11 +517,11 @@ not yet explored this topic.}
 
 
 Like many fracture methods in computer animation, we do not have a good solution to generating fractured
-geometry.  Like previous work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
+geometry.  Like previous \adam{shape matching} work~\cite{Mueller:2005:MDB,Rivers:2007:FFL}, we can embed a high-resolution 
 render mesh for unbreakable objects, but creating new geometry when fracture occurs is more difficult.  
 Currently we use an off-the-shelf particle skinning tool~\cite{Bhattacharya:2015:ALM} to skin the simulation particles.
 This approach suffers two major drawbacks: the results are low-resolution and the fracture surfaces are overly smooth.  
-Moreover, since we do not handle-self collisions, we can merge components that unexpectedly pass through each other.
+%Moreover, since we do not handle-self collisions, we can merge components that unexpectedly pass through each other.
 One approach to generating fracture geometry is to simply render the simulation geometry and increase the resolution 
 where fracture occurs~\cite{Obrien:1999:GMA,Obrien:2002:GMA}.  The simulation geometry can can later be 
 coarsened to improve computational efficiency~\cite{Pfaff:2014:ATC}.  This approach leads to
@@ -526,11 +557,18 @@ researchers develop mathematical tools for analysis.
 %where visual detail
 %and computational efficiency are of paramount importance.
 
+\begin{figure}[h!]
+\includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
+\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
+\label{fig:projectile}
+%\vspace{-1.5in}
+\end{figure}
+
 \paragraph{Conclusion} 
 One of the primary advantages of the clustered shape matching approach is that the number of degrees of freedom
 is much larger then the number of ``integration units''---clusters in this case.  The opposite is true of finite element
 methods with unstructured meshes where the number of tetrahedra is often considerably larger than the number of vertices.  
-For graphical applications visual detail, which correlates with the number of degrees of freedom, is of paramount importance
+For graphical applications, visual detail, which correlates with the number of degrees of freedom, is of paramount importance
 and computation, which correlates with ``integration units,'' is often limited.  
 For these reasons, the clustered shape matching framework is extremely appealing for computer animation, 
 especially interactive animation.  The utility and versatility of this framework is greatly improved by our extensions 
@@ -538,13 +576,6 @@ to the animation of ductile fracture.
 
 
 
-
-\begin{figure}[h!]
-\includegraphics[width=\linewidth]{Figures/plateComparisonI3d.pdf}
-\caption{A projectile is fired through a thin sheet of material with varying material properties. top: weak and brittle; center: strong and brittle; bottom: strong and ductile.  Note permanent the plastic deformation near the hole.  }
-\label{fig:projectile}
-%\vspace{-1.5in}
-\end{figure}
 
 \section*{Acknowledgements}
 The authors wish to thank the anonymous reviewers for their time and helpful comments.
