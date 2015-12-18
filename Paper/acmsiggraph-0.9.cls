@@ -39,18 +39,11 @@
 % - version 0.9  2013/12/06 Stephen Spencer
 %   - removed "abstract" environment for copyright space
 %   - renamed remaining environments to "tog" and "conference"
-% - version 0.91
-%   - removed the hyperlink icons
-%   - added date to the external class name
-%
-%
-% - version 0.92 2015/11/04 Boris Veytsman
-%   - Added new copyright, conference info and doi commands
 %
 % ---------------------------------------------------------------------------
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{acmsiggraph}[2015/11/04 v0.92 ACM SIGGRAPH class]
+\ProvidesClass{acmsiggraph}[2013/12/06 ACM SIGGRAPH class]
 
 % lots of options aren't allowed.
 
@@ -110,8 +103,37 @@
 \setlength{\headsep}{0.250in}
 \setlength{\footskip}{0.500in}
 
-\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
+% create a new length ``\ACMcopyrightspace'' and set its initial value.
 
+\newlength{\ACMcopyrightspace}
+\setlength{\ACMcopyrightspace}{3.3in}
+
+% set the value of ``\ACMcopyrightspace'' based on the kind of document.
+
+\if@ACMtog
+\setlength{\ACMcopyrightspace}{1.5in}
+\fi
+
+\if@ACMconference
+\setlength{\ACMcopyrightspace}{1.0in}
+\fi
+
+\if@ACMreview
+\setlength{\ACMcopyrightspace}{0in}
+\fi
+
+\if@ACMpreprint
+\setlength{\ACMcopyrightspace}{0in}
+\fi
+
+% define the ``\copyrightspace'' command.
+% (todo) don't do this if ``\ACMcopyrightspace'' is zero.
+
+\newcommand{\copyrightspace}{%
+  \renewcommand{\thefootnote}{}%
+  \footnotetext[0]{\rule[\ACMcopyrightspace]{2.71828in}{0in}}%
+  \renewcommand{\thefootnote}{\arabic{footnote}}
+}
 
 % in ``review'' mode, the ``\onlineid'' command passes the value given
 % to the paper by the online submission system. This gets printed out 
@@ -428,113 +450,48 @@
     \ifx#4\@ACMempty \else ---#4\fi%
 }
 
-% Support for CCSXML file
-\RequirePackage{comment}
-\excludecomment{CCSXML}
-
-
-% New concepts scheme
-\let\@concepts\@empty
-%
-% The first argument is the significance, the
-% second is the concept(s)
-%
-\newcommand\ccsdesc[2][100]{%
-  \ccsdesc@parse#1~#2~}
-%
-% The parser of the expression Significance~General~Specific
-%
-\def\ccsdesc@parse#1~#2~#3~{%
-  \expandafter\ifx\csname CCS@#2\endcsname\relax
-    \expandafter\gdef\csname CCS@#2\endcsname{\textbullet\textbf{#2} $\to$ }%
-  \g@addto@macro{\@concepts}{\csname CCS@#2\endcsname}\fi
-  \expandafter\g@addto@macro\expandafter{\csname CCS@#2\endcsname}{%
-    \ifnum#1>499\textbf{#3; }\else
-    \ifnum#1>299\textit{#3; }\else
-    #3; \fi\fi}}
-
-\def\conceptlist{\textbf{Concepts:} \@concepts}
-
-
-\def\conferenceinfo#1#2{\gdef\conf{#1}\gdef\confinfo{#2}}
-\conferenceinfo{}{}
-\def\doi#1{\def\@doi{#1}}
-\doi{}
-\def\isbn#1{\gdef\@isbn{#1}}
-\isbn{}
-\RequirePackage{url}
-\urlstyle{rm}
-\def\printdoi#1{\url{#1}}
-
-
-
-\RequirePackage{acmcopyright}
-
-\def\copyrightspace{}
-
-\newcommand\printcopyright{%
-  \renewcommand{\thefootnote}{}%
-  \footnotetext[0]{%
-\hspace*{-1.8em}%
-  \@copyrightpermission
-  \if@printcopyright
-    \copyright\ \@acmYear\ \@copyrightowner\
-  \fi
-  \ifx\conf\@empty\else
-  \\\conf, \confinfo\fi
-  \ifx\@isbn\@empty\else
-  \\ISBN: \@isbn\fi
-  \ifx\@doi\@empty\else
-  \\DOI: \printdoi{\@doi}\fi
-}%
-  \renewcommand{\thefootnote}{\arabic{footnote}}
-}
-
-\def\copyrightyear#1{\def\@acmYear{#1}}
-\copyrightyear{\the\year}
-
 %%% Icon(s) with hyperlinks.
 
-%\newcommand{\@ACMurlWeb}{}
-%\newcommand{\TOGprojectURL}[1]{\renewcommand{\@ACMurlWeb}{#1}}
-%\newcommand{\@ACMurlVideo}{}
-%\newcommand{\TOGvideoURL}[1]{\renewcommand{\@ACMurlVideo}{#1}}
-%\newcommand{\@ACMurlData}{}
-%\newcommand{\TOGdataURL}[1]{\renewcommand{\@ACMurlData}{#1}}
-%\newcommand{\@ACMurlCode}{}
-%\newcommand{\TOGcodeURL}[1]{\renewcommand{\@ACMurlCode}{#1}}
+\newcommand{\@ACMurlWeb}{}
+\newcommand{\TOGprojectURL}[1]{\renewcommand{\@ACMurlWeb}{#1}}
+\newcommand{\@ACMurlVideo}{}
+\newcommand{\TOGvideoURL}[1]{\renewcommand{\@ACMurlVideo}{#1}}
+\newcommand{\@ACMurlData}{}
+\newcommand{\TOGdataURL}[1]{\renewcommand{\@ACMurlData}{#1}}
+\newcommand{\@ACMurlCode}{}
+\newcommand{\TOGcodeURL}[1]{\renewcommand{\@ACMurlCode}{#1}}
 
-%\newcommand{\icon@DL}{\raisebox{-.02in}{\includegraphics[width=.13in]{icons/iconacm}}\hspace{.01in}DL}
-%\newcommand{\icon@PDF}{\raisebox{-.02in}{\includegraphics[width=.11in]{icons/iconpdf}}\hspace{.015in}PDF}
-%\newcommand{\icon@Web}{\raisebox{-.025in}{\includegraphics[width=.11in]{icons/iconweb}}\hspace{.01in}Web}
-%\newcommand{\icon@Video}{\raisebox{-.01in}{\includegraphics[width=.11in]{icons/iconvideo}}\hspace{.007in}Video}
-%\newcommand{\icon@Data}{\raisebox{-.01in}{\includegraphics[width=.10in]{icons/icondata}}\hspace{.015in}Data}
-%\newcommand{\icon@Code}{\raisebox{-.005in}{\includegraphics[width=.10in]{icons/iconcode}}\hspace{.017in}Code}
+\newcommand{\icon@DL}{\raisebox{-.02in}{\includegraphics[width=.13in]{icons/iconacm}}\hspace{.01in}DL}
+\newcommand{\icon@PDF}{\raisebox{-.02in}{\includegraphics[width=.11in]{icons/iconpdf}}\hspace{.015in}PDF}
+\newcommand{\icon@Web}{\raisebox{-.025in}{\includegraphics[width=.11in]{icons/iconweb}}\hspace{.01in}Web}
+\newcommand{\icon@Video}{\raisebox{-.01in}{\includegraphics[width=.11in]{icons/iconvideo}}\hspace{.007in}Video}
+\newcommand{\icon@Data}{\raisebox{-.01in}{\includegraphics[width=.10in]{icons/icondata}}\hspace{.015in}Data}
+\newcommand{\icon@Code}{\raisebox{-.005in}{\includegraphics[width=.10in]{icons/iconcode}}\hspace{.017in}Code}
 
-%\newcommand{\TOGlinkslist}{%
-%  \if@ACMtog
-%  {%
-%    \ifx\@ACMarticleDOI\@ACMempty%
-%	  \ClassWarningNoLine{acmsiggraph}{Please set \noexpand\TOGarticleDOI.}%
-%	\fi%
-%    {\bf Links:}%
-%    \sc%
-%    \ifx\@ACMarticleDOI\@ACMempty\else%
-%      \hspace{0.09in}\href{http://doi.acm.org/10.1145/\@ACMarticleDOI}{\icon@DL}%
-%     \ifx\@ACMarticleDOIsuffix\@ACMempty\else%
-%       \hspace{0.09in}\href{http://portal.acm.org/ft_gateway.cfm?id=\@ACMarticleDOIsuffix&type=pdf}{\icon@PDF}\fi%
-%     \ifx\@ACMurlWeb\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlWeb}{\icon@Web}\fi%
-%     \ifx\@ACMurlVideo\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlVideo}{\icon@Video}\fi%
-%     \ifx\@ACMurlData\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlData}{\icon@Data}\fi%
-%     \ifx\@ACMurlCode\@ACMempty\else%
-%       \hspace{0.09in}\href{\@ACMurlCode}{\icon@Code}\fi%
-%    \fi%
-%  }%
-%  \fi
-%}
+\newcommand{\TOGlinkslist}{%
+  \if@ACMtog
+  {%
+    \ifx\@ACMarticleDOI\@ACMempty%
+	  \ClassWarningNoLine{acmsiggraph}{Please set \noexpand\TOGarticleDOI.}%
+	\fi%
+    {\bf Links:}%
+    \sc%
+    \ifx\@ACMarticleDOI\@ACMempty\else%
+      \hspace{0.09in}\href{http://doi.acm.org/10.1145/\@ACMarticleDOI}{\icon@DL}%
+     \ifx\@ACMarticleDOIsuffix\@ACMempty\else%
+       \hspace{0.09in}\href{http://portal.acm.org/ft_gateway.cfm?id=\@ACMarticleDOIsuffix&type=pdf}{\icon@PDF}\fi%
+     \ifx\@ACMurlWeb\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlWeb}{\icon@Web}\fi%
+     \ifx\@ACMurlVideo\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlVideo}{\icon@Video}\fi%
+     \ifx\@ACMurlData\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlData}{\icon@Data}\fi%
+     \ifx\@ACMurlCode\@ACMempty\else%
+       \hspace{0.09in}\href{\@ACMurlCode}{\icon@Code}\fi%
+    \fi%
+  }%
+  \fi
+}
 
 % Package hyperref should come late in class file to properly apply to any modified commands.
 \RequirePackage{ifpdf}
@@ -558,38 +515,18 @@
 \AtBeginDocument{%
   \if@ACMreview%
   \hypersetup{
-    pdfcreator={LaTeX acmsiggraph.cls (11/2015)},
+    pdfcreator={LaTeX acmsiggraph.cls},
     pdfkeywords={\@ACMkeywords},
     pdftitle={\@title},
   }%
   \else%
   \hypersetup{
-    pdfcreator={LaTeX acmsiggraph.cls (11/2015)},
+    pdfcreator={LaTeX acmsiggraph.cls},
     pdfkeywords={\@ACMkeywords},
     pdftitle={\@title},
     pdfauthor={\@ACMpdfauthor},
   }%
   \fi
-}
-
-% fix for disappearing line numbers in paragraphs with equations
-\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
-	\expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
-	\expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
-	\renewenvironment{#1}%
-	{\linenomath\csname old#1\endcsname}%
-	{\csname oldend#1\endcsname\endlinenomath}}%
-\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
-	\patchAmsMathEnvironmentForLineno{#1}%
-	\patchAmsMathEnvironmentForLineno{#1*}}%
-\AtBeginDocument{%
-	\patchBothAmsMathEnvironmentsForLineno{equation}%
-	\patchBothAmsMathEnvironmentsForLineno{align}%
-	\patchBothAmsMathEnvironmentsForLineno{flalign}%
-	\patchBothAmsMathEnvironmentsForLineno{alignat}%
-	\patchBothAmsMathEnvironmentsForLineno{gather}%
-	\patchBothAmsMathEnvironmentsForLineno{multline}%
-	\patchBothAmsMathEnvironmentsForLineno{eqnarray}%
 }
 
 %% end of file
