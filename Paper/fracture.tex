@@ -263,7 +263,8 @@ Given $\B{R}$ and $\B{x}_{cm}-\B{r}_{cm}$, we define goal positions, $\B{g}_i$, 
 Hookean springs are then used to define forces that move the particles toward the goal positions.
 
 \paragraph{Clustered Shape Matching}
-Handling multiple clusters is straightforward.  When computing a particle's contribution to 
+\adam{Breaking an object into multiple overlapping clusters allows for richer and more localized deformations.}
+Fortunately, handling multiple clusters is straightforward.  When computing a particle's contribution to 
 cluster quantities, we divide the particle's mass among the clusters to which it belongs.
 For a particle $p_i$ in cluster $c\in\mathcal{C}$ we introduce a weight $w_{i,c}$ that
 describes how much of $p_i$'s mass is contributed to cluster $c$
