@@ -212,17 +212,17 @@ the deformed shape by finding
 the least-squares best-fit rigid transformation from the rest pose
 to the current deformed pose by
 solving for the rotation matrix, $\B{R}$, and translation
-vector, $\B{x}_{cm}-\B{r}_{cm}$, that minimizes
+vector, $\bar{\B{x}}-\bar{\B{r}}$, that minimizes
 \begin{equation}
 \label{eq:sm}
-\sum_i m_i \| \B{R}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\|^2.
+\sum_i m_i \| \B{R}\left(\B{r}_i - \bar{\B{r}}\right)-\left(\B{x}_i-\bar{\B{x}}\right)\|^2.
 \end{equation}
-\adam{The best translation is given by the center-of-mass in the rest ($\B{r}_{cm}$) and world ($\B{x}_{cm}$) space.}
+\adam{The best translation is given by the center-of-mass in the rest ($\bar{\B{r}}$) and world ($\bar{\B{x}}$) space.}
 Computing the rotation, $\B{R}$, is more involved.  
 We first compute the least-squares best-fit linear deformation gradient, $\B{F}$.
 Specifically, we seek the $\B{F}$ that minimizes
 \begin{equation}
-\sum_i m_i \| \B{F}\left(\B{r}_i - \B{r}_{cm}\right)-\left(\B{x}_i-\B{x}_{cm}\right)\|^2.
+\sum_i m_i \| \B{F}\left(\B{r}_i - \bar{\B{r}}\right)-\left(\B{x}_i-\bar{\B{x}}\right)\|^2.
 \end{equation}
 Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we arrive at
 \begin{equation}
@@ -231,7 +231,7 @@ Setting the derivative with respect to $\B{F}$ to $0$ and re-arranging terms we 
 \end{equation}
 where $\B{O}(\cdot,\cdot)$ is the outer product matrix
 \begin{equation}
-\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\B{a}_{cm}\right)\left(\B{b}_{i}-\B{b}_{cm}\right)^T,
+\B{O}(\B{a}_i,\B{b}_i) = \left(\B{a}_i-\bar{\B{a}}\right)\left(\B{b}_{i}-\bar{\B{b}}\right)^T,
 \end{equation}
 and $\B{A}_{**}$ is a convenient shorthand.
 %\begin{align}
@@ -256,9 +256,9 @@ the left matrix ($\B{A}_{xr}$).
 This modification}
 is particularly important if the distribution of mass in the cluster is non-uniform and $\B{F}$ is not a pure rotation.
 
-Given $\B{R}$ and $\B{x}_{cm}-\B{r}_{cm}$, we define goal positions, $\B{g}_i$, as
+Given $\B{R}$ and $\bar{\B{x}}-\bar{\B{r}}$, we define goal positions, $\B{g}_i$, as
 \begin{equation}
-\B{g}_i = \B{R}\left(\B{r}_i-\B{r}_{cm}\right)+\B{x}_{cm}.
+\B{g}_i = \B{R}\left(\B{r}_i-\bar{\B{r}}\right)+\bar{\B{x}}.
 \end{equation}
 Hookean springs are then used to define forces that move the particles toward the goal positions.
 
@@ -266,29 +266,29 @@ Hookean springs are then used to define forces that move the particles toward th
 \adam{Breaking an object into multiple overlapping clusters allows for richer and more localized deformations.}
 Fortunately, handling multiple clusters is straightforward.  When computing a particle's contribution to 
 cluster quantities, we divide the particle's mass among the clusters to which it belongs.
-For a particle $p_i$ in cluster $c\in\mathcal{C}$ we introduce a weight $w_{i,c}$ that
+For a particle $p_i$ in cluster $c\in\mathcal{C}$ we introduce a weight $w_{ic}$ that
 describes how much of $p_i$'s mass is contributed to cluster $c$
-and replace $m_i$ with $w_{i,c}m_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
+and replace $m_i$ with $w_{ic}m_i$ in equations \eqref{eq:sm}-\eqref{eq:defgrad} 
 and when computing cluster mass and center-of-mass.
 Specifically, if particle $p_i$ belongs
-to $n_i$ clusters, then the center-of-mass of cluster $c$, $\B{x}_{cm,c}$, is
+to $n_i$ clusters, then the center-of-mass of cluster $c$, $\bar{\B{x}}_{c}$, is
 \begin{equation}
-\B{x}_{cm,c} = \frac{\sum_{p_i\in\mathcal{P}_c}(w_{i,c}m_i)\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(w_{i,c}m_i)},
+\bar{\B{x}}_{c} = \frac{\sum_{p_i\in\mathcal{P}_c}(w_{ic}m_i)~\B{x_i}}{\sum_{p_i\in\mathcal{P}_c}(w_{ic}m_i)},
 \end{equation}
 where $\mathcal{P}_c$ is the set of particles in cluster $c$.
 Furthermore, when computing the goal position, $\B{g}_i$, for a particle we perform a weighted
 average of the goal positions given by each cluster \adam{to which it belongs}.  That is,
 \begin{equation}
-\B{g}_i = \sum_c w_{i,c} ~\B{g}_{i,c},
+\B{g}_i = \sum_c w_{ic} ~\B{g}_{ic},
 \end{equation}
-where $\B{g}_{i,c}$ is the goal position for particle $p_i$ in cluster $c$.  
+where $\B{g}_{ic}$ is the goal position for particle $p_i$ in cluster $c$.  
 
 \adam{\paragraph{Clustering}
 We use the clustering method of Jones and colleagues~\shortcite{Jones:2015:CAC}.  This method is a 
 variation of the fuzzy $c$-means algortithm and produces overlapping clusters where each particle may 
 belong to several clusters to varying degrees.  As in the popular $k$-means clustering algorithm, this
 algorithm alternates between updating cluster membership and updating cluster centers.  However,
-updating membership involves updating weights, $w_{i,c}$, and cluster centers are the weighted center-of-mass
+updating membership involves updating weights, $w_{ic}$, and cluster centers are the weighted center-of-mass
 of members.  Please see Jones and colleagues~\shortcite{Jones:2015:CAC} for more details including analysis
 of different weighting functions, varying cluster size, degree of overlap, etc.}
 
@@ -364,13 +364,13 @@ clusters from the priority queue and, if the $\Sigma_{\max}$ still exceeds $\tau
 as follows.
 
 We assume that the fracture surface is defined by the plane that passes through the center of mass of the 
-cluster, $\B{x}_{cm,c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive 
+cluster, $\bar{\B{x}}_{c}$, and is orthogonal to the singular vector $\B{V}_{\max}$.  Particles on the positive 
  side of this plane are removed from the cluster and added to a new cluster.  
  
 To propagate fractures to nearby clusters, we examine each particle in the split cluster.  If a particle is a member of clusters on both sides of the fracture plane, it is split into two particles.  The mass is divided between the two new particles based on how many clusters they belong to; all other properties are copied to both new particles.  This process mimics duplication of node degrees of freedom in finite element approaches to fracture.  To compare which side of the plane the particle and clusters are on, we evaluate
 \begin{equation}
-\sign{\left(\B{x}_i-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}} \neq %\mathrel{!}=
-\sign{\left(\B{x}_{cm,d}-\B{x}_{cm,c}\right)\cdot \B{V}_{\max}}.
+\sign{\left(\B{x}_i-\bar{\B{x}}_{c}\right)\cdot \B{V}_{\max}} \neq %\mathrel{!}=
+\sign{\left(\bar{\B{x}}_{d}-\bar{\B{x}}_{c}\right)\cdot \B{V}_{\max}}.
 \end{equation} 
 for each cluster, $d$, of which particle $i$ is a member.  This process is illustrated in Figure \ref{fig:fractureFig}.
 We also split ``outlier'' particles, which, even after strain limiting, are still too far from a cluster center.  
@@ -386,13 +386,13 @@ In this case, we create a new particle associated only with the cluster and diss
 
 \mycomment{
 the particle is on the opposite side of the fracture plane from 
-from any other cluster, $d$, where the center of mass, $\B{x}_{cm,d}$ is on the other side of the fracture surface.
+from any other cluster, $d$, where the center of mass, $\bar{\B{x}}_{d}$ is on the other side of the fracture surface.
 That is if, for particle $p_i$,
 
 particle $p_i$ is removed from cluster $d$.  We then update the properties of the affected clusters.
 The plasticity variables, $\B{F}^p$ and $\alpha$, are copied from the fractured cluster to the new cluster.
 For every cluster that undergoes a membership change, we update the mass, $m_c$; the 
-rest and world center of mass, $\B{r}_{cm,c}$ and $\B{x}_{cm,c}$; the cluster width (see~\cite{Bargteil:2014:SLF});
+rest and world center of mass, $\bar{\B{r}}_{c}$ and $\bar{\B{x}}_{c}$; the cluster width (see~\cite{Bargteil:2014:SLF});
 and the stored matrix, $\B{A}_{rr}^{-1}$.}
 
 Initially our clusters are well sampled; however, fractures may create degenerate clusters.  To prevent instability due to these clusters, we compute $\B{A}_{rr}^{-1}$
@@ -439,9 +439,9 @@ redistribute the particles into the clusters based on distance to the
 nearest center of mass.  This process iterates until 
 convergence.  Finally, we include particle $p_i$ within any cluster, $c$,
 such that the distance between $p_i$ and the cluster's center
-of mass, $\B{r}_{cm,c}$, is less than $w$.  That is
+of mass, $\bar{\B{r}}_{c}$, is less than $w$.  That is
 \begin{equation}
-p_i\in\mathcal{P}_c \iff \|\B{r}_i-\B{r}_{cm,c}\| < w.
+p_i\in\mathcal{P}_c \iff \|\B{r}_i-\bar{\B{r}}_{c}\| < w.
 \end{equation}
 }
 %\josh{what else needs to be said here?}
