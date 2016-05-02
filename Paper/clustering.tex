@@ -467,7 +467,7 @@ Luckily, these maps can be computed once during initialization if the clusters r
 If two clusters do not have a membership overlap, we next check whether their world space sphere proxies overlap.  If not, 
 there is no collision and we continue to the next pair of clusters.  If so, we consider each particle, $p_i$, in the
 first cluster, $c_1$.  We first check whether the particle is inside the world space sphere proxy of the second cluster, $c_2$.  If not, 
-we continue to the next particle.  If so, we transform the particle's world position into the second cluster's rest space,
+we continue to the next particle.  If so, we transform the particle's world position into the second cluster's rest space.
 Specifically, we compute
 \begin{equation}
 \B{x}_i^\prime = \B{r}_{c_2} + \B{F}_{c_2}^{-1}\left(\B{x}_i - \B{x}_{c_2}\right)
