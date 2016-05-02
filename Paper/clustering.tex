@@ -11,7 +11,7 @@
 %%% - use ``conference'' for final content accepted to a sponsored event
 %%%   (hint: If you don't know, you should use ``conference.'')
 
-\documentclass[conference]{acmsiggraph}
+\documentclass[conference]{acmsiggraph-0.9}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{wasysym}
@@ -346,7 +346,7 @@ where $\epsilon$ prevents dividing by zero (we use $\epsilon = 0.0001$).
 Fifth is the fuzzy $c$-means weighting function~\cite{Dunn:1973:AFR,Bezdek:1981:PRF},
 \begin{equation}
 \label{eq:fuzzycmeans}
-\displaystyle \mathrm{fcm}(\B{x}_i, \B{x}_{c}, h) = \dfrac{1}{\displaystyle \sum_{d\in\mathcal{C}}\left(\dfrac{\|x_i - x_{c}\|}{\|x_i-x_{d}\|}\right)^{\tfrac{2}{m-1}}},
+\displaystyle \mathrm{fcm}(\B{x}_i, \B{x}_{c}, h) = \dfrac{1}{\displaystyle \sum_{d\in\mathcal{C}}\left(\dfrac{\|\B{x}_i - \B{x}_{c}\|}{\|\B{x}_i - \B{x}_{d}\|}\right)^{\tfrac{2}{m-1}}},
 \end{equation}
 where $m$ is a user-specified parameter greater than one.
 Note that $\mathrm{fcm}$ is the only weighting function where the weight in one cluster depends on the positions of other cluster centers,
@@ -553,7 +553,7 @@ of Newton's laws of motion.
 It would be interesting to consider additional clustering shapes, such as ellipsoids, 
 that might better conform to complex geometry while remaining simple and computationally efficient.  
 Our current implementation does not employ a bounding volume hierarchy resulting in an asymptotic runtime for collision detection 
-that is quadratic in the number of clusters.  Employing a variation of the hierarchy of He and colleagues~\cite{He:2015:ICC} 
+that is quadratic in the number of clusters.  Employing a variation of the hierarchy of He and colleagues~\shortcite{He:2015:ICC} 
 is a promising direction for future development and may allow the colliding bunnies example to run in real time.  
 Finally, while nothing in our approach prevents spatially varying material properties,
 such variation is not currently supported by our implementation.
@@ -617,7 +617,7 @@ to clustering and collision handling.
 
 \section*{Acknowledgements}
 The authors wish to thank the anonymous reviewers for their time and helpful comments.
-We also thank Parasaran Raman and Suresh Venkatasubramanian  Suresh for sharing their knowledge
+We also thank Parasaran Raman and Suresh Venkatasubramanian for sharing their knowledge
 of clustering algorithms.
 This work was supported in part by National Science Foundation awards
 IIS-1314896, IIS-1314757, and IIS-1314813 
