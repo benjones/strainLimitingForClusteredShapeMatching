@@ -656,3 +656,32 @@ void World::mergeClusters(const std::vector<Particle>& newParticles,
   }
   
 }
+
+void World::removeInvalidClusters(){
+  for(int i = 0; i < clusters.size(); i++){
+    Cluster cluster = clusters.at(i);
+    Cluster* toDelete = NULL;
+    int index = 0;
+
+    bool tooManyClusters = true;
+    for(int j = 0; j < particles.size(); j++){
+      if(particles[j].clusters.size() <= Mmax){
+	tooManyClusters = false;
+      }
+    }
+
+    if(cluster.members.size() < cluster.initialMembers / 2 ||
+       cluster.members.size() > cluster.initialMembers * 2 ||
+       cluster.Fp.norm() > 2.0 ||
+       tooManyClusters){
+      toDelete = &cluster;
+      index = i;
+    }
+
+    if(toDelete != NULL){
+      clusters.erase(clusters.begin() + index);
+    }
+  }
+}
+
+

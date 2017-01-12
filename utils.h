@@ -8,7 +8,7 @@
 //why, apple?   why????
 #include <OpenGL/glu.h>
 #else
-#include <gl/glu.h>
+#include <GL/glu.h>
 #endif
 
 

@@ -17,6 +17,7 @@
 class World{
 public:
   std::string filename; //for reloading the file
+  int Mmax = 5;
 
   void loadFromJson(const std::string& _filename);
   
@@ -48,6 +49,7 @@ public:
   void splitOutliers();
   void cullSmallClusters();
   void removeLonelyParticles();
+  void removeInvalidClusters();
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;

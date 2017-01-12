@@ -63,6 +63,7 @@ class CollisionGeometry {
 
 class Cluster {
  public:
+  int initialMembers;
   Eigen::Vector3d restCom;
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
