@@ -43,7 +43,7 @@ public:
   //cleanup stuff without knowing anything about ogre
   std::function<void(Particle&)> cleanup = noop;
   RGBColor color;
-  
+  int radius = 1.0;  
 };
 
 class CollisionGeometry {

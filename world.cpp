@@ -684,4 +684,38 @@ void World::removeInvalidClusters(){
   }
 }
 
+void World::removeInvalidParticles(){
 
+  int index = 0;
+  for(auto& p : particles){
+    int neighborIndex = findClosestParticle(p);
+    Particle neighbor = particles.at(neighborIndex); 
+
+    if(index < neighborIndex){
+      if((p.position - neighbor.position).norm() < p.radius * eta){
+        particles.erase(particles.begin() + index);
+      }
+    }   
+    index++;
+  }
+}
+
+int World::findClosestParticle(Particle p){
+
+  double minDist = 99999999;
+  int outputIndex = 0;
+  int currentIndex = 0;
+
+  for(auto& neighbor : particles){
+    if(p.id != neighbor.id){
+      double dist = (p.position - neighbor.position).norm();
+      if(dist < minDist){
+        minDist = dist;
+        outputIndex = currentIndex;
+      }
+    }
+    currentIndex++;
+  }
+ 
+  return outputIndex;
+}
