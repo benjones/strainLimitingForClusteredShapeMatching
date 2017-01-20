@@ -53,6 +53,9 @@ public:
   void removeInvalidClusters();
   void removeInvalidParticles();
   int findClosestParticle(Particle p);
+  void seedNewParticles();
+  void seedNewParticle(Particle p);
+  double fRand(double fMin, double fMax);
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;

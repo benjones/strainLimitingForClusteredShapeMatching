@@ -412,6 +412,8 @@ void World::loadFromJson(const std::string& _filename){
 	//p.position[1] = -0.8*pos[0] + 0.6*pos[1];// - 0.8*pos[2];
 	//p.position[2] = 0.48*pos[0] + 0.64*pos[1] + 0.6*pos[2];
   //}
+
+  srand(time(NULL));
 }
 
 
@@ -718,4 +720,32 @@ int World::findClosestParticle(Particle p){
   }
  
   return outputIndex;
+}
+
+void World::seedNewParticles(){
+  for(auto& cluster : clusters){
+    if(cluster.Fp.norm() > 1.8){
+      for(auto& particle : particles){
+	//if(std::find(particle.clusters.begin(), particle.clusters.end(), cluster) != particle.clusters.end()){
+          for(int i = 0; i < 5; i++){
+	    seedNewParticle(particle);
+	  //}
+        }
+      }
+    }
+  }
+}
+
+void World::seedNewParticle(Particle p){
+  double dist = fRand(p.radius, p.radius*2.0);
+  Eigen::Vector3d dir(fRand(-M_PI, M_PI), fRand(-M_PI, M_PI), fRand(-M_PI, M_PI));
+
+  Particle newParticle = p;
+  Eigen::Vector3d newPos = dir.normalized() * dist;
+  newParticle.position = newPos;
+}
+
+double World::fRand(double fMin, double fMax){
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
 }
