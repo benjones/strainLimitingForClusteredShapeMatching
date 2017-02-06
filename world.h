@@ -56,6 +56,8 @@ public:
   void seedNewParticles();
   void seedNewParticle(Particle p);
   double fRand(double fMin, double fMax);
+  void makeClustersForUnreferencedParticles();
+  void removeParticleFromClusters(Particle p);
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
@@ -127,6 +129,7 @@ public:
 
   std::vector<Particle> particles;
   std::vector<Cluster> clusters;
+  std::vector<Particle> unreferencedParticles;
 
   void printCOM() const;
   

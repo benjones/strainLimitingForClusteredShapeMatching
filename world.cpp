@@ -695,10 +695,25 @@ void World::removeInvalidParticles(){
 
     if(index < neighborIndex){
       if((p.position - neighbor.position).norm() < p.radius * eta){
-        particles.erase(particles.begin() + index);
+        removeParticleFromClusters(particles.at(index));
+	particles.erase(particles.begin() + index);
       }
     }   
     index++;
+  }
+}
+
+void World::removeParticleFromClusters(Particle p){
+  for(int i = 0; i < clusters.size(); i++){
+    Cluster cluster = clusters.at(i);
+    int index = 0;
+    for(auto& member : cluster.members){
+      auto &q = particles[member.index];
+      if(&p == &q){
+	cluster.members.erase(cluster.members.begin() + index);
+      }
+      index++;
+    }
   }
 }
 
@@ -725,12 +740,9 @@ int World::findClosestParticle(Particle p){
 void World::seedNewParticles(){
   for(auto& cluster : clusters){
     if(cluster.Fp.norm() > 1.8){
-      for(auto& particle : particles){
-	//if(std::find(particle.clusters.begin(), particle.clusters.end(), cluster) != particle.clusters.end()){
-          for(int i = 0; i < 5; i++){
-	    seedNewParticle(particle);
-	  //}
-        }
+      for(const auto& member : cluster.members){
+        auto &q = particles[member.index];
+	seedNewParticle(q);
       }
     }
   }
@@ -743,9 +755,25 @@ void World::seedNewParticle(Particle p){
   Particle newParticle = p;
   Eigen::Vector3d newPos = dir.normalized() * dist;
   newParticle.position = newPos;
+  unreferencedParticles.push_back(newParticle);
+  particles.push_back(newParticle);
+
+  for(int i = 0; i < clusters.size(); i++){
+    Cluster c = clusters.at(i);
+    if((newParticle.position - c.worldCom).norm() <= clusteringParams.neighborRadius){
+      c.members.push_back({(int)particles.size() - 1, 1.0});
+    }
+  }
 }
 
 double World::fRand(double fMin, double fMax){
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
+  double f = (double)rand() / RAND_MAX;
+  return fMin + f * (fMax - fMin);
+}
+
+void World::makeClustersForUnreferencedParticles(){
+  std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
+  for(int i = 0; i < newClusters.size(); i++){
+    clusters.push_back(newClusters.at(i));
+  }
 }
