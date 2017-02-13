@@ -157,6 +157,9 @@ void World::timestep(){
 	}
   }
 
+  removeInvalidClusters();
+  removeInvalidParticles();
+
   elapsedTime += dt;
   //std::cout << "elapsed time: " << elapsedTime << std::endl;
 }
@@ -581,7 +584,15 @@ void World::removeLonelyParticles() {
 	  [](Particle& p){ p.cleanup(p);});
   
   particles.erase(it, particles.end());
-  
+ /* 
+  for(int i = 0; i < particles.size(); i++){
+    Particle p = particles.at(i);
+    if(p.dead){
+      //World::removeParticleFromClusters(p);
+      particles.erase(particles.begin() + i);
+      i--;
+    }
+  }*/
 }
 
 /////////////////////////////////////
@@ -971,7 +982,8 @@ template <typename Container>
 void World::updateClusterProperties(const Container& clusterIndices){
   countClusters(); //TODO, just touch a subset...
 
-  for(auto& p : particles){
+  for(int i = 0; i < particles.size(); i++){
+        Particle p = particles.at(i);
 	if (p.mass <= 0.0) std::cout<<p.mass<<" "<<std::endl;
 	assert(p.mass > 0.0);
   }

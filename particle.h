@@ -43,7 +43,8 @@ public:
   //cleanup stuff without knowing anything about ogre
   std::function<void(Particle&)> cleanup = noop;
   RGBColor color;
-  double radius = 1.0;  
+  double radius = 0.01;  
+  bool dead = false;
 };
 
 class CollisionGeometry {
@@ -63,7 +64,7 @@ class CollisionGeometry {
 
 class Cluster {
  public:
-  int initialMembers;
+  int initialMembers = 0;
   Eigen::Vector3d restCom;
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;

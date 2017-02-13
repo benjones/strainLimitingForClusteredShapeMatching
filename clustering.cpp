@@ -359,6 +359,10 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
   if (!converged) return {}; //no clusters means it didn't work
   std::cout << "numClusters: " << clusters.size() << std::endl;
 
+  for(auto& c : clusters){
+    c.initialMembers = c.members.size();
+  }
+
   return clusters;
 }
 

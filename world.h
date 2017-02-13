@@ -18,7 +18,7 @@ class World{
 public:
   std::string filename; //for reloading the file
   int Mmax = 5;
-  double eta = 0.1;
+  double eta = 0.01;
 
   void loadFromJson(const std::string& _filename);
   
