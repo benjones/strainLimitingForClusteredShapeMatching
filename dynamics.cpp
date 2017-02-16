@@ -157,8 +157,10 @@ void World::timestep(){
 	}
   }
 
-  removeInvalidClusters();
-  removeInvalidParticles();
+  //removeInvalidClusters();
+  //removeInvalidParticles();
+  seedNewParticles();
+  makeClustersForUnreferencedParticles();
 
   elapsedTime += dt;
   //std::cout << "elapsed time: " << elapsedTime << std::endl;
@@ -510,8 +512,21 @@ void World::splitOutliers() {
 void World::cullSmallClusters() {
   double threshold = 1e-4;
   auto sizeBefore = clusters.size();
+
+  bool tooManyClusters = true;
+  for(int j = 0; j < particles.size(); j++){
+    if(particles[j].clusters.size() <= Mmax){
+      tooManyClusters = false;
+    }
+  }
+
   for (auto &c : clusters) {
-	if (c.members.size() < 4 || c.mass < threshold) {
+	if (c.members.size() < 4 || 
+            c.mass < threshold ||
+            c.members.size() < c.initialMembers / 2 ||
+            c.members.size() > c.initialMembers * 2 ||
+            c.Fp.norm() > 2.0 ||
+            tooManyClusters) {
 	  for (auto &member : c.members) {
 		particles[member.index].totalweight -= member.weight;
 	  }
@@ -523,8 +538,14 @@ void World::cullSmallClusters() {
   mapping.resize(clusters.size());
   int i1=0, i2=0;
   for (auto &c : clusters) {
-	if (c.members.size() < 4 || c.mass < threshold) {
-	  mapping[i1++] = -1;
+	//if (c.members.size() < 4 || c.mass < threshold) {  
+        if (c.members.size() < 4 ||
+            c.mass < threshold ||
+            c.members.size() < c.initialMembers / 2 ||
+            c.members.size() > c.initialMembers * 2 ||
+            c.Fp.norm() > 2.0 ||
+            tooManyClusters) {
+          mapping[i1++] = -1;
 	} else {
 	  mapping[i1++] = i2++;
 	}
@@ -541,7 +562,12 @@ void World::cullSmallClusters() {
   
   utils::actuallyEraseIf(clusters,
 	  [](const Cluster& c){
-		return (c.members.size() < 4 || c.mass < 1e-4);
+		//return (c.members.size() < 4 || c.mass < 1e-4);
+		return (c.members.size() < 4 ||
+            		c.mass < 1e-4 ||
+            		c.members.size() < c.initialMembers / 2 ||
+            		c.members.size() > c.initialMembers * 2 ||
+            		c.Fp.norm() > 2.0);
 	  }); 
 
   if(clusters.size() != sizeBefore){
@@ -556,6 +582,15 @@ void World::removeLonelyParticles() {
   int i1=0, i2=0;
   for (auto &p : particles) {
 	if (p.numClusters > 0) {
+  /*for(int i = 0; i < particles.size(); i++){
+	Particle p = particles.at(i);
+	int neighborIndex = findClosestParticle(p);
+	Particle neighbor = particles.at(neighborIndex);
+	double dist = (p.position - neighbor.position).norm();
+
+	if(p.numClusters > 0 && 
+	   i > neighborIndex &&
+	   dist > (p.radius * eta)){*/
 	  mapping[i1++] = i2++;
 	} else {
 	  mapping[i1++] = -1;
@@ -577,8 +612,19 @@ void World::removeLonelyParticles() {
 		return (p.numClusters == 0);
 		});*/
   //need to call cleanup on the reved particles...
-  auto it = std::stable_partition(particles.begin(), particles.end(),
-	  [](const Particle& p){return p.numClusters > 0;});
+  auto it = std::stable_partition(particles.begin(), particles.end(),[this](const Particle& p){
+	//int i = find(particles.begin(), particles.end(), p) - particles.begin();
+        int neighborIndex = findClosestParticle(p);
+        Particle neighbor = particles.at(neighborIndex);
+        double dist = (p.position - neighbor.position).norm();
+
+	printf("dist: %f\n", dist);
+	//printf("p.position: %f, %f, %f\n", p.position.x(), p.position.y(), p.position.z());
+	//printf("(p.id, nearestNeighbor) = (%d, %d)\tdist = %f\tradius * eta = %f\n", p.id, neighborIndex, dist, p.radius * eta);
+
+        return(p.numClusters > 0 && (p.id > neighborIndex || dist > (p.radius * eta)));
+	//return p.numClusters > 0;
+  });
 
   std::for_each(it, particles.end(),
 	  [](Particle& p){ p.cleanup(p);});

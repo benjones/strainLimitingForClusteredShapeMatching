@@ -711,7 +711,7 @@ void World::removeInvalidParticles(){
 }
 
 void World::removeParticleFromClusters(Particle p){
-  printf("removeParticleFromClusters\n");
+  //printf("removeParticleFromClusters\n");
   for(int i = 0; i < clusters.size(); i++){
     Cluster cluster = clusters.at(i);
     int index = 0;
@@ -746,7 +746,7 @@ int World::findClosestParticle(Particle p){
 }
 
 void World::seedNewParticles(){
-  printf("seedNewParticles\n");
+  //printf("seedNewParticles\n");
   for(auto& cluster : clusters){
     if(cluster.Fp.norm() > 1.8){
       for(const auto& member : cluster.members){
@@ -758,7 +758,7 @@ void World::seedNewParticles(){
 }
 
 void World::seedNewParticle(Particle p){
-  printf("seedNewParticle\n");
+  //printf("seedNewParticle\n");
   double dist = fRand(p.radius, p.radius*2.0);
   Eigen::Vector3d dir(fRand(-M_PI, M_PI), fRand(-M_PI, M_PI), fRand(-M_PI, M_PI));
 
@@ -777,15 +777,17 @@ void World::seedNewParticle(Particle p){
 }
 
 double World::fRand(double fMin, double fMax){
-  printf("fRand\n");
+  //printf("fRand\n");
   double f = (double)rand() / RAND_MAX;
   return fMin + f * (fMax - fMin);
 }
 
 void World::makeClustersForUnreferencedParticles(){
-  printf("makeClustersForUnreferencedParticles\n");
-  std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
-  for(int i = 0; i < newClusters.size(); i++){
-    clusters.push_back(newClusters.at(i));
+  //printf("makeClustersForUnreferencedParticles\n");
+  if(unreferencedParticles.size() >= clusteringParams.nClusters){
+    std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
+    for(int i = 0; i < newClusters.size(); i++){
+      clusters.push_back(newClusters.at(i));
+    }
   }
 }
