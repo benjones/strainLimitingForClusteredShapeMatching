@@ -139,14 +139,25 @@ void World::timestep(){
 	//std::cout<<"updateClusterProperties"<<std::endl;
   }
 
+  //printf("got here 1\n");
+
   updateClusterProperties(range(clusters.size()));
+
+  //printf("got here 2\n");
 
   //std::cout<<"updateTransforms"<<std::endl;
   for (auto &c : clusters) updateTransforms(c);
+
+  //printf("got here 3\n");
+
   //std::cout<<"selfCollisions"<<std::endl;
   if (selfCollisionsOn) selfCollisions();
 
+  //printf("got here 4\n");
+
   bounceOutOfPlanes();
+
+  //printf("got here 5\n");
 
   for(auto& c : clusters){
 	c.Fp = c.FpNew;
@@ -157,10 +168,12 @@ void World::timestep(){
 	}
   }
 
+  //printf("got here\n");
+
   //removeInvalidClusters();
-  //removeInvalidParticles();
-  seedNewParticles();
-  makeClustersForUnreferencedParticles();
+  removeInvalidParticles();
+  //seedNewParticles();
+  //makeClustersForUnreferencedParticles();
 
   elapsedTime += dt;
   //std::cout << "elapsed time: " << elapsedTime << std::endl;
@@ -603,9 +616,6 @@ void World::removeLonelyParticles() {
 	  member.index = mapping[member.index];
 	}
   }
-
-  
-  
   
   /*  utils::actuallyEraseIf(particles,
 	  [](const Particle& p){
@@ -614,22 +624,31 @@ void World::removeLonelyParticles() {
   //need to call cleanup on the reved particles...
   auto it = std::stable_partition(particles.begin(), particles.end(),[this](const Particle& p){
 	//int i = find(particles.begin(), particles.end(), p) - particles.begin();
-        int neighborIndex = findClosestParticle(p);
-        Particle neighbor = particles.at(neighborIndex);
-        double dist = (p.position - neighbor.position).norm();
+/*        int neighborIndex = findClosestParticle(p);
+	double dist = p.radius * eta;
+	Particle neighbor = particles.at(0);
+	if(neighborIndex != -1){
+        	neighbor = particles.at(neighborIndex);
+        	dist = (p.position - neighbor.position).norm();
+	}
 
-	printf("dist: %f\n", dist);
+	//printf("dist: %f\tthreshold: %f\n", dist, p.radius * eta);
 	//printf("p.position: %f, %f, %f\n", p.position.x(), p.position.y(), p.position.z());
 	//printf("(p.id, nearestNeighbor) = (%d, %d)\tdist = %f\tradius * eta = %f\n", p.id, neighborIndex, dist, p.radius * eta);
 
-        return(p.numClusters > 0 && (p.id > neighborIndex || dist > (p.radius * eta)));
-	//return p.numClusters > 0;
+        return(p.numClusters > 0 && (p.id > neighborIndex || dist >= (p.radius * eta)));*/
+	return p.numClusters > 0;
   });
 
+  printf("numParticles: %d\n", particles.size());
+
   std::for_each(it, particles.end(),
-	  [](Particle& p){ p.cleanup(p);});
+	  [](Particle& p){ p.cleanup(p); printf("removing particle\n");});
   
   particles.erase(it, particles.end());
+
+  printf("new numParticles: %d\n", particles.size());
+
  /* 
   for(int i = 0; i < particles.size(); i++){
     Particle p = particles.at(i);
@@ -843,13 +862,23 @@ void World::selfCollisions() {
 	}  
   */
 
+  //printf("got here 3.1\n");
+
   const double alpha = collisionRestitution;
 
   AccelerationGrid<Cluster, ClusterComGetter> accelerationGrid;
   accelerationGrid.numBuckets = 16; //todo, tune me
+ 
+  //printf("got here 3.2\n");
+
   accelerationGrid.updateGridWithRadii(clusters, ClusterRadiusGetter{});
+  
+  //printf("got here 3.3\n");
+
   auto potentialClusterPairs = accelerationGrid.getPotentialPairs();
   
+  //printf("got here 3.4\n");
+
     int wereNeighbors = 0;
   int collided = 0;
   

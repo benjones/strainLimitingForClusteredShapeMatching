@@ -69,7 +69,11 @@ void AccelerationGrid<ParticleType, Px>::updateGridWithRadii(
   
   assert(numBuckets > 0);
 
+  //printf("got here 3.2.1\n");
+
   const auto getter = Px{};
+
+  //printf("got here 3.2.2\n");
 
   Eigen::Vector3d bbMin = 
 	std::accumulate(particles.begin(),
@@ -84,7 +88,7 @@ void AccelerationGrid<ParticleType, Px>::updateGridWithRadii(
 		  
 		});
   
-  
+  //printf("got here 3.2.3\n");
   
   Eigen::Vector3d bbMax = 
 	std::accumulate(particles.begin(),
@@ -105,9 +109,14 @@ void AccelerationGrid<ParticleType, Px>::updateGridWithRadii(
   bbMax += 0.05*delta;
   origin = bbMin;
   delta = (bbMax - bbMin)/numBuckets;
+  
+  //printf("got here 3.2.4\n");
+  //printf("numBuckets: %d\n", numBuckets);
 
   grid.assign(numBuckets*numBuckets*numBuckets, {});
   
+  //printf("got here 3.2.5\n");
+
   for(auto&& e : enumerate(particles)){
 	const auto pIndex = e.first;
 	const auto& p = e.second;

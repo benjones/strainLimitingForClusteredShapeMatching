@@ -691,7 +691,7 @@ void World::removeInvalidClusters(){
 
 void World::removeInvalidParticles(){
   printf("removeInvalidParticles\n");
-  for(int i = 0; i < particles.size(); i++){
+/*  for(int i = 0; i < particles.size(); i++){
     Particle p = particles.at(i);
     int neighborIndex = findClosestParticle(p);
     Particle neighbor = particles.at(neighborIndex); 
@@ -708,27 +708,40 @@ void World::removeInvalidParticles(){
     }
   }
   printf("number of particles: %d\n", particles.size());   
+*/
+
+  for(auto& particle : particles){
+    int neighborIndex = findClosestParticle(particle);
+    if(neighborIndex != -1){
+      if(particle.id < neighborIndex){
+      	Particle neighbor = particles.at(neighborIndex);
+      	double dist = (particle.position - neighbor.position).norm();
+	if(dist < (particle.radius * eta)){
+	  removeParticleFromClusters(particle);
+	}
+      }
+    }
+  }
 }
 
 void World::removeParticleFromClusters(Particle p){
   //printf("removeParticleFromClusters\n");
-  for(int i = 0; i < clusters.size(); i++){
-    Cluster cluster = clusters.at(i);
+  for(auto& cluster : clusters){
     int index = 0;
     for(auto& member : cluster.members){
-      auto &q = particles[member.index];
-      if(&p == &q){
+      if(member.index == p.id){
 	cluster.members.erase(cluster.members.begin() + index);
       }
       index++;
     }
   }
+  p.numClusters = 0;
 }
 
 int World::findClosestParticle(Particle p){
   //printf("findClosestParticle\n");
   double minDist = 99999999;
-  int outputIndex = 0;
+  int outputIndex = -1;
   int currentIndex = 0;
 
   for(auto& neighbor : particles){

@@ -43,7 +43,7 @@ public:
   //cleanup stuff without knowing anything about ogre
   std::function<void(Particle&)> cleanup = noop;
   RGBColor color;
-  double radius = 0.01;  
+  double radius = 0.1;  
   bool dead = false;
 };
 
