@@ -690,26 +690,6 @@ void World::removeInvalidClusters(){
 }
 
 void World::removeInvalidParticles(){
-  printf("removeInvalidParticles\n");
-/*  for(int i = 0; i < particles.size(); i++){
-    Particle p = particles.at(i);
-    int neighborIndex = findClosestParticle(p);
-    Particle neighbor = particles.at(neighborIndex); 
-
-    if(i < neighborIndex){
-      double dist = (p.position - neighbor.position).norm();
-//      printf("dist: %f, p.radius * eta: %f\n", dist, p.radius * eta);
-      if(dist < (p.radius * eta)){
-        printf("removing a particle with mass: %f\n", particles.at(i).mass);
-//        removeParticleFromClusters(particles.at(index));
-	particles.erase(particles.begin() + i);
-        particles.at(i).dead = true;
-      }
-    }
-  }
-  printf("number of particles: %d\n", particles.size());   
-*/
-
   for(auto& particle : particles){
     int neighborIndex = findClosestParticle(particle);
     if(neighborIndex != -1){

@@ -534,6 +534,7 @@ void World::cullSmallClusters() {
   }
 
   for (auto &c : clusters) {
+	//if (c.members.size() < 4 || c.mass < threshold){
 	if (c.members.size() < 4 || 
             c.mass < threshold ||
             c.members.size() < c.initialMembers / 2 ||
@@ -640,14 +641,10 @@ void World::removeLonelyParticles() {
 	return p.numClusters > 0;
   });
 
-  printf("numParticles: %d\n", particles.size());
-
   std::for_each(it, particles.end(),
-	  [](Particle& p){ p.cleanup(p); printf("removing particle\n");});
+	  [](Particle& p){ p.cleanup(p);});
   
   particles.erase(it, particles.end());
-
-  printf("new numParticles: %d\n", particles.size());
 
  /* 
   for(int i = 0; i < particles.size(); i++){
