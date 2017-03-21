@@ -662,10 +662,13 @@ void World::mergeClusters(const std::vector<Particle>& newParticles,
 void World::removeInvalidClusters(){
 //  printf("removeInvalidClusters\n");
   for(int i = 0; i < clusters.size(); i++){
+	//  adamb: why use at(), it is slower than [], also why call the copy constructor for the cluster?  Why not just get a reference.
     Cluster cluster = clusters.at(i);
+	// adamb: it looks like toDelete is just funcitoning as a boolean?
     Cluster* toDelete = NULL;
     int index = 0;
 
+	// adamb: Do you really want to loop over all particles for each cluster?  What is the point of this?
     bool tooManyClusters = true;
     for(int j = 0; j < particles.size(); j++){
       if(particles[j].clusters.size() <= Mmax){
@@ -683,6 +686,7 @@ void World::removeInvalidClusters(){
       index = i;
     }
 
+	// adamb: I don't think this is safe inside the for loop
     if(toDelete != NULL){
       clusters.erase(clusters.begin() + index);
     }
@@ -706,11 +710,13 @@ void World::removeInvalidParticles(){
 
 void World::removeParticleFromClusters(Particle p){
   //printf("removeParticleFromClusters\n");
+  // adamb: why are you looping over all clusters?  The particle knows what clusters it is in.
   for(auto& cluster : clusters){
     int index = 0;
+	// adamb: We should cut this loop short after the erase
     for(auto& member : cluster.members){
       if(member.index == p.id){
-	cluster.members.erase(cluster.members.begin() + index);
+		cluster.members.erase(cluster.members.begin() + index);
       }
       index++;
     }
@@ -725,6 +731,7 @@ int World::findClosestParticle(Particle p){
   int outputIndex = -1;
   int currentIndex = 0;
 
+  // adamb: you should use the acceleration grid for this
   for(auto& neighbor : particles){
     if(p.id != neighbor.id){
       double dist = (p.position - neighbor.position).norm();
@@ -770,7 +777,7 @@ void World::seedNewParticles(){
 	  q.id = particles.size();
 
           particles.push_back(q);
-	  c.members.push_back({q.id, 1.0});
+	  c.members.push_back({q.id, q.totalweight});
           updateCluster = true;
       	  printf("seeded new particle with position %f, %f, %f, mag: %f\n", q.position.x(), q.position.y(), q.position.z(), q.position.norm());
 	}
