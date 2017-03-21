@@ -715,6 +715,7 @@ void World::removeParticleFromClusters(Particle p){
       index++;
     }
   }
+  //printf("deleting a particle\n");
   p.numClusters = 0;
 }
 
@@ -739,35 +740,93 @@ int World::findClosestParticle(Particle p){
 }
 
 void World::seedNewParticles(){
+  for(auto&& en : benlib::enumerate(clusters)){
+    auto& c = en.second;
+    int count = 0;
+    if(c.Fp.norm() > 1.8){
+      bool updateCluster = false;
+      for(auto &member : c.members){
+	if(count >= 5) break;
+        count++;
+        auto &p = particles[member.index];
+
+	double dist = fRand(p.radius, p.radius * 2.0);
+  	Eigen::Vector3d dir(fRand(-1, 1), fRand(-1, 1), fRand(-1, 1));
+	dir = dir.normalized();
+
+  	Particle q(p);
+  	Eigen::Vector3d newPos = p.position + (dir * dist);
+  	q.position = newPos;
+
+        if ((q.position - particles.at(findClosestParticle(q)).position).norm() > p.radius){
+          q.entity = nullptr;
+          q.sceneNode = nullptr;
+          q.cleanup = p.cleanup;
+          q.clusters.clear();
+          q.clusters.push_back(en.first);
+          q.numClusters = 1;
+          q.mass = (member.weight/p.totalweight) * p.mass;
+          q.totalweight = member.weight;
+	  q.id = particles.size();
+
+          particles.push_back(q);
+	  c.members.push_back({q.id, 1.0});
+          updateCluster = true;
+      	  printf("seeded new particle with position %f, %f, %f, mag: %f\n", q.position.x(), q.position.y(), q.position.z(), q.position.norm());
+	}
+      }
+    }
+  }
+}
+
+/*
+void World::seedNewParticles(){
   //printf("seedNewParticles\n");
   for(auto& cluster : clusters){
     if(cluster.Fp.norm() > 1.8){
-      for(const auto& member : cluster.members){
-        auto &q = particles[member.index];
+      //printf("seeding new particle\n");
+      //for(const auto& member : cluster.members){
+      //  auto &q = particles[member.index];
+      for(int i = 0; i < 5; i++){
+	int randIndex = rand() % cluster.members.size();
+	Particle q = particles.at(cluster.members.at(randIndex).index);
 	seedNewParticle(q);
       }
+      cluster.Fp.setIdentity();
     }
   }
 }
 
 void World::seedNewParticle(Particle p){
   //printf("seedNewParticle\n");
-  double dist = fRand(p.radius, p.radius*2.0);
+  double dist = fRand(p.radius, p.radius * 2.0) / 2.0;
   Eigen::Vector3d dir(fRand(-M_PI, M_PI), fRand(-M_PI, M_PI), fRand(-M_PI, M_PI));
 
-  Particle newParticle = p;
-  Eigen::Vector3d newPos = dir.normalized() * dist;
-  newParticle.position = newPos;
-  unreferencedParticles.push_back(newParticle);
-  particles.push_back(newParticle);
 
-  for(int i = 0; i < clusters.size(); i++){
-    Cluster c = clusters.at(i);
-    if((newParticle.position - c.worldCom).norm() <= clusteringParams.neighborRadius){
-      c.members.push_back({(int)particles.size() - 1, 1.0});
+  Particle newParticle(p);
+  Eigen::Vector3d newPos = p.position + (dir.normalized() * dist);
+  newParticle.position = newPos;
+  newParticle.numClusters = p.numClusters;
+  if((newParticle.position - particles.at(findClosestParticle(newParticle)).position).norm() > p.radius / 2.0){
+ 
+    newParticle.id = particles.size();
+    newParticle.numClusters = p.numClusters;
+    newParticle.clusters = p.clusters;
+    particles.push_back(newParticle); 
+
+//    printf("particle position: %f, %f, %f, with mass: %f\n", newParticle.position.x(), newParticle.position.y(), newParticle.position.z(), newParticle.mass);
+
+    for(auto& c : clusters){
+      for(auto& member : c.members){
+        if(member.index == p.id){
+	  c.members.push_back({newParticle.id, 1.0});
+        }
+      }
     }
+    //printf("seeding a particle with %zu clusters\n", newParticle.numClusters);
   }
 }
+*/
 
 double World::fRand(double fMin, double fMax){
   //printf("fRand\n");
@@ -778,9 +837,9 @@ double World::fRand(double fMin, double fMax){
 void World::makeClustersForUnreferencedParticles(){
   //printf("makeClustersForUnreferencedParticles\n");
   if(unreferencedParticles.size() >= clusteringParams.nClusters){
-    std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
-    for(int i = 0; i < newClusters.size(); i++){
-      clusters.push_back(newClusters.at(i));
-    }
+    //std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
+    //for(int i = 0; i < newClusters.size(); i++){
+    //  clusters.push_back(newClusters.at(i));
+    //}
   }
 }

@@ -172,7 +172,7 @@ void World::timestep(){
 
   //removeInvalidClusters();
   removeInvalidParticles();
-  //seedNewParticles();
+  seedNewParticles();
   //makeClustersForUnreferencedParticles();
 
   elapsedTime += dt;
@@ -585,7 +585,7 @@ void World::cullSmallClusters() {
 	  }); 
 
   if(clusters.size() != sizeBefore){
-	std::cout << "deleted " << sizeBefore - clusters.size() << " clusters" << std::endl;
+	std::cout << "deleted " << sizeBefore - clusters.size() << " clusters at time" << elapsedTime << std::endl;
   }
   countClusters();
 }
@@ -638,6 +638,7 @@ void World::removeLonelyParticles() {
 	//printf("(p.id, nearestNeighbor) = (%d, %d)\tdist = %f\tradius * eta = %f\n", p.id, neighborIndex, dist, p.radius * eta);
 
         return(p.numClusters > 0 && (p.id > neighborIndex || dist >= (p.radius * eta)));*/
+	//if(p.numClusters <= 0) printf("removing a particle with %zu clusters\n", p.numClusters);
 	return p.numClusters > 0;
   });
 
@@ -1036,6 +1037,7 @@ void World::updateTransforms(Cluster& c) const{
 
 void World::countClusters(){
   for(auto& p : particles){
+//	if(p.numClusters == 0) printf("found an empty particle at the beginning\n");
 	p.numClusters = 0;
 	p.clusters.clear();
   }
@@ -1046,7 +1048,11 @@ void World::countClusters(){
 	  p.clusters.push_back(cInd);
 	}
   }
+  for (auto& p : particles){
+    if(p.numClusters == 0) printf("found an empty particle at the end\n");
+  }
   for(auto& p : particles){assert(p.numClusters == p.clusters.size());}
+
 }
 
 // updates coms, width, mass, aInv
