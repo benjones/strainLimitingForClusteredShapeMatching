@@ -843,10 +843,48 @@ double World::fRand(double fMin, double fMax){
 
 void World::makeClustersForUnreferencedParticles(){
   //printf("makeClustersForUnreferencedParticles\n");
+
+  ClusteringParams newClusteringParams = clusteringParams;
+  newClusteringParams.nClusters = 1;
+  newClusteringParams.nClustersMax = 1;
+  newClusteringParams.neighborRadius /= 2.0;
+  newClusteringParams.neighborRadiusMax /= 2.0;
+
+  while(!unreferencedParticles.empty()){
+    std::vector<Particle> particlesToBeClustered;
+    std::vector<Cluster> newClusters;
+
+    int randIndex = rand() % unreferencedParticles.size();
+    Particle center = particles[randIndex];
+
+    for(auto& p : unreferencedParticles){
+      if((center.position - p.position).norm() <= newClusteringParams.neighborRadiusMax){
+        particlesToBeClustered.push_back(p);
+      }
+    }
+
+    newClusters = makeClusters(particlesToBeClustered, newClusteringParams);
+    clusters.insert(clusters.end(), newClusters.begin(), newClusters.end());
+
+    for(auto& p : particlesToBeClustered){
+      unreferencedParticles.erase(std::remove_if(unreferencedParticles.begin(),
+                                                 unreferencedParticles.end(),
+                                                 [p](Particle q){return p.id == q.id;}),
+                                                 unreferencedParticles.end());
+    }
+
+    particlesToBeClustered.clear();
+    newClusters.clear();
+  }
+}
+
+
+/*void World::makeClustersForUnreferencedParticles(){
+  //printf("makeClustersForUnreferencedParticles\n");
   if(unreferencedParticles.size() >= clusteringParams.nClusters){
     //std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
     //for(int i = 0; i < newClusters.size(); i++){
     //  clusters.push_back(newClusters.at(i));
     //}
   }
-}
+}*/
