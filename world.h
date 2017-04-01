@@ -48,6 +48,8 @@ public:
   void splitOutliers();
   void cullSmallClusters();
   void removeLonelyParticles();
+  void removeClusters();
+  void addClusters(const ClusteringParams &params);
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
@@ -212,7 +214,8 @@ public:
   double collisionGeometryThreshold;
   double outlierThreshold;
 
-
+  double clusterFpThreshold;
+  double clusterFadeIn, clusterFadeOut;
 
   benlib::Profiler prof;
 };

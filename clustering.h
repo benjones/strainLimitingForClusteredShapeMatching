@@ -8,6 +8,12 @@ struct RestPositionGetter{
   }
 };
 
+struct EmbeddedPositionGetter{
+  Eigen::Vector3d operator()(const Particle& p) const{
+	return p.embeddedPosition;
+  }
+};
+
 struct ClusteringParams{
   double neighborRadius;
   int nClusters;
