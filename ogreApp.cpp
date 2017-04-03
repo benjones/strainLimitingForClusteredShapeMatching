@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <iostream>
+#ifndef BEN
 #include <Ogre/OgreRoot.h>
 #include <Ogre/OgrePlugin.h>
 #include <Ogre/OgreWindowEventUtilities.h>
@@ -28,6 +29,25 @@
 #include <Ogre/OgreMeshManager.h>
 #include <Ogre/Plugins/OctreeSceneManager/OgreOctreePlugin.h>
 #include <Ogre/RenderSystems/GL/OgreGLPlugin.h>
+#else
+#include <Ogre/OgreRoot.h>
+#include <Ogre/OgrePlugin.h>
+#include <Ogre/OgreWindowEventUtilities.h>
+#include <Ogre/OgreRenderWindow.h>
+#include <Ogre/OgreCamera.h>
+#include <Ogre/OgreViewport.h>
+#include <Ogre/OgreSceneNode.h>
+#include <Ogre/OgreEntity.h>
+#include <Ogre/OgreMaterialManager.h>
+#include <Ogre/OgreMaterial.h>
+#include <Ogre/OgreTechnique.h>
+#include <OgreFreeimageCodec.h>
+#include <Ogre/OgreMeshManager.h>
+#include <OgreOctreePlugin.h>
+#include <OgreGLPlugin.h>
+//#include <OgreGL3PlusPlugin.h>
+
+#endif
 
 #include "world.h"
 #include "color_spaces.h"
@@ -62,6 +82,7 @@ int main(int argc, char** argv){
 
   auto octreePlugin = std::unique_ptr<Ogre::OctreePlugin>(new Ogre::OctreePlugin());
   auto glPlugin = std::unique_ptr<Ogre::GLPlugin>(new Ogre::GLPlugin());
+  //  auto gl3Plugin = std::unique_ptr<Ogre::GL3PlusPlugin>(new Ogre::GL3PlusPlugin());
   //the top two must outlive root
   auto ogreRoot = std::unique_ptr<Ogre::Root>(new Ogre::Root("","","ogreLog.log"));
 
@@ -73,6 +94,8 @@ int main(int argc, char** argv){
 
   ogreRoot->installPlugin(glPlugin.get());
   glPlugin->initialise();
+  //  ogreRoot->installPlugin(gl3Plugin.get());
+  //  gl3Plugin->initialise();
   
   std::cout << "installed plugins: " << std::endl;
   for(const auto& plugin : ogreRoot->getInstalledPlugins()){
@@ -87,21 +110,25 @@ int main(int argc, char** argv){
 	std::cout << '\t' << r->getName() << std::endl;
   }
   
-  Ogre::RenderSystem* rs =
-	ogreRoot->getRenderSystemByName("OpenGL Rendering Subsystem");
+Ogre::RenderSystem* rs =
+										 ogreRoot->getRenderSystemByName("OpenGL Rendering Subsystem");
+	//	ogreRoot->getRenderSystemByName("OpenGL 3+ Rendering Subsystem");
 
   assert(rs);
   if(!(rs->getName() == "OpenGL Rendering Subsystem")){
 	throw std::runtime_error("couldn't set up render sys");
   }
-
+std::cout << "setting fullscreen" << std::endl;
   rs->setConfigOption("Full Screen", "No");
   //rs->setConfigOption("VSync", "No");
+std::cout << "setting video mode" << std::endl;
   rs->setConfigOption("Video Mode", "960 x 540 @ 32-bit");
+std::cout << "setting render system: " << std::endl;
 
-  ogreRoot->setRenderSystem(rs);
+ogreRoot->setRenderSystem(rs);
+std::cout << "initializing window " << std::endl;
 
-  auto* window = ogreRoot->initialise(true, "Ductile Fracture for Shape Matching");
+auto* window = ogreRoot->initialise(true, "Ductile Fracture for Shape Matching");
 
   sceneManager->setAmbientLight(Ogre::ColourValue(0.1, 0.1, 0.1));
 

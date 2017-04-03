@@ -5,6 +5,7 @@
 #include "movingPlane.hpp"
 #include "twistingPlane.hpp"
 #include "tiltingPlane.hpp"
+#include "constraintPlane.hpp"
 #include "projectile.hpp"
 #include "cylinderObstacle.hpp"
 
@@ -60,6 +61,7 @@ public:
 	movingPlanes.clear();
 	twistingPlanes.clear();
 	tiltingPlanes.clear();
+	constraintPlanes.clear();
 	projectiles.clear();
 	cylinders.clear();
 	clusterCenters.clear();
@@ -80,21 +82,6 @@ public:
   void dumpClippedSpheres(const std::string& filename) const;
   void dumpColors(const std::string& filename) const;
 
-
-  //refactored out into vis, camera/settings stuff
-  /*  void draw(SDL_Window* window) const ;
-  void drawPretty(SDL_Window* window) const ;
-  void drawSingleCluster(SDL_Window* window, int frame) const;
-  void drawPlanes() const;
-  void drawPlanesPretty() const;
-  void drawTPlane(const Eigen::Vector3d& normal, double offset, double roffset, double width) const;
-  void drawTiltPlane(const Eigen::Vector3d& normal, const Eigen::Vector3d& tilt, double offset, double roffset, double width) const;clus
-  void zoom(int amount);
-  void pan(Eigen::Vector2i oldposition,
-		   Eigen::Vector2i newPosition);
-
-  void move(bool forward);
-  */
   void bounceOutOfPlanes();
 
  // std::vector<std::vector<int> > clusterCollisionMap;
@@ -189,8 +176,10 @@ public:
   std::vector<MovingPlane> movingPlanes;
   std::vector<TwistingPlane> twistingPlanes;
   std::vector<TiltingPlane> tiltingPlanes;
+  std::vector<ConstraintPlane> constraintPlanes;
   std::vector<Projectile> projectiles;
   std::vector<CylinderObstacle> cylinders;
+
   std::vector<size_t> clusterCenters;
   bool dragWithPlanes = true;
 
