@@ -1,3 +1,4 @@
+#include "world.h"
 #include "clustering.h"
 #include "range.hpp"
 #include "utils.h"
@@ -412,5 +413,136 @@ double ClusteringParams::kernel(const Eigen::Vector3d &x) const{
 	return x.norm();
   default:
 	return 1.0 / (x.squaredNorm() + 1.0e-4);
+  }
+}
+
+void World::removeClusters() {
+  for (auto &c : clusters) {
+	if (c.markedForRemoval) continue;
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.Fp);
+	double condFp = solver.singularValues()(0)/solver.singularValues()(2);
+	if (condFp > clusterFpThreshold) {
+	  c.markedForRemoval = true;
+	  c.fadeSteps = clusterFadeOut;
+	  c.oweights.reserve(c.members.size());
+	  for (auto &m : c.members) c.oweights.push_back(m.weight);
+	}
+  }
+  for (auto &c : clusters) {
+	if (!c.markedForRemoval || c.fadeSteps <= 0) continue;
+	for (auto &&en : benlib::enumerate(c.members)) {
+	  auto &m = en.second;
+	  double w = c.oweights[en.first]/c.fadeSteps;
+	  particles[m.index].totalweight -= w;
+	  m.weight -= w;
+	}
+	c.fadeSteps--;
+  }  
+}
+
+void World::addClusters(const ClusteringParams &params) {
+  double convergenceThreshold = 1e-6 * params.sqrNeighborRadius; // 0.1% motion allowed
+  for (auto &p : particles) {
+	bool unclustered = true;
+	for (auto i = p.clusters.begin();  i != p.clusters.end() && unclustered; i++) {
+	  if (!clusters[*i].markedForRemoval) unclustered = false;
+	}
+	std::unordered_set<int> particlesToEmbedSet;
+	std::vector<int> particlesToEmbed;
+
+	for (auto &i : p.clusters) {
+	  for (auto &m : clusters[i].members) {
+		particlesToEmbedSet.insert(m.index);
+	  }
+	}
+	particlesToEmbed.resize(particlesToEmbedSet.size());
+
+	int m = particlesToEmbedSet.size();
+	int n = m + p.clusters.size();
+	Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n,n);
+	Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+	Eigen::VectorXd y = Eigen::VectorXd::Zero(n);
+	Eigen::VectorXd z = Eigen::VectorXd::Zero(n);
+	Eigen::VectorXd a = Eigen::VectorXd::Zero(n);
+	Eigen::VectorXd b = Eigen::VectorXd::Zero(n);
+	Eigen::VectorXd c = Eigen::VectorXd::Zero(n);
+
+	int index = 0;
+	for (auto &i : particlesToEmbedSet) {
+	  particlesToEmbed[index] = i;
+	  
+	  for (auto && en : benlib::enumerate(p.clusters)) {
+		auto &j = en.second;
+		int k=0;
+		while (k < clusters[j].members.size() && clusters[j].members[k].index != i) k++;
+		if (k >= clusters[j].members.size()) continue;
+		double w = clusters[j].members[k].weight;
+		double w2 = w*w;
+		Eigen::Vector3d d = clusters[j].Fp * clusters[j].prest[k];
+		A(index, index) += w2;
+		A(m+en.first, m+en.first) += w2;
+		A(index, m+en.first) -= w2;
+		A(m+en.first, index) -= w2;
+		a(index) += w*d(0);
+		b(index) += w*d(1);
+		c(index) += w*d(2);
+		index++;
+	  }
+	}
+
+	Eigen::LLT<Eigen::MatrixXd> lltofA(A);
+	x = lltofA.solve(a);
+	y = lltofA.solve(b);
+	z = lltofA.solve(c);
+
+	//std::vector<Eigen::Vector3d> e;
+	//e.resize(m);
+	for (int i=0; i<m; i++) {
+	  //e[i](0) = x(i);
+	  //e[i](1) = y(i);
+	  //e[i](2) = z(i);
+	  particles[particlesToEmbed[i]].embeddedPosition(0) = x(i);
+	  particles[particlesToEmbed[i]].embeddedPosition(1) = y(i);
+	  particles[particlesToEmbed[i]].embeddedPosition(2) = z(i);
+	}
+
+	Cluster newCluster;
+	newCluster.restCom = particles[p.id].embeddedPosition;
+	
+	AccelerationGrid<Particle, EmbeddedPositionGetter> embeddedPositionGrid;
+	embeddedPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
+	embeddedPositionGrid.updateGrid(particles);
+	bool converged = false;
+
+	while (!converged) {
+	  converged = true;
+	  std::vector<int> neighbors =
+		embeddedPositionGrid.getNearestNeighbors(particles, newCluster.restCom, params.neighborRadius);
+	  newCluster.members.resize(neighbors.size());
+	  for(unsigned int i=0; i<neighbors.size(); i++) {
+		auto n = neighbors[i];
+		Particle &p = particles[n];
+		double w = params.kernel (newCluster.restCom - p.restPosition);
+		newCluster.members[i] = {n, w};
+		//p.totalweight += w;
+		//p.clusters.push_back(j);
+		//p.numClusters++;
+	  }
+
+	  //compute cluster COMs
+	  newCluster.worldCom = newCluster.restCom; //store the last rest COM here for now
+	  newCluster.mass = 0.0;
+	  newCluster.restCom = Eigen::Vector3d::Zero();
+	  for (auto &member : newCluster.members) {
+		auto &p = particles[member.index];
+		double w = member.weight / (p.totalweight+member.weight);
+		newCluster.restCom += w * p.mass * p.position;
+		newCluster.mass += w * p.mass;
+	  }
+	  newCluster.restCom /= newCluster.mass;
+	  if ((newCluster.restCom - newCluster.worldCom).squaredNorm() > convergenceThreshold) {
+		converged = false;
+	  }
+	}
   }
 }

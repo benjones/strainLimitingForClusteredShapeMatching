@@ -16,7 +16,7 @@ using benlib::range;
 inline double sqr (const double &x) {return x*x;}
 
 void World::timestep(){
-
+  std::cout<<"timestep"<<std::endl;
   for(auto& twistingPlane : twistingPlanes){
 	for(auto& p : particles){
       if (twistingPlane.outside(p) && twistingPlane.lifetime < elapsedTime) 
@@ -69,11 +69,12 @@ void World::timestep(){
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
+	  if (en.first == 17 || en.first == 28) std::cout<<"a: "<<en.first<<" "<<sigma(0)<<std::endl;
 	  if(fabs(sigma(0) - 1.0) > cluster.toughness && !cluster.justFractured){
 		potentialSplits.push_back({en.first, 
 				sigma(0) - cluster.toughness, 
 				V.col(0)});
-	  } else if (cluster.justFractured && fabs(sigma(0) - 1.0) <= cluster.toughness){
+	  } else if (cluster.justFractured && fabs(sigma(0) - 1.0) <= 1.0*cluster.toughness){
 		//can this just be an else? --Ben
 		cluster.justFractured = false;
 	  }
@@ -214,6 +215,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   auto timer = prof.timeName("fracture");
 
   benlib::Profiler fractureProf;
+  for(auto& p : particles){
+	p.flags &= ~(Particle::JUST_SPLIT);
+  }
+
   //do fracture
   std::sort(potentialSplits.begin(), potentialSplits.end(),
 	  [](const FractureInfo& a, const FractureInfo& b){
@@ -222,12 +227,22 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
   if(!potentialSplits.empty()){
 	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
+	for (auto s : potentialSplits) std::cout<<"\t "<<s.clusterIndex<<std::endl;
   }
 
   bool aCancel = false;
   for(auto &ps : potentialSplits){
 	auto setupTimer = fractureProf.timeName("setup");
 	size_t cIndex = ps.clusterIndex;
+
+	bool skip = false;
+	for (auto &i : clusters[cIndex].members) {
+	  if (particles[i.index].flags & Particle::JUST_SPLIT) {
+		skip = true;
+		break;
+	  }
+	}
+	if (skip) continue;
 
 	auto worldCOM = clusters[cIndex].worldCom;
 
@@ -240,6 +255,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	
 	Eigen::Vector3d sigma = solver.singularValues();
+	if (cIndex == 17 || cIndex == 28) std::cout<<cIndex<<" "<<sigma(0)<<std::endl;
 	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness || clusters[cIndex].justFractured){
 	  if(!aCancel){
 		aCancel = true;
@@ -335,6 +351,13 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		for (auto &i : p.clusters) {
 		  if (i == cIndex || i == clusters.size()-1) continue;
 		  auto &c = clusters[(i)];
+		  if (delayRepeatedFracture) {
+			if (!c.justFractured) std::cout<<"stopping fracture for "<<i<<" ("<<cIndex<<", "<<clusters.size()-1<<")"<<std::endl;
+			c.justFractured = true;
+		  }
+		  if (toughnessBoost > 0.0) {
+			c.timeSinceLastFracture = 0.0;
+		  }
 		  if(((p.position - worldCOM).dot(splitDirection) >= 0) !=
 			  ((c.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 			unsigned int j = 0;
@@ -348,6 +371,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		}
 		if (n == 0) continue;
 		p.flags |= Particle::SPLIT;
+		p.flags |= Particle::JUST_SPLIT;
 		Particle q(p);
 		//init ogre stuff to null
 		q.sceneNode  = nullptr;
@@ -462,8 +486,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   auto endTime = std::chrono::high_resolution_clock::now();
   double secsElapsed = std::chrono::duration<double>(endTime - start).count();
   if(secsElapsed > 0.001){
-	std::cout << "fracture took more than 1ms: " << secsElapsed << std::endl;
-	fractureProf.dump<std::chrono::duration<double>>(std::cout);
+	//std::cout << "fracture took more than 1ms: " << secsElapsed << std::endl;
+	//fractureProf.dump<std::chrono::duration<double>>(std::cout);
   }
 }	
 
