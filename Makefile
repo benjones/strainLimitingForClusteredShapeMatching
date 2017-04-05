@@ -36,9 +36,9 @@ OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPla
 
 #-----------------------------------------
 
+OGRE_INCS = -I/usr/local/include -I/opt/ogre/include
+OGRE_LIBS = -framework CoreFoundation -framework Cocoa -framework OpenGL -framework AGL -L/usr/local/lib -ltbb -lfreeimage -lboost_system -L/opt/ogre/lib -lOgreMainStatic -lRenderSystem_GLStatic -lPlugin_OctreeSceneManagerStatic -lOgreGLSupportStatic -lzzip -lboost_thread-mt -lz
 
-OGRE_INCS = -I/Users/$(USER)/libs/ogre/OgreMain/include -I/Users/$(USER)/libs/ogre/build/include -I/usr/local/include -I/Users/$(USER)/libs/ogre/PlugIns/OctreeSceneManager/include -I/Users/$(USER)/libs/ogre/RenderSystems/GL/include
-OGRE_LIBS = -framework CoreFoundation -framework Cocoa -framework OpenGL -framework AGL -L/usr/local/lib -ltbb -lfreeimage -L/Users/$(USER)/libs/ogre/build/lib/macosx -lOgreMainStatic -lPlugin_OctreeSceneManagerStatic -lRenderSystem_GLStatic #-F/Library/Frameworks -oframework Ogre
 
 CCOPTS = $(OPT) $(FLAGS) $(INCS) $(EIGEN_INCLUDE) 
 LDOPTS = $(OPT) 

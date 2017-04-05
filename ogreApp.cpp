@@ -1,20 +1,33 @@
+/*
+  hg clone https://bitbucket.org/sinbad/ogre/
+  CMakeLists.txt (L327): set(CMAKE_OSX_DEPLOYMENT_TARGET 10.12)
+  cmake -D OGRE_STATIC=1 -D OGRE_BUILD_SAMPLES=0 ..
+  make     
+  make install
+  cd sdk/include/OGRE
+  cp OgrePlugin.h RenderSystems/GL/
+  cp OgrePlugin.h Plugins/OctreeSceneManager/
+  cd ../../../
+  sudo mv sdk /opt/ogre
+ */
 
 #include <memory>
 #include <iostream>
-#include <OgreRoot.h>
-#include <OgreOctreePlugin.h>
-#include <OgreGLPlugin.h>
-#include <OgreWindowEventUtilities.h>
-#include <OgreRenderWindow.h>
-#include <OgreCamera.h>
-#include <OgreViewport.h>
-#include <OgreSceneNode.h>
-#include <OgreEntity.h>
-#include <OgreMaterialManager.h>
-#include <OgreMaterial.h>
-#include <OgreTechnique.h>
-#include <OgreFreeimageCodec.h>
-#include <OgreMeshManager.h>
+#include <Ogre/OgreRoot.h>
+#include <Ogre/OgrePlugin.h>
+#include <Ogre/OgreWindowEventUtilities.h>
+#include <Ogre/OgreRenderWindow.h>
+#include <Ogre/OgreCamera.h>
+#include <Ogre/OgreViewport.h>
+#include <Ogre/OgreSceneNode.h>
+#include <Ogre/OgreEntity.h>
+#include <Ogre/OgreMaterialManager.h>
+#include <Ogre/OgreMaterial.h>
+#include <Ogre/OgreTechnique.h>
+#include <Ogre/OgreFreeimageCodec.h>
+#include <Ogre/OgreMeshManager.h>
+#include <Ogre/Plugins/OctreeSceneManager/OgreOctreePlugin.h>
+#include <Ogre/RenderSystems/GL/OgreGLPlugin.h>
 
 #include "world.h"
 #include "color_spaces.h"
@@ -28,7 +41,7 @@ int main(int argc, char** argv){
   }
   
   
-  
+  int identity_id=0;
 
   bool dumpFrames = argc > 2;
 
@@ -58,7 +71,6 @@ int main(int argc, char** argv){
   ogreRoot->installPlugin(octreePlugin.get());
   octreePlugin->initialise();
 
-
   ogreRoot->installPlugin(glPlugin.get());
   glPlugin->initialise();
   
@@ -84,7 +96,7 @@ int main(int argc, char** argv){
   }
 
   rs->setConfigOption("Full Screen", "No");
-  rs->setConfigOption("VSync", "No");
+  //rs->setConfigOption("VSync", "No");
   rs->setConfigOption("Video Mode", "960 x 540 @ 32-bit");
 
   ogreRoot->setRenderSystem(rs);
@@ -108,7 +120,7 @@ int main(int argc, char** argv){
 
   //load the meshes/textures/etc
   Ogre::ResourceGroupManager::getSingleton().
-	addResourceLocation("/Users/ben/libs/ogre/Samples/Media/models", "FileSystem", "General");
+	addResourceLocation("/opt/ogre/Media/models", "FileSystem", "General");
   Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 
 
@@ -219,7 +231,6 @@ int main(int argc, char** argv){
   
   
   
-  
   for(auto& p : world.particles){
 	p.cleanup = cleanupParticle;
 	p.sceneNode = sceneManager->getRootSceneNode()->createChildSceneNode();
@@ -228,7 +239,7 @@ int main(int argc, char** argv){
 	p.entity = sceneManager->createEntity("sphere.mesh");
 	p.sceneNode->attachObject(p.entity);
 	auto material = Ogre::MaterialManager::getSingleton().create(
-		"aMat",
+		(std::string("aMat ") + std::to_string(identity_id++)).c_str(),
 		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
 
 	//find closest color:
@@ -237,7 +248,7 @@ int main(int argc, char** argv){
 		[&p,&world](int a, int b){
 		  return (p.position - world.clusters[a].worldCom).squaredNorm() <
 		  (p.position - world.clusters[b].worldCom).squaredNorm();
-		});
+		  });
 	
 		RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
 	material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
@@ -261,7 +272,7 @@ int main(int argc, char** argv){
 		p.entity = sceneManager->createEntity("sphere.mesh");
 		p.sceneNode->attachObject(p.entity);
 		auto material = Ogre::MaterialManager::getSingleton().create(
-			"aMat",
+			(std::string("aMat ") + std::to_string(identity_id++)).c_str(),
 			Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
 		
 		//find closest color:
@@ -270,9 +281,9 @@ int main(int argc, char** argv){
 			[&p,&world](int a, int b){
 			  return (p.position - world.clusters[a].worldCom).squaredNorm() <
 			  (p.position - world.clusters[b].worldCom).squaredNorm();
-			});
+			  });
 		
-			RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
+			  RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
 		material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
 		p.entity->setMaterial(material);
 	  }
