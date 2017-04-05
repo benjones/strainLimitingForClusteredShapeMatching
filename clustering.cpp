@@ -1,8 +1,8 @@
 #include "clustering.h"
 #include "range.hpp"
 #include "utils.h"
-
 #include "accelerationGrid.h"
+
 #include "profiler.hpp"
 #include <random>
 
@@ -93,7 +93,6 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
   if (params.clusteringAlgorithm == 2) {
 	return makeRandomClusters(particles, params.neighborRadius);
   }
-
 
   AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
   restPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?

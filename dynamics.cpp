@@ -6,8 +6,6 @@
 #include <random>
 #include <iostream>
 
-#include "accelerationGrid.h"
-
 #include "enumerate.hpp"
 using benlib::enumerate;
 #include "range.hpp"
@@ -139,25 +137,16 @@ void World::timestep(){
 	//std::cout<<"updateClusterProperties"<<std::endl;
   }
 
-  //printf("got here 1\n");
 
   updateClusterProperties(range(clusters.size()));
-
-  //printf("got here 2\n");
 
   //std::cout<<"updateTransforms"<<std::endl;
   for (auto &c : clusters) updateTransforms(c);
 
-  //printf("got here 3\n");
-
   //std::cout<<"selfCollisions"<<std::endl;
   if (selfCollisionsOn) selfCollisions();
 
-  //printf("got here 4\n");
-
   bounceOutOfPlanes();
-
-  //printf("got here 5\n");
 
   for(auto& c : clusters){
 	c.Fp = c.FpNew;
@@ -168,9 +157,6 @@ void World::timestep(){
 	}
   }
 
-  //printf("got here\n");
-
-  //removeInvalidClusters();
   removeInvalidParticles();
   seedNewParticles();
   //makeClustersForUnreferencedParticles();
@@ -596,15 +582,6 @@ void World::removeLonelyParticles() {
   int i1=0, i2=0;
   for (auto &p : particles) {
 	if (p.numClusters > 0) {
-  /*for(int i = 0; i < particles.size(); i++){
-	Particle p = particles.at(i);
-	int neighborIndex = findClosestParticle(p);
-	Particle neighbor = particles.at(neighborIndex);
-	double dist = (p.position - neighbor.position).norm();
-
-	if(p.numClusters > 0 && 
-	   i > neighborIndex &&
-	   dist > (p.radius * eta)){*/
 	  mapping[i1++] = i2++;
 	} else {
 	  mapping[i1++] = -1;
@@ -624,21 +601,6 @@ void World::removeLonelyParticles() {
 		});*/
   //need to call cleanup on the reved particles...
   auto it = std::stable_partition(particles.begin(), particles.end(),[this](const Particle& p){
-	//int i = find(particles.begin(), particles.end(), p) - particles.begin();
-/*        int neighborIndex = findClosestParticle(p);
-	double dist = p.radius * eta;
-	Particle neighbor = particles.at(0);
-	if(neighborIndex != -1){
-        	neighbor = particles.at(neighborIndex);
-        	dist = (p.position - neighbor.position).norm();
-	}
-
-	//printf("dist: %f\tthreshold: %f\n", dist, p.radius * eta);
-	//printf("p.position: %f, %f, %f\n", p.position.x(), p.position.y(), p.position.z());
-	//printf("(p.id, nearestNeighbor) = (%d, %d)\tdist = %f\tradius * eta = %f\n", p.id, neighborIndex, dist, p.radius * eta);
-
-        return(p.numClusters > 0 && (p.id > neighborIndex || dist >= (p.radius * eta)));*/
-	//if(p.numClusters <= 0) printf("removing a particle with %zu clusters\n", p.numClusters);
 	return p.numClusters > 0;
   });
 
@@ -646,16 +608,6 @@ void World::removeLonelyParticles() {
 	  [](Particle& p){ p.cleanup(p);});
   
   particles.erase(it, particles.end());
-
- /* 
-  for(int i = 0; i < particles.size(); i++){
-    Particle p = particles.at(i);
-    if(p.dead){
-      //World::removeParticleFromClusters(p);
-      particles.erase(particles.begin() + i);
-      i--;
-    }
-  }*/
 }
 
 /////////////////////////////////////
@@ -1037,7 +989,6 @@ void World::updateTransforms(Cluster& c) const{
 
 void World::countClusters(){
   for(auto& p : particles){
-//	if(p.numClusters == 0) printf("found an empty particle at the beginning\n");
 	p.numClusters = 0;
 	p.clusters.clear();
   }
@@ -1047,9 +998,6 @@ void World::countClusters(){
 	  ++(p.numClusters);
 	  p.clusters.push_back(cInd);
 	}
-  }
-  for (auto& p : particles){
-    if(p.numClusters == 0) printf("found an empty particle at the end\n");
   }
   for(auto& p : particles){assert(p.numClusters == p.clusters.size());}
 

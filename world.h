@@ -7,6 +7,7 @@
 #include "tiltingPlane.hpp"
 #include "projectile.hpp"
 #include "cylinderObstacle.hpp"
+#include "accelerationGrid.h"
 
 #include "preallocVector.hpp"
 #include "profiler.hpp"
@@ -18,7 +19,7 @@ class World{
 public:
   std::string filename; //for reloading the file
   int Mmax = 5;
-  double eta =0.1;
+  double eta =0.01;
 
   void loadFromJson(const std::string& _filename);
   
@@ -46,16 +47,22 @@ public:
 	Eigen::Vector3d fractureNormal;
 	 
   };
+
+  struct ClusterComGetter{
+    Eigen::Vector3d operator()(const Cluster& c) const{
+      return c.worldCom;
+    }
+  };
+
   void doFracture(std::vector<FractureInfo> potentialSplits);
   void splitOutliers();
   void cullSmallClusters();
   void removeLonelyParticles();
-  void removeInvalidClusters();
   void removeInvalidParticles();
   int findClosestParticle(Particle p);
   void seedNewParticles();
-  void seedNewParticle(Particle p);
   double fRand(double fMin, double fMax);
+  int choose(int x, int y);
   void makeClustersForUnreferencedParticles();
   void removeParticleFromClusters(Particle p);
 

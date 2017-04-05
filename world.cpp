@@ -4,6 +4,7 @@
 #include "json/json.h"
 #include "utils.h"
 #include "color_spaces.h"
+#include "clustering.h"
 
 #include "enumerate.hpp"
 using benlib::enumerate;
@@ -659,40 +660,6 @@ void World::mergeClusters(const std::vector<Particle>& newParticles,
   
 }
 
-void World::removeInvalidClusters(){
-//  printf("removeInvalidClusters\n");
-  for(int i = 0; i < clusters.size(); i++){
-	//  adamb: why use at(), it is slower than [], also why call the copy constructor for the cluster?  Why not just get a reference.
-    Cluster cluster = clusters.at(i);
-	// adamb: it looks like toDelete is just funcitoning as a boolean?
-    Cluster* toDelete = NULL;
-    int index = 0;
-
-	// adamb: Do you really want to loop over all particles for each cluster?  What is the point of this?
-    bool tooManyClusters = true;
-    for(int j = 0; j < particles.size(); j++){
-      if(particles[j].clusters.size() <= Mmax){
-	tooManyClusters = false;
-      }
-    }
-
-    //printf("cluster's initial members: %d, current cluster size:%d\n", cluster.initialMembers, cluster.members.size());
-
-    if(cluster.members.size() < cluster.initialMembers / 2 ||
-       cluster.members.size() > cluster.initialMembers * 2 ||
-       cluster.Fp.norm() > 2.0 ||
-       tooManyClusters){
-      toDelete = &cluster;
-      index = i;
-    }
-
-	// adamb: I don't think this is safe inside the for loop
-    if(toDelete != NULL){
-      clusters.erase(clusters.begin() + index);
-    }
-  }
-}
-
 void World::removeInvalidParticles(){
   for(auto& particle : particles){
     int neighborIndex = findClosestParticle(particle);
@@ -709,29 +676,25 @@ void World::removeInvalidParticles(){
 }
 
 void World::removeParticleFromClusters(Particle p){
-  //printf("removeParticleFromClusters\n");
-  // adamb: why are you looping over all clusters?  The particle knows what clusters it is in.
-  for(auto& cluster : clusters){
+  for(int i = 0; i < p.clusters.size(); i++){
+    Cluster* cluster = &clusters[p.clusters[i]];
     int index = 0;
-	// adamb: We should cut this loop short after the erase
-    for(auto& member : cluster.members){
+    for(auto& member : cluster->members){
       if(member.index == p.id){
-		cluster.members.erase(cluster.members.begin() + index);
+        cluster->members.erase(cluster->members.begin() + index);
+        break;
       }
       index++;
     }
   }
-  //printf("deleting a particle\n");
   p.numClusters = 0;
 }
 
 int World::findClosestParticle(Particle p){
-  //printf("findClosestParticle\n");
   double minDist = 99999999;
   int outputIndex = -1;
   int currentIndex = 0;
 
-  // adamb: you should use the acceleration grid for this
   for(auto& neighbor : particles){
     if(p.id != neighbor.id){
       double dist = (p.position - neighbor.position).norm();
@@ -742,8 +705,19 @@ int World::findClosestParticle(Particle p){
     }
     currentIndex++;
   }
- 
+
   return outputIndex;
+
+//Using the acceleration grid, works but runs really slowly 
+/*
+  AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
+  restPositionGrid.numBuckets = 16;
+  restPositionGrid.updateGrid(particles);
+
+  std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, p.restPosition, neighborRadiusMax);
+
+  return neighbors[0];
+*/
 }
 
 void World::seedNewParticles(){
@@ -753,19 +727,22 @@ void World::seedNewParticles(){
     if(c.Fp.norm() > 1.8){
       bool updateCluster = false;
       for(auto &member : c.members){
-	if(count >= 5) break;
+        if(count >= 5) break;
         count++;
         auto &p = particles[member.index];
 
-	double dist = fRand(p.radius, p.radius * 2.0);
-  	Eigen::Vector3d dir(fRand(-1, 1), fRand(-1, 1), fRand(-1, 1));
+        double dist = fRand(p.radius, p.radius * 2.0);
+        //Eigen::Vector3d dir(fRand(-1, 1), fRand(-1, 1), fRand(-1, 1));
+        Eigen::Vector3d dir(choose(-1, 1), choose(-1, 1), choose(-1, 1));
 	dir = dir.normalized();
 
-  	Particle q(p);
-  	Eigen::Vector3d newPos = p.position + (dir * dist);
-  	q.position = newPos;
+        Particle q(p);
+        Eigen::Vector3d newPos = c.worldCom + (dir.normalized() * (dist * 0.5));
+        q.position = newPos;
+        q.restPosition = p.restPosition;// + (dir.normalized() * (dist * 0.5));
+        //q.restPosition = c.restCom + (dir.normalized() * (clusteringParams.neighborRadius * 0.5));
 
-        if ((q.position - particles.at(findClosestParticle(q)).position).norm() > p.radius){
+        if ((q.position - particles.at(findClosestParticle(q)).position).norm() > q.radius * 0.45){
           q.entity = nullptr;
           q.sceneNode = nullptr;
           q.cleanup = p.cleanup;
@@ -774,71 +751,27 @@ void World::seedNewParticles(){
           q.numClusters = 1;
           q.mass = (member.weight/p.totalweight) * p.mass;
           q.totalweight = member.weight;
-	  q.id = particles.size();
+          q.id = particles.size();
 
           particles.push_back(q);
-	  c.members.push_back({q.id, q.totalweight});
+          c.members.push_back({q.id, q.totalweight});
           updateCluster = true;
-      	  printf("seeded new particle with position %f, %f, %f, mag: %f\n", q.position.x(), q.position.y(), q.position.z(), q.position.norm());
+          printf("seeding particle\n");
 	}
       }
     }
   }
 }
 
-/*
-void World::seedNewParticles(){
-  //printf("seedNewParticles\n");
-  for(auto& cluster : clusters){
-    if(cluster.Fp.norm() > 1.8){
-      //printf("seeding new particle\n");
-      //for(const auto& member : cluster.members){
-      //  auto &q = particles[member.index];
-      for(int i = 0; i < 5; i++){
-	int randIndex = rand() % cluster.members.size();
-	Particle q = particles.at(cluster.members.at(randIndex).index);
-	seedNewParticle(q);
-      }
-      cluster.Fp.setIdentity();
-    }
-  }
-}
-
-void World::seedNewParticle(Particle p){
-  //printf("seedNewParticle\n");
-  double dist = fRand(p.radius, p.radius * 2.0) / 2.0;
-  Eigen::Vector3d dir(fRand(-M_PI, M_PI), fRand(-M_PI, M_PI), fRand(-M_PI, M_PI));
-
-
-  Particle newParticle(p);
-  Eigen::Vector3d newPos = p.position + (dir.normalized() * dist);
-  newParticle.position = newPos;
-  newParticle.numClusters = p.numClusters;
-  if((newParticle.position - particles.at(findClosestParticle(newParticle)).position).norm() > p.radius / 2.0){
- 
-    newParticle.id = particles.size();
-    newParticle.numClusters = p.numClusters;
-    newParticle.clusters = p.clusters;
-    particles.push_back(newParticle); 
-
-//    printf("particle position: %f, %f, %f, with mass: %f\n", newParticle.position.x(), newParticle.position.y(), newParticle.position.z(), newParticle.mass);
-
-    for(auto& c : clusters){
-      for(auto& member : c.members){
-        if(member.index == p.id){
-	  c.members.push_back({newParticle.id, 1.0});
-        }
-      }
-    }
-    //printf("seeding a particle with %zu clusters\n", newParticle.numClusters);
-  }
-}
-*/
-
 double World::fRand(double fMin, double fMax){
   //printf("fRand\n");
   double f = (double)rand() / RAND_MAX;
   return fMin + f * (fMax - fMin);
+}
+
+int World::choose(int x, int y){
+  if(rand()%2 == 1) return x;
+  return y;
 }
 
 void World::makeClustersForUnreferencedParticles(){
@@ -877,14 +810,3 @@ void World::makeClustersForUnreferencedParticles(){
     newClusters.clear();
   }
 }
-
-
-/*void World::makeClustersForUnreferencedParticles(){
-  //printf("makeClustersForUnreferencedParticles\n");
-  if(unreferencedParticles.size() >= clusteringParams.nClusters){
-    //std::vector<Cluster> newClusters = makeClusters(unreferencedParticles, clusteringParams);
-    //for(int i = 0; i < newClusters.size(); i++){
-    //  clusters.push_back(newClusters.at(i));
-    //}
-  }
-}*/
