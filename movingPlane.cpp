@@ -6,7 +6,6 @@ bool MovingPlane::outside(Particle& particle) const {
    if(particle.restPosition.dot(normal) > offset){
       return true;
    }
-
    return false;
 }
 
@@ -16,7 +15,6 @@ void MovingPlane::bounceParticle(Particle& particle, double timeElapsed) const {
    double currentOffset = offset + timeElapsed*velocity;
 
    if(outside(particle)){
-	 std::cout<<"outside"<<std::endl;
       Eigen::Vector3d tangential = 
          particle.restPosition - (particle.restPosition.dot(normal))*normal;
 
