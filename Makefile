@@ -32,12 +32,20 @@ OPT = -O3 -g
 
 TARGETS = runSimulator mitsubafy mitsubafyClusters
 
-OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o clustering.o
+OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o constraintPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o clustering.o
 
 #-----------------------------------------
 
 OGRE_INCS = -I/usr/local/include -I/opt/ogre/include
 OGRE_LIBS = -framework CoreFoundation -framework Cocoa -framework OpenGL -framework AGL -L/usr/local/lib -ltbb -lfreeimage -lboost_system -L/opt/ogre/lib -lOgreMainStatic -lRenderSystem_GLStatic -lPlugin_OctreeSceneManagerStatic -lOgreGLSupportStatic -lzzip -lboost_thread-mt -lz
+
+ifeq ($(USER), ben)
+EIGEN_INCLUDE=-I/Users/ben/libs/eigen/
+OGRE_INCS = -I/Users/ben/libs/ogre/OgreMain/include -I/Users/ben/libs/ogre/build/include -I/usr/local/include -I/Users/ben/libs/ogre/PlugIns/OctreeSceneManager/include -I/Users/ben/libs/ogre/RenderSystems/GL/include #-I/Users/ben/libs/ogre/RenderSystems/GL3Plus/include
+OGRE_LIBS = -framework CoreFoundation -framework Cocoa -framework OpenGL -framework AGL -L/usr/local/lib -ltbb -lfreeimage -lzzip -L/Users/ben/libs/ogre/build/lib/macosx -lOgreMainStatic -lOgreGLSupportStatic -lPlugin_OctreeSceneManagerStatic -lRenderSystem_GLStatic #-lRenderSystem_GL3PlusStatic #-F/Library/Frameworks -framework Ogre
+FLAGS += -DBEN
+endif
+
 
 
 CCOPTS = $(OPT) $(FLAGS) $(INCS) $(EIGEN_INCLUDE) 

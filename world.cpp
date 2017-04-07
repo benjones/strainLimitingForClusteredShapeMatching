@@ -103,32 +103,6 @@ void World::loadFromJson(const std::string& _filename){
   }
 
 
-  /* unused in all our examples, and doesn't really belong, refactored to the vis stuff --Ben
-  auto cameraPositionIn = root["cameraPosition"];
-  if(!cameraPositionIn.isNull() && cameraPositionIn.isArray() && cameraPositionIn.size() == 3){
-	cameraPosition.x() = cameraPositionIn[0].asDouble();
-	cameraPosition.y() = cameraPositionIn[1].asDouble();
-	cameraPosition.z() = cameraPositionIn[2].asDouble();
-  } else {
-	cameraPosition = Eigen::Vector3d{0,7, -5};
-	}
-  auto cameraLookAtIn = root["cameraLookAt"];
-  if(!cameraLookAtIn.isNull() && cameraLookAtIn.isArray() && cameraLookAtIn.size() == 3){
-	cameraLookAt.x() = cameraLookAtIn[0].asDouble();
-	cameraLookAt.y() = cameraLookAtIn[1].asDouble();
-	cameraLookAt.z() = cameraLookAtIn[2].asDouble();
-  } else {
-	cameraLookAt = Eigen::Vector3d::Zero();
-  }
-  
-  auto cameraUpIn = root["cameraUp"];
-  if(!cameraUpIn.isNull() && cameraUpIn.isArray() && cameraUpIn.size() == 3){
-	cameraUp.x() = cameraUpIn[0].asDouble();
-	cameraUp.y() = cameraUpIn[1].asDouble();
-	cameraUp.z() = cameraUpIn[2].asDouble();
-  } else {
-	cameraUp = Eigen::Vector3d{0,1,0};
-	}*/
 
   dt = root.get("dt",1/60.0).asDouble();
   numConstraintIters = root.get("numConstraintIters", 5).asInt();
@@ -266,6 +240,14 @@ void World::loadFromJson(const std::string& _filename){
   }
   std::cout << tiltingPlanes.size() << " tilting planes" << std::endl;
 
+  auto& constraintPlanesIn = root["constraintPlanes"];
+  for(auto i : range(constraintPlanesIn.size())){
+	double x = constraintPlanesIn[i]["x"].asDouble();
+	constraintPlanes.emplace_back(x, particles);
+  }
+  std::cout << constraintPlanes.size() << " constraint planes" << std::endl;
+
+  
   auto& projectilesIn = root["projectiles"];
   for(auto i : range(projectilesIn.size())){
 	auto& projectile = projectilesIn[i];

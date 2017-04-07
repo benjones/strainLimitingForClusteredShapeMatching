@@ -113,7 +113,9 @@ void World::timestep(){
 	  }
 	  p.position += dt * p.velocity;
 	}
-	
+	for(auto& cp : constraintPlanes){
+	  cp.constrainParticles(particles);
+	}
 	assertFinite();
 
 	for(auto iter : range(numConstraintIters)){
