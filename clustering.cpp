@@ -21,9 +21,9 @@ std::vector<Cluster> makeRandomClusters(std::vector<Particle>& particles, double
   auto r = benlib::range(particles.size());
   auto lonelyParticles = std::vector<size_t>(r.begin(), r.end());
 
-  AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
-  restPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
-  restPositionGrid.updateGrid(particles);
+  AccelerationGrid<Particle, EmbeddedPositionGetter> embeddedPositionGrid;
+  embeddedPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
+  embeddedPositionGrid.updateGrid(particles);
 
   
   for(auto& p : particles){p.numClusters = 0; p.totalweight = 0.0;}
@@ -37,8 +37,8 @@ std::vector<Cluster> makeRandomClusters(std::vector<Particle>& particles, double
 	auto currentParticle = lonelyParticles[r];
 	lonelyParticles.erase(lonelyParticles.begin() + r);
 	Cluster c;
-	c.restCom = particles[currentParticle].restPosition;
-	std::vector<int> neighbors = restPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
+	c.restCom = particles[currentParticle].embeddedPosition;
+	std::vector<int> neighbors = embeddedPositionGrid.getNearestNeighbors(particles, c.restCom, neighborRadius);
 	c.members.resize(neighbors.size());
 	double w = 1.0;
 	for(unsigned int i=0; i<neighbors.size(); i++) {
@@ -96,9 +96,9 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
   }
 
 
-  AccelerationGrid<Particle, RestPositionGetter> restPositionGrid;
-  restPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
-  restPositionGrid.updateGrid(particles);
+  AccelerationGrid<Particle, EmbeddedPositionGetter> embeddedPositionGrid;
+  embeddedPositionGrid.numBuckets = 16; //TODO tune me, 512 buckets now... seems reasonable?
+  embeddedPositionGrid.updateGrid(particles);
   
   std::cout << "nClusters: " << params.nClusters << std::endl;
   std::cout << "k means initialization...";
@@ -111,7 +111,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 	  int r = randomDist(gen);
 	  if (picked[r]) continue;
 	  picked[r] = true;
-	  c.restCom = particles[r].restPosition;
+	  c.restCom = particles[r].embeddedPosition;
 	  clusters.push_back(c);
 	}
 
@@ -123,7 +123,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 	  
 	  for (int i=0; i<particles.size(); i++) {
 		auto& p = particles[i];
-		const auto& pRest = p.restPosition;
+		const auto& pRest = p.embeddedPosition;
 
 		//closest to pRest
 		auto bestPair = utils::minProjectedElement(
@@ -171,13 +171,13 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 	for (auto j=0; j<clusters.size(); j++) {
 	  auto &c = clusters[j];
 	  std::vector<int> neighbors =
-		restPositionGrid.getNearestNeighbors(particles, c.restCom, params.neighborRadius);
+		embeddedPositionGrid.getNearestNeighbors(particles, c.restCom, params.neighborRadius);
 
 	  c.members.resize(neighbors.size());
 	  for(unsigned int i=0; i<neighbors.size(); i++) {
 		auto n = neighbors[i];
 		Particle &p = particles[n];
-		double w = params.kernel(c.restCom - p.restPosition);
+		double w = params.kernel(c.restCom - p.embeddedPosition);
 		c.members[i] = {n, w};
 		p.totalweight += w;
 		p.clusters.push_back(j);
@@ -227,12 +227,12 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		Cluster &c = clusters[j];
 		int oldMembers = c.members.size();
 		std::vector<int> neighbors =
-		  restPositionGrid.getNearestNeighbors(particles, c.restCom, params.neighborRadius);
+		  embeddedPositionGrid.getNearestNeighbors(particles, c.restCom, params.neighborRadius);
 		c.members.resize(neighbors.size());
 		for(unsigned int i=0; i<neighbors.size(); i++) {
 		  auto n = neighbors[i];
 		  Particle &p = particles[n];
-		  double w = params.kernel (c.restCom - p.restPosition);
+		  double w = params.kernel (c.restCom - p.embeddedPosition);
 		  c.members[i] = {n, w};
 		  p.totalweight += w;
 		  p.clusters.push_back(j);
@@ -248,7 +248,7 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
 		auto& p = particles[i];
 		if (p.numClusters > 0) continue;
 		
-		const auto& pRest = p.restPosition;
+		const auto& pRest = p.embeddedPosition;
 		auto bestPair = utils::minProjectedElement(clusters,
 			[&pRest](const Cluster& c){ return (c.restCom - pRest).squaredNorm();});
 		bestPair.first->members.push_back({static_cast<int>(i), params.blackhole});
@@ -360,6 +360,12 @@ std::vector<Cluster> makeClusters(std::vector<Particle>& particles,
   if (!converged) return {}; //no clusters means it didn't work
   std::cout << "numClusters: " << clusters.size() << std::endl;
 
+  for (auto &c : clusters) {
+	for (auto &m : c.members) {
+	  m.pos = particles[m.index].embeddedPosition - c.restCom;
+	}
+  }
+
   return clusters;
 }
 
@@ -417,8 +423,10 @@ double ClusteringParams::kernel(const Eigen::Vector3d &x) const{
 }
 
 void World::removeClusters() {
+  if (clusterFpThreshold < 0) return;
+  // mark cluster for removal
   for (auto &c : clusters) {
-	if (c.markedForRemoval) continue;
+	if (c.markedForRemoval || c.newCluster) continue;
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(c.Fp);
 	double condFp = solver.singularValues()(0)/solver.singularValues()(2);
 	if (condFp > clusterFpThreshold) {
@@ -428,65 +436,100 @@ void World::removeClusters() {
 	  for (auto &m : c.members) c.oweights.push_back(m.weight);
 	}
   }
+
+  // fade out dying clusters
   for (auto &c : clusters) {
 	if (!c.markedForRemoval || c.fadeSteps <= 0) continue;
 	for (auto &&en : benlib::enumerate(c.members)) {
 	  auto &m = en.second;
-	  double w = c.oweights[en.first]/c.fadeSteps;
+	  double w = c.oweights[en.first]/clusterFadeOut;
 	  particles[m.index].totalweight -= w;
 	  m.weight -= w;
 	}
 	c.fadeSteps--;
+	if (c.fadeSteps <= 0) c.mass = 0.0; // this will trigger deletion in cullSmallClusters
   }  
 }
 
 void World::addClusters(const ClusteringParams &params) {
   double convergenceThreshold = 1e-6 * params.sqrNeighborRadius; // 0.1% motion allowed
+
+  // loop over particles looking for ones that will not be in any cluster not marked for removal
+  // we will seed new clusters at such particles
   for (auto &p : particles) {
 	bool unclustered = true;
 	for (auto i = p.clusters.begin();  i != p.clusters.end() && unclustered; i++) {
 	  if (!clusters[*i].markedForRemoval) unclustered = false;
 	}
-	std::unordered_set<int> particlesToEmbedSet;
-	std::vector<int> particlesToEmbed;
+	if (!unclustered) continue;
 
+	// get a list of particles and clusters to embed in (3D) embedded space
+	std::unordered_set<int> particlesToEmbedSet;
+	std::unordered_set<int> clustersToEmbedSet;
+	std::vector<int> particlesToEmbed;
+	std::vector<int> clustersToEmbed;
+
+	// Try embedding all clusters of p and all neighboring clusters.
 	for (auto &i : p.clusters) {
-	  for (auto &m : clusters[i].members) {
+	  auto &c = clusters[i];
+	  clustersToEmbedSet.insert(i);
+	  for (auto &m : c.members) {
 		particlesToEmbedSet.insert(m.index);
+		for (auto &j : c.neighbors) {
+		  clustersToEmbedSet.insert(j);
+		  for (auto &n : clusters[j].members) {
+			particlesToEmbedSet.insert(n.index);
+		  }
+		}
 	  }
 	}
-	particlesToEmbed.resize(particlesToEmbedSet.size());
 
-	int m = particlesToEmbedSet.size();
-	int n = m + p.clusters.size();
-	Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n,n);
-	Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
-	Eigen::VectorXd y = Eigen::VectorXd::Zero(n);
-	Eigen::VectorXd z = Eigen::VectorXd::Zero(n);
-	Eigen::VectorXd a = Eigen::VectorXd::Zero(n);
-	Eigen::VectorXd b = Eigen::VectorXd::Zero(n);
-	Eigen::VectorXd c = Eigen::VectorXd::Zero(n);
+	// copy from sets to vectors
+	particlesToEmbed.reserve(particlesToEmbedSet.size());
+	for (auto &i : particlesToEmbedSet) particlesToEmbed.push_back(i);
+	clustersToEmbed.resize(clustersToEmbedSet.size());
+	for (auto &i : clustersToEmbedSet) clustersToEmbed.push_back(i);
+	for (unsigned int i = 0; i<clustersToEmbed.size(); i++) clusters[clustersToEmbed[i]].embedId = i;
 
-	int index = 0;
-	for (auto &i : particlesToEmbedSet) {
-	  particlesToEmbed[index] = i;
+	// set up the linear system for embedding
+	// we will embed particles and clusters
+	int psize = particlesToEmbed.size();
+	int dim = psize + clustersToEmbed.size();
+	Eigen::MatrixXd A = Eigen::MatrixXd::Zero(dim,dim);
+	Eigen::VectorXd x = Eigen::VectorXd::Zero(dim);
+	Eigen::VectorXd y = Eigen::VectorXd::Zero(dim);
+	Eigen::VectorXd z = Eigen::VectorXd::Zero(dim);
+	Eigen::VectorXd a = Eigen::VectorXd::Zero(dim);
+	Eigen::VectorXd b = Eigen::VectorXd::Zero(dim);
+	Eigen::VectorXd c = Eigen::VectorXd::Zero(dim);
+
+	// fill in the matrix and rhs
+	for (int pindex = 0; pindex<psize; pindex++) {
+	  Particle &q = particles[particlesToEmbed[pindex]]; 
 	  
-	  for (auto && en : benlib::enumerate(p.clusters)) {
-		auto &j = en.second;
+	  // loop over all clusters that contain this particle
+	  for (auto &j : q.clusters) {
+		auto &cluster = clusters[j];
+		// look for q in member array
 		int k=0;
-		while (k < clusters[j].members.size() && clusters[j].members[k].index != i) k++;
-		if (k >= clusters[j].members.size()) continue;
-		double w = clusters[j].members[k].weight;
+		while (k < cluster.members.size() && cluster.members[k].index != q.id) k++;
+		assert (k < cluster.members.size());
+
+		// compute weight
+		double w = cluster.members[k].weight;
 		double w2 = w*w;
-		Eigen::Vector3d d = clusters[j].Fp * clusters[j].prest[k];
-		A(index, index) += w2;
-		A(m+en.first, m+en.first) += w2;
-		A(index, m+en.first) -= w2;
-		A(m+en.first, index) -= w2;
-		a(index) += w*d(0);
-		b(index) += w*d(1);
-		c(index) += w*d(2);
-		index++;
+		Eigen::Vector3d d = cluster.Fp * cluster.members[k].pos;
+		int cindex = psize + cluster.embedId;
+
+		A(pindex, pindex) += w2;
+		A(cindex, cindex) += w2;
+		A(pindex, cindex) -= w2;
+		A(cindex, pindex) -= w2;
+
+		a(pindex) += w*d(0);
+		b(pindex) += w*d(1);
+		c(pindex) += w*d(2);
+		// rhs for cluster is 0.0
 	  }
 	}
 
@@ -495,15 +538,11 @@ void World::addClusters(const ClusteringParams &params) {
 	y = lltofA.solve(b);
 	z = lltofA.solve(c);
 
-	//std::vector<Eigen::Vector3d> e;
-	//e.resize(m);
-	for (int i=0; i<m; i++) {
-	  //e[i](0) = x(i);
-	  //e[i](1) = y(i);
-	  //e[i](2) = z(i);
-	  particles[particlesToEmbed[i]].embeddedPosition(0) = x(i);
-	  particles[particlesToEmbed[i]].embeddedPosition(1) = y(i);
-	  particles[particlesToEmbed[i]].embeddedPosition(2) = z(i);
+	for (int i = 0; i < psize; i++) {
+	  auto &e = particles[particlesToEmbed[i]].embeddedPosition;
+	  e(0) = x(i);
+	  e(1) = y(i);
+	  e(2) = z(i);
 	}
 
 	Cluster newCluster;
@@ -522,11 +561,8 @@ void World::addClusters(const ClusteringParams &params) {
 	  for(unsigned int i=0; i<neighbors.size(); i++) {
 		auto n = neighbors[i];
 		Particle &p = particles[n];
-		double w = params.kernel (newCluster.restCom - p.restPosition);
+		double w = params.kernel (newCluster.restCom - p.embeddedPosition);
 		newCluster.members[i] = {n, w};
-		//p.totalweight += w;
-		//p.clusters.push_back(j);
-		//p.numClusters++;
 	  }
 
 	  //compute cluster COMs
@@ -536,13 +572,37 @@ void World::addClusters(const ClusteringParams &params) {
 	  for (auto &member : newCluster.members) {
 		auto &p = particles[member.index];
 		double w = member.weight / (p.totalweight+member.weight);
-		newCluster.restCom += w * p.mass * p.position;
+		newCluster.restCom += w * p.mass * p.embeddedPosition;
 		newCluster.mass += w * p.mass;
 	  }
 	  newCluster.restCom /= newCluster.mass;
+
 	  if ((newCluster.restCom - newCluster.worldCom).squaredNorm() > convergenceThreshold) {
 		converged = false;
 	  }
 	}
+
+	newCluster.oweights.resize(newCluster.members.size());
+	for (auto &&en : benlib::enumerate(newCluster.members)) {
+	  auto &member = en.second;
+	  member.pos = p.embeddedPosition - newCluster.restCom;
+	  newCluster.oweights[en.first] = member.weight;
+	  member.weight = 0.0;
+	}
+	newCluster.fadeSteps = clusterFadeIn;
+	newCluster.newCluster = true;
+	clusters.push_back(newCluster);
   }
+
+  for (auto &c : clusters) {
+	if (!c.newCluster || c.fadeSteps <= 0) continue;
+	for (auto &&en : benlib::enumerate(c.members)) {
+	  auto &m = en.second;
+	  double w = c.oweights[en.first]/clusterFadeIn;
+	  particles[m.index].totalweight += w;
+	  m.weight += w;
+	}
+	c.fadeSteps--;
+	if (c.fadeSteps <= 0) c.newCluster = false;
+  }  
 }

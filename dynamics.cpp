@@ -91,7 +91,7 @@ void World::timestep(){
 	  for(auto &member : cluster.members){
 		auto &p = particles[member.index];
 		double w = member.weight / p.totalweight;
-		p.goalPosition += w*(T*(p.restPosition - cluster.restCom) + cluster.worldCom);
+		p.goalPosition += w*(T*(member.pos) + cluster.worldCom);
 		p.goalVelocity += w*clusterVelocity;
 	  }	  
 	}
@@ -127,6 +127,11 @@ void World::timestep(){
 	for (auto &c : clusters) c.worldCom = sumWeightedWorldCOM(c.members);	
 	assertFinite();
   }
+
+  removeClusters();
+  addClusters(clusteringParams);
+  if (!fractureOn) cullSmallClusters();
+  countClusters();
 
   //std::cout<<"doFracture"<<std::endl;
   if (fractureOn) {
@@ -180,7 +185,7 @@ void World::strainLimitingIteration(){
 
 	for(const auto& member : c.members){
 	  auto &q = particles[member.index];
-	  Eigen::Vector3d rest = (q.restPosition - c.restCom);
+	  Eigen::Vector3d rest = (member.pos);
 	  Eigen::Vector3d goal = T*(rest) + c.worldCom;
 	  double ratio = (goal-q.position).squaredNorm() / (c.width*c.width);
 	  
@@ -307,8 +312,10 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::Vector3d n = ((Apq*clusters[cIndex].aInv).inverse()*splitDirection).normalized();
 
 	//we need to worry about signs at some point
-	c.cg.addPlane(n, -(n.dot(c.restCom)));
-	newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
+	//c.cg.addPlane(n, -(n.dot(c.restCom)));
+	//newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
+	c.cg.addPlane(n, 0.0);
+	newCluster.cg.addPlane(-n, 0.0);
 	
 	clusters.push_back(newCluster);	  
 	if (delayRepeatedFracture) {
@@ -496,7 +503,7 @@ void World::splitOutliers() {
 	for(auto &member : c.members) {
 	  auto &p = particles[member.index];
 	  if ((p.numClusters > 1) && ((p.position - c.worldCom).norm() > 
-			  (1.0 + gamma) * outlierThreshold * (p.restPosition - c.restCom).norm())) {
+			  (1.0 + gamma) * outlierThreshold * (member.pos).norm())) {
 		Particle q(p);
 		q.entity = nullptr;
 		q.sceneNode = nullptr;
@@ -745,9 +752,10 @@ bool CollisionGeometry::project(Eigen::Vector3d &x) {
   return true;
 }
 
+
 inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) { 
   assert(x.allFinite());
-  Eigen::Vector3d y = c.worldCom + c.restToWorldTransform * (x-c.restCom);
+  Eigen::Vector3d y = c.worldCom + c.restToWorldTransform * (x);
   assert(y.allFinite());
   return y;
 }
@@ -755,7 +763,7 @@ inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) {
 
 inline Eigen::Vector3d worldToRest(const Cluster &c, const Eigen::Vector3d &x) {
   assert(x.allFinite());
-  Eigen::Vector3d y = c.restCom + c.worldToRestTransform * (x-c.worldCom);
+  Eigen::Vector3d y = c.worldToRestTransform * (x-c.worldCom);
   if (!y.allFinite()) {
 	std::cout<<x<<std::endl;
 	std::cout<<y<<std::endl;
@@ -946,7 +954,7 @@ Eigen::Matrix3d World::computeApq(const Cluster& c) const{
   for (auto &member : c.members) {
 	auto &p = particles[member.index];
 	Eigen::Vector3d pj = p.position - c.worldCom;
-	Eigen::Vector3d qj = p.restPosition - c.restCom;
+	Eigen::Vector3d qj = member.pos;
 	Apq += (member.weight/p.totalweight)*p.mass * pj * qj.transpose();
   }
   return Apq;
@@ -1009,7 +1017,21 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	  std::cout<<c.mass<<" "<<c.members.size()<<" "<<c.members[0].weight<<std::endl;
 	}
 	assert(c.mass >= 0);
-	c.restCom = sumWeightedRestCOM(c.members);
+
+	// with the abondonment of restPositions we need to shift the member positions
+	//c.restCom = sumWeightedRestCOM(c.members);
+	Eigen::Vector3d shift = Eigen::Vector3d::Zero();
+	double mass = 0.0;
+	for (auto &m : c.members) {
+	  auto &p = particles[m.index];
+	  double w = (m.weight / p.totalweight) * p.mass;
+	  mass += w;
+	  shift += w*m.pos;
+	}
+	shift /= mass;
+	for (auto &m : c.members)  m.pos -= shift;
+
+	c.restCom = Eigen::Vector3d::Zero();
 	c.worldCom = sumWeightedWorldCOM(c.members);
 
 	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
@@ -1019,7 +1041,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	assert(c.worldCom.allFinite());
 	c.width = 0.0;
 	for(const auto& member : c.members){
-	  c.width = std::max(c.width, (c.restCom - particles[member.index].restPosition).norm());
+	  c.width = std::max(c.width, (member.pos).norm());
 	} 
 	c.renderWidth = c.width; //it'll get updated soon enough
 	//assert(c.width >= 0);
@@ -1028,7 +1050,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	// adam says: this should take weights into account
 	for (const auto& member : c.members) {
 	  auto &p = particles[member.index];
-	  Eigen::Vector3d qj = p.restPosition - c.restCom;
+	  Eigen::Vector3d qj = member.pos;
 	  c.aInv += (member.weight/p.totalweight)*p.mass * qj * qj.transpose();
 	}
 	  

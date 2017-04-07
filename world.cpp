@@ -56,6 +56,7 @@ void World::loadFromJson(const std::string& _filename){
 	for(const auto & pos : particleInfo.positions){
 	  newParticles.emplace_back();
 	  newParticles.back().position = pos;
+	  newParticles.back().embeddedPosition = pos;
 	  newParticles.back().restPosition = pos;
 	  newParticles.back().velocity = Eigen::Vector3d::Zero();
 	  newParticles.back().mass = mass;
@@ -91,6 +92,7 @@ void World::loadFromJson(const std::string& _filename){
 	for(const auto& pos : particleInfo.positions){
 	  newParticles.emplace_back();
 	  newParticles.back().position = scale*pos + offset;
+	  newParticles.back().embeddedPosition = scale*pos + offset;
 	  newParticles.back().restPosition = scale*pos + offset;
 	  newParticles.back().velocity = velocity;
 	  newParticles.back().mass = mass;
@@ -143,6 +145,9 @@ void World::loadFromJson(const std::string& _filename){
   yield = root.get("yield", 0.0).asDouble();
   nu = root.get("nu", 0.0).asDouble();
   hardening = root.get("hardening", 0.0).asDouble();
+  clusterFpThreshold = root.get("clusterFpThreshold", -1.0).asDouble();
+  clusterFadeOut = root.get("clusterFadeOut", 30).asDouble();
+  clusterFadeIn = root.get("clusterFadeIn", 30).asDouble();
   
   collisionRestitution = root.get("collisionRestitution", 0.5).asDouble();
   collisionGeometryThreshold = root.get("collisionGeometryThreshold", 0.5).asDouble();
@@ -336,8 +341,7 @@ void World::loadFromJson(const std::string& _filename){
 	Eigen::Matrix3d Aqq;
 	Aqq.setZero();
 	for (auto &member : c.members) {
-	  auto &p = particles[member.index];
-	  Eigen::Vector3d qj = p.restPosition - c.restCom;
+	  Eigen::Vector3d qj = member.pos;
 	  Aqq += qj * qj.transpose();
 	}
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(Aqq, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -349,8 +353,7 @@ void World::loadFromJson(const std::string& _filename){
 	  min = std::numeric_limits<double>::max();
 	  max = -std::numeric_limits<double>::max();
 	  for (auto &member : c.members) {
-		auto &p = particles[member.index];
-		double d = n.dot(p.restPosition);
+		double d = n.dot(member.pos);
 		if (d < min) min = d;
 		if (d > max) max = d;
 	  }

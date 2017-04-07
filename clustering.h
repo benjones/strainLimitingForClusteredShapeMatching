@@ -2,12 +2,6 @@
 
 #include "particle.h"
 
-struct RestPositionGetter{
-  Eigen::Vector3d operator()(const Particle& p) const{
-	return p.restPosition;
-  }
-};
-
 struct EmbeddedPositionGetter{
   Eigen::Vector3d operator()(const Particle& p) const{
 	return p.embeddedPosition;
