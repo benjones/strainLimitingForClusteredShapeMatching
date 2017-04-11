@@ -19,7 +19,7 @@ class Particle {
 public:
   Eigen::Vector3d position, 
 	velocity, 
-	restPosition, 
+	restPosition,  // DO NOT USE for anything other than moving planes
 	oldPosition, 
 	goalPosition, 
 	goalVelocity,
@@ -61,12 +61,12 @@ class CollisionGeometry {
 
 class Cluster {
  public:
-  Eigen::Vector3d restCom;
+  Eigen::Vector3d restCom; // DO NOT USE except for initial clustering
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
   //contains the particle index and its weight
   struct Member{
-  	int index; double weight;
+  	int index; double weight;  Eigen::Vector3d pos;
   };
   std::vector<Member > members;
   std::unordered_set<int> neighbors;  // Note: this refers to neighboring CLUSTERS 
@@ -87,8 +87,9 @@ class Cluster {
   bool justFractured = false;
   double timeSinceLastFracture;
   bool markedForRemoval = false;
+  bool newCluster = false;
   int fadeSteps;
   std::vector<double> oweights;
-  std::vector<Eigen::Vector3d> prest;
+  int embedId;
 };
 

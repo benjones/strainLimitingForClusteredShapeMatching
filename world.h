@@ -131,17 +131,6 @@ public:
 	return mass;
   }
 
-  Eigen::Vector3d sumWeightedRestCOM(const std::vector<Cluster::Member> &members) const {
-	double mass = 0.0;
-	Eigen::Vector3d com = Eigen::Vector3d::Zero();
-	for (auto &member : members) {
-	  auto &p = particles[member.index];
-	  double w = (member.weight / p.totalweight) * p.mass;
-	  mass += w;
-	  com += w * p.restPosition;
-	}
-	return (com / mass);
-  }
 
   Eigen::Vector3d sumWeightedWorldCOM(const std::vector<Cluster::Member>& members) const {
 	double mass = 0.0;
