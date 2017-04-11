@@ -63,8 +63,9 @@ public:
   void seedNewParticles();
   double fRand(double fMin, double fMax);
   int choose(int x, int y);
-  void makeClustersForUnreferencedParticles();
   void removeParticleFromClusters(Particle p);
+  void removeClusters();
+  void addClusters(const ClusteringParams &params);
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
@@ -160,18 +161,6 @@ public:
 	return mass;
   }
 
-  Eigen::Vector3d sumWeightedRestCOM(const std::vector<Cluster::Member> &members) const {
-	double mass = 0.0;
-	Eigen::Vector3d com = Eigen::Vector3d::Zero();
-	for (auto &member : members) {
-	  auto &p = particles[member.index];
-	  double w = (member.weight / p.totalweight) * p.mass;
-	  mass += w;
-	  com += w * p.restPosition;
-	}
-	return (com / mass);
-  }
-
   Eigen::Vector3d sumWeightedWorldCOM(const std::vector<Cluster::Member>& members) const {
 	double mass = 0.0;
 	Eigen::Vector3d com = Eigen::Vector3d::Zero();
@@ -230,7 +219,8 @@ public:
   double collisionGeometryThreshold;
   double outlierThreshold;
 
-
+  double clusterFpThreshold;
+  double clusterFadeIn, clusterFadeOut;
 
   benlib::Profiler prof;
 };

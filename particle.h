@@ -19,10 +19,11 @@ class Particle {
 public:
   Eigen::Vector3d position, 
 	velocity, 
-	restPosition, 
+	restPosition,  // DO NOT USE for anything other than moving planes
 	oldPosition, 
 	goalPosition, 
-	goalVelocity;
+	goalVelocity,
+	embeddedPosition;
   double mass; 
   double totalweight; // sum of weights of this particle in all clusters
   size_t numClusters; // only used to determine singelton particles
@@ -32,18 +33,15 @@ public:
   Particle(const Particle &p)  = default; //c++11 magic :)
   short flags;
   static const short SPLIT = 1;
+  static const short JUST_SPLIT = 2;
   int id;
-  //: position(p.position), velocity(p.velocity), restPosition(p.restPosition),
-  //	oldPosition(p.oldPosition), goalPosition(p.goalPosition), goalVelocity(p.goalVelocity), mass(p.mass),
-  //	totalweight(p.totalweight), numClusters(p.numClusters), outsideSomeMovingPlane(p.outsideSomeMovingPlane),
-  //	clusters(p.clusters){};
   Ogre::SceneNode* sceneNode = nullptr;
   Ogre::Entity* entity = nullptr;
   //Ogre::Material* material = nullptr;
   //cleanup stuff without knowing anything about ogre
   std::function<void(Particle&)> cleanup = noop;
   RGBColor color;
-  double radius = 0.1;  
+  float radius = 0.1;
   bool dead = false;
 };
 
@@ -64,22 +62,19 @@ class CollisionGeometry {
 
 class Cluster {
  public:
-  int initialMembers = 0;
-  Eigen::Vector3d restCom;
+  Eigen::Vector3d restCom; // DO NOT USE except for initial clustering
   Eigen::Vector3d worldCom;
   Eigen::Matrix3d aInv, Fp, FpNew;
   //contains the particle index and its weight
   struct Member{
-  	int index; double weight;
-	//bool operator== (const Member &rhs){
-	//return (index == rhs.index) && (weight == rhs.weight);
-  	//}
-
+  	int index; double weight;  Eigen::Vector3d pos;
   };
+  int initialMembers = 0;
   std::vector<Member > members;
   std::unordered_set<int> neighbors;  // Note: this refers to neighboring CLUSTERS 
   std::unordered_set<int> oldNeighbors;		// Note: this refers to neighboring CLUSTERS
   double mass, width, renderWidth;
+  double condFp;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
   Cluster() {Fp.setIdentity(); cstrain = 0.0;}
@@ -93,5 +88,10 @@ class Cluster {
   Eigen::Matrix4d getVisTransform() const;
   bool justFractured = false;
   double timeSinceLastFracture;
+  bool markedForRemoval = false;
+  bool newCluster = false;
+  int fadeSteps;
+  std::vector<double> oweights;
+  int embedId;
 };
 

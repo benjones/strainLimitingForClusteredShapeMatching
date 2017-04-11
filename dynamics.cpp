@@ -88,7 +88,7 @@ void World::timestep(){
 	  for(auto &member : cluster.members){
 		auto &p = particles[member.index];
 		double w = member.weight / p.totalweight;
-		p.goalPosition += w*(T*(p.restPosition - cluster.restCom) + cluster.worldCom);
+		p.goalPosition += w*(T*(member.pos) + cluster.worldCom);
 		p.goalVelocity += w*clusterVelocity;
 	  }	  
 	}
@@ -125,6 +125,11 @@ void World::timestep(){
 	assertFinite();
   }
 
+  removeClusters();
+  addClusters(clusteringParams);
+  if(!fractureOn) cullSmallClusters();
+  countClusters();
+
   //std::cout<<"doFracture"<<std::endl;
   if (fractureOn) {
 	doFracture(std::move(potentialSplits));
@@ -159,7 +164,6 @@ void World::timestep(){
 
   removeInvalidParticles();
   seedNewParticles();
-  //makeClustersForUnreferencedParticles();
 
   elapsedTime += dt;
   //std::cout << "elapsed time: " << elapsedTime << std::endl;
@@ -183,7 +187,7 @@ void World::strainLimitingIteration(){
 
 	for(const auto& member : c.members){
 	  auto &q = particles[member.index];
-	  Eigen::Vector3d rest = (q.restPosition - c.restCom);
+	  Eigen::Vector3d rest = (member.pos);
 	  Eigen::Vector3d goal = T*(rest) + c.worldCom;
 	  double ratio = (goal-q.position).squaredNorm() / (c.width*c.width);
 	  
@@ -295,9 +299,11 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::Vector3d n = ((Apq*clusters[cIndex].aInv).inverse()*splitDirection).normalized();
 
 	//we need to worry about signs at some point
-	c.cg.addPlane(n, -(n.dot(c.restCom)));
-	newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
-	
+	//c.cg.addPlane(n, -(n.dot(c.restCom)));
+	//newCluster.cg.addPlane(-n, (n.dot(c.restCom)));
+	c.cg.addPlane(n, 0.0);
+	newCluster.cg.addPlane(-n, 0.0);
+
 	clusters.push_back(newCluster);	  
 	if (delayRepeatedFracture) {
 	  clusters[clusters.size()-1].justFractured = true;
@@ -476,7 +482,7 @@ void World::splitOutliers() {
 	for(auto &member : c.members) {
 	  auto &p = particles[member.index];
 	  if ((p.numClusters > 1) && ((p.position - c.worldCom).norm() > 
-			  (1.0 + gamma) * outlierThreshold * (p.restPosition - c.restCom).norm())) {
+			  (1.0 + gamma) * outlierThreshold * (member.pos).norm())) {
 		Particle q(p);
 		q.entity = nullptr;
 		q.sceneNode = nullptr;
@@ -520,13 +526,13 @@ void World::cullSmallClusters() {
   }
 
   for (auto &c : clusters) {
-	//if (c.members.size() < 4 || c.mass < threshold){
-	if (c.members.size() < 4 || 
+	if (c.members.size() < 4 || c.mass < threshold){
+	/*if (c.members.size() < 4 || 
             c.mass < threshold ||
             c.members.size() < c.initialMembers / 2 ||
             c.members.size() > c.initialMembers * 2 ||
             c.Fp.norm() > 2.0 ||
-            tooManyClusters) {
+            tooManyClusters) {*/
 	  for (auto &member : c.members) {
 		particles[member.index].totalweight -= member.weight;
 	  }
@@ -538,13 +544,13 @@ void World::cullSmallClusters() {
   mapping.resize(clusters.size());
   int i1=0, i2=0;
   for (auto &c : clusters) {
-	//if (c.members.size() < 4 || c.mass < threshold) {  
-        if (c.members.size() < 4 ||
+	if (c.members.size() < 4 || c.mass < threshold) {  
+        /*if (c.members.size() < 4 ||
             c.mass < threshold ||
             c.members.size() < c.initialMembers / 2 ||
             c.members.size() > c.initialMembers * 2 ||
             c.Fp.norm() > 2.0 ||
-            tooManyClusters) {
+            tooManyClusters) {*/
           mapping[i1++] = -1;
 	} else {
 	  mapping[i1++] = i2++;
@@ -562,12 +568,12 @@ void World::cullSmallClusters() {
   
   utils::actuallyEraseIf(clusters,
 	  [](const Cluster& c){
-		//return (c.members.size() < 4 || c.mass < 1e-4);
-		return (c.members.size() < 4 ||
+		return (c.members.size() < 4 || c.mass < 1e-4);
+		/*return (c.members.size() < 4 ||
             		c.mass < 1e-4 ||
             		c.members.size() < c.initialMembers / 2 ||
             		c.members.size() > c.initialMembers * 2 ||
-            		c.Fp.norm() > 2.0);
+            		c.Fp.norm() > 2.0);*/
 	  }); 
 
   if(clusters.size() != sizeBefore){
@@ -749,7 +755,7 @@ bool CollisionGeometry::project(Eigen::Vector3d &x) {
 
 inline Eigen::Vector3d restToWorld(const Cluster &c, const Eigen::Vector3d &x) { 
   assert(x.allFinite());
-  Eigen::Vector3d y = c.worldCom + c.restToWorldTransform * (x-c.restCom);
+  Eigen::Vector3d y = c.restToWorldTransform * (x-c.restCom);
   assert(y.allFinite());
   return y;
 }
@@ -958,7 +964,7 @@ Eigen::Matrix3d World::computeApq(const Cluster& c) const{
   for (auto &member : c.members) {
 	auto &p = particles[member.index];
 	Eigen::Vector3d pj = p.position - c.worldCom;
-	Eigen::Vector3d qj = p.restPosition - c.restCom;
+	Eigen::Vector3d qj = member.pos;
 	Apq += (member.weight/p.totalweight)*p.mass * pj * qj.transpose();
   }
   return Apq;
@@ -1023,7 +1029,22 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	  std::cout<<c.mass<<" "<<c.members.size()<<" "<<c.members[0].weight<<std::endl;
 	}
 	assert(c.mass >= 0);
-	c.restCom = sumWeightedRestCOM(c.members);
+	
+	// with the abondonment of restPositions we need to shift the member positions
+	//c.restCom = sumWeightedRestCOM(c.members);
+	Eigen::Vector3d shift = Eigen::Vector3d::Zero();
+	double mass = 0.0;
+	for (auto &m : c.members) {
+	  auto &p = particles[m.index];
+	  double w = (m.weight / p.totalweight) * p.mass;
+	  mass += w;
+	  shift += w*m.pos;
+	}
+	shift /= mass;
+	for (auto &m : c.members)  m.pos -= shift;
+
+	c.restCom = Eigen::Vector3d::Zero();
+
 	c.worldCom = sumWeightedWorldCOM(c.members);
 
 	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
@@ -1033,7 +1054,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	assert(c.worldCom.allFinite());
 	c.width = 0.0;
 	for(const auto& member : c.members){
-	  c.width = std::max(c.width, (c.restCom - particles[member.index].restPosition).norm());
+	  c.width = std::max(c.width, (member.pos).norm());
 	} 
 	c.renderWidth = c.width; //it'll get updated soon enough
 	//assert(c.width >= 0);
@@ -1042,7 +1063,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	// adam says: this should take weights into account
 	for (const auto& member : c.members) {
 	  auto &p = particles[member.index];
-	  Eigen::Vector3d qj = p.restPosition - c.restCom;
+	  Eigen::Vector3d qj = member.pos;
 	  c.aInv += (member.weight/p.totalweight)*p.mass * qj * qj.transpose();
 	}
 	  
