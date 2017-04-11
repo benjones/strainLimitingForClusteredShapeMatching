@@ -669,3 +669,104 @@ if (elapsedTime <= plane.lifetime)
 glDepthMask(true);
 }
 #endif
+
+
+
+void drawWorldsPretty(const std::vector<World>& worlds,
+	const Camera& camera, 
+	const VisSettings& settings, 
+	SDL_Window* window,
+	double zOffset){
+
+  glEnable(GL_DEPTH_TEST);
+  glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);
+  glClearColor(0.2, 0.2, 0.2, 1);
+  glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+
+  int windowWidth, windowHeight;
+  SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+  gluPerspective(45,static_cast<double>(windowWidth)/windowHeight,
+	  .5, 100);
+
+  
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  gluLookAt(camera.position.x(), camera.position.y(), camera.position.z(),
+	  camera.lookAt.x(), camera.lookAt.y(), camera.lookAt.z(),
+	  camera.up.x(), camera.up.y(), camera.up.z());
+
+  glEnable (GL_BLEND);
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  int worldNumber = -1;
+  for(const auto& world : worlds){
+  //avoid typing world.clusters, world.particles everywhere
+	worldNumber++;
+	
+	const auto& clusters = world.clusters;
+	const auto& particles = world.particles;
+	const int which_cluster = settings.which_cluster;
+	
+	if(!particles.empty()){						
+	  glPointSize(10);
+	  
+	  if (!settings.drawColoredParticles) {
+		if (settings.which_cluster == -1) {
+		  glColor4d(1,1,1,0.95);
+		} else {
+		  glColor4d(1,1,1,0.2);
+		}
+		Eigen::Vector3d zChange(0,0, worldNumber*zOffset);
+		std::vector<Eigen::Vector3d> positions(particles.size());
+		for(auto i = 0; i < particles.size(); ++i){
+		  positions[i] = particles[i].position + zChange;
+		}
+		
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(3, GL_DOUBLE,
+			sizeof(Eigen::Vector3d),
+			positions.data());
+		glDrawArrays(GL_POINTS, 0, particles.size());
+	  }
+	}
+	
+	
+	drawPlanesPretty(world.planes, 
+		world.movingPlanes, 
+		world.twistingPlanes, 
+		world.tiltingPlanes, 
+		world.elapsedTime);
+	
+	auto max_t = std::max_element(
+		clusters.begin(), clusters.end(),
+		[](const Cluster& a, const Cluster& b){
+		  return a.toughness < b.toughness;
+		})->toughness;
+	
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1.0,1.0);
+	
+    
+  
+	glColor3d(1, 0, 1);
+	for(auto& projectile : world.projectiles){
+	  glMatrixMode(GL_MODELVIEW);
+	  glPushMatrix();
+	  auto currentPosition = projectile.start + world.elapsedTime*projectile.velocity;
+	  glTranslated(currentPosition.x(), currentPosition.y(), currentPosition.z());
+	  utils::drawSphere(projectile.radius, 10, 10);
+	  glPopMatrix();
+	}
+	
+	glColor3d(0,1,0);
+	for(auto& cylinder : world.cylinders){
+	  utils::drawCylinder(cylinder.supportPoint, cylinder.normal, cylinder.radius);
+	}
+  }
+  glFlush();
+  SDL_GL_SwapWindow(window);
+}

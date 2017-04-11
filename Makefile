@@ -81,6 +81,9 @@ ogreApp.o: ogreApp.cpp libshapematch.a
 ogreApp: libshapematch.a ogreApp.o
 	$(CC) -o ogreApp $(OGRE_LIBS) -L. -lshapematch ogreApp.o
 
+convergenceTest: libshapematch.a convergenceTestMain.o vis.o
+	$(CC) $(LDOPTS) -o convergenceTest -L. -lshapematch $(SDL_LIB) $(EIGEN_INCLUDE) $(INCS) $(FLAGS) convergenceTestMain.o vis.o $(OBJECTS)
+
 #-----------------------------------------
 
 .cpp.o:

@@ -33,6 +33,12 @@ void drawWorldPretty(const World& world,
 					   const VisSettings& settings, 
 					   SDL_Window* window);
 
+void drawWorldsPretty(const std::vector<World>& worlds,
+					   const Camera& camera, 
+					   const VisSettings& settings, 
+	SDL_Window* window, double zOffset) ;
+
+
 void drawPlanesPretty(const std::vector<Eigen::Vector4d>& planes,
 						const std::vector<MovingPlane>& movingPlanes,
 						const std::vector<TwistingPlane>& twistingPlanes,
