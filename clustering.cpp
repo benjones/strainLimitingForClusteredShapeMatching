@@ -578,13 +578,13 @@ void World::addClusters(const ClusteringParams &params) {
 
 	for (int i = 0; i < psize; i++) {
 	  auto &e = particles[particlesToEmbed[i]].embeddedPosition;
-	  std::cout<<x(i)<<", "<<y(i)<<", "<<z(i)<<std::endl;
 	  e(0) = x(i);
 	  e(1) = y(i);
 	  e(2) = z(i);
 	}
 	for (int i=0; i<clustersToEmbed.size(); i++) {
 	  auto &e = clusters[clustersToEmbed[i]].restCom;
+	  std::cout<<x(psize+i)<<", "<<y(psize+i)<<", "<<z(psize+i)<<std::endl;
 	  e(0) = x(psize+i);
 	  e(1) = y(psize+i);
 	  e(2) = z(psize+i);
