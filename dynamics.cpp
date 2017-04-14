@@ -59,6 +59,7 @@ void World::timestep(){
 	  Eigen::Matrix3d Apq = computeApq(cluster);
 	  Eigen::Matrix3d A = Apq*cluster.aInv;
 	  if (nu > 0.0) A = A*cluster.Fp.inverse(); // plasticity
+	  //if (cluster.newCluster)std::cout<<A<<std::endl<<std::endl<<Apq<<std::endl<<std::endl<<cluster.aInv<<std::endl<<std::endl<<cluster.Fp<<std::endl<<std::endl<<cluster.Fp.inverse()<<std::endl<<std::endl;
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -66,6 +67,7 @@ void World::timestep(){
 	  
 	  Eigen::Matrix3d U = solver.matrixU(), V = solver.matrixV();
 	  Eigen::Vector3d sigma = solver.singularValues();
+	  if (cluster.newCluster) std::cout<<sigma(0)<<" "<<sigma(1)<<" "<<sigma(2)<<std::endl;
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
@@ -1024,7 +1026,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
   countClusters(); //TODO, just touch a subset...
 
   for(auto& p : particles){
-	if (p.mass <= 0.0) std::cout<<p.mass<<" "<<std::endl;
+	if (p.mass <= 0.0) std::cout<<p.mass<<" "<<p.totalweight<<std::endl;
 	assert(p.mass > 0.0);
   }
 

@@ -448,7 +448,7 @@ void World::removeClusters() {
 	  m.weight -= w;
 	}
 	c.fadeSteps--;
-	if (c.fadeSteps <= 0) deleteClusters = true; // this will trigger deletion in cullSmallClusters
+	if (c.fadeSteps <= 0) deleteClusters = true; 
   }  
 
   if (deleteClusters) {
@@ -475,7 +475,7 @@ void World::removeClusters() {
   
 	utils::actuallyEraseIf(clusters,
 		[](const Cluster& c){
-		  return (c.members.size() < 4 || c.mass < 1e-4);
+		  return (c.markedForRemoval && c.fadeSteps <= 0);
 		}); 
 	std::cout << "deleted " << sizeBefore - clusters.size() << " clusters" << std::endl;
   }
@@ -552,7 +552,7 @@ void World::addClusters(const ClusteringParams &params) {
 		assert (k < cluster.members.size());
 
 		// compute weight
-		double w = cluster.members[k].weight;
+		double w = cluster.members[k].weight/q.totalweight;
 		double w2 = w*w;
 		Eigen::Vector3d d = cluster.Fp * cluster.members[k].pos;
 		int cindex = psize + cluster.embedId;
@@ -567,9 +567,13 @@ void World::addClusters(const ClusteringParams &params) {
 		A(cindex, cindex) += w2;
 		A(pindex, cindex) -= w2;
 		A(cindex, pindex) -= w2;
-
 	  }
+	  if (p.id == q.id) A(pindex,pindex) += 1.0;
 	}
+
+	//std::cout<<b<<std::endl;
+	  assert(A.allFinite());
+	  assert(b.allFinite());
 
 	Eigen::LLT<Eigen::MatrixXd> lltofA(A);
 	x = lltofA.solve(a);
@@ -578,13 +582,14 @@ void World::addClusters(const ClusteringParams &params) {
 
 	for (int i = 0; i < psize; i++) {
 	  auto &e = particles[particlesToEmbed[i]].embeddedPosition;
+	  //std::cout<<"p("<<i<<"): "<<x(i)<<", "<<y(i)<<", "<<z(i)<<std::endl;
 	  e(0) = x(i);
 	  e(1) = y(i);
 	  e(2) = z(i);
 	}
 	for (int i=0; i<clustersToEmbed.size(); i++) {
 	  auto &e = clusters[clustersToEmbed[i]].restCom;
-	  std::cout<<x(psize+i)<<", "<<y(psize+i)<<", "<<z(psize+i)<<std::endl;
+	  //std::cout<<"c("<<i<<"): "<<x(psize+i)<<", "<<y(psize+i)<<", "<<z(psize+i)<<std::endl;
 	  e(0) = x(psize+i);
 	  e(1) = y(psize+i);
 	  e(2) = z(psize+i);
@@ -631,11 +636,15 @@ void World::addClusters(const ClusteringParams &params) {
 	newCluster.oweights.resize(newCluster.members.size());
 	for (auto &&en : benlib::enumerate(newCluster.members)) {
 	  auto &member = en.second;
-	  member.pos = p.embeddedPosition - newCluster.restCom;
+	  member.pos = particles[member.index].embeddedPosition - newCluster.restCom;
 	  newCluster.oweights[en.first] = member.weight;
 	  member.weight = 0.0;
+	  particles[member.index].clusters.push_back(clusters.size());
+	  particles[member.index].numClusters++;
 	}
 	newCluster.toughness = toughness;
+	newCluster.Fp = Eigen::Matrix3d::Identity();
+	newCluster.FpNew = Eigen::Matrix3d::Identity();
 	newCluster.cg.init(Eigen::Vector3d::Zero(), params.neighborRadius);
 	newCluster.fadeSteps = clusterFadeIn;
 	newCluster.newCluster = true;
@@ -652,6 +661,10 @@ void World::addClusters(const ClusteringParams &params) {
 	}
 	c.fadeSteps--;
 	if (c.fadeSteps <= 0) c.newCluster = false;
+	//for (auto &m : c.members) {
+	// std::cout<<m.weight<<" "<<m.pos<<std::endl;
+	//}
+	//exit(-1);
   }  
   int count = 0;
   for (auto &c : clusters) if (c.newCluster) count++;
