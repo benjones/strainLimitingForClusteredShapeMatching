@@ -72,7 +72,6 @@ class Cluster {
   std::unordered_set<int> neighbors;  // Note: this refers to neighboring CLUSTERS 
   std::unordered_set<int> oldNeighbors;		// Note: this refers to neighboring CLUSTERS
   double mass, width, renderWidth;
-  double condFp;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
   Cluster() {Fp.setIdentity(); cstrain = 0.0;}

@@ -318,6 +318,7 @@ void World::loadFromJson(const std::string& _filename){
   
   
 
+  updateClusterProperties(range(clusters.size()));
 
   for (auto& c : clusters) {
 	Eigen::Matrix3d Aqq;

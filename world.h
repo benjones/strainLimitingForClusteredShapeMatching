@@ -196,4 +196,6 @@ public:
   double clusterFadeIn, clusterFadeOut;
 
   benlib::Profiler prof;
+  
+  void testWorld();
 };
