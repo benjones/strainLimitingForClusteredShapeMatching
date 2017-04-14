@@ -556,17 +556,18 @@ void World::addClusters(const ClusteringParams &params) {
 		double w2 = w*w;
 		Eigen::Vector3d d = cluster.Fp * cluster.members[k].pos;
 		int cindex = psize + cluster.embedId;
+		a(pindex) += w*d(0);
+		b(pindex) += w*d(1);
+		c(pindex) += w*d(2);
+		// rhs for cluster is 0.0
 
+		//if (cindex == dim) continue;
 		//std::cout<<cindex<<" "<<pindex<<" "<<dim<<" "<<psize<<" "<<cluster.embedId<<std::endl;
 		A(pindex, pindex) += w2;
 		A(cindex, cindex) += w2;
 		A(pindex, cindex) -= w2;
 		A(cindex, pindex) -= w2;
 
-		a(pindex) += w*d(0);
-		b(pindex) += w*d(1);
-		c(pindex) += w*d(2);
-		// rhs for cluster is 0.0
 	  }
 	}
 
@@ -577,10 +578,18 @@ void World::addClusters(const ClusteringParams &params) {
 
 	for (int i = 0; i < psize; i++) {
 	  auto &e = particles[particlesToEmbed[i]].embeddedPosition;
+	  std::cout<<x(i)<<", "<<y(i)<<", "<<z(i)<<std::endl;
 	  e(0) = x(i);
 	  e(1) = y(i);
 	  e(2) = z(i);
 	}
+	for (int i=0; i<clustersToEmbed.size(); i++) {
+	  auto &e = clusters[clustersToEmbed[i]].restCom;
+	  e(0) = x(psize+i);
+	  e(1) = y(psize+i);
+	  e(2) = z(psize+i);
+	}
+	//clusters[clustersToEmbed[clustersToEmbed.size()-1]].restCom = Eigen::Vector3d::Zero();
 
 	Cluster newCluster;
 	newCluster.restCom = particles[p.id].embeddedPosition;
