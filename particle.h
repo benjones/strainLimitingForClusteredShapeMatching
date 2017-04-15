@@ -26,6 +26,7 @@ public:
 	embeddedPosition;
   double mass; 
   double totalweight; // sum of weights of this particle in all clusters
+  double tmpd;
   size_t numClusters; // only used to determine singelton particles
   bool outsideSomeMovingPlane;
   std::vector<int> clusters; 

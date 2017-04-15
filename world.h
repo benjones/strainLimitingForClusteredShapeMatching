@@ -51,6 +51,8 @@ public:
   void removeLonelyParticles();
   void removeClusters();
   void addClusters(const ClusteringParams &params);
+  template <typename Container>
+	double pbdIteration(const Container &particleIndices, const Container &clusterIndices);
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
@@ -140,6 +142,18 @@ public:
 	  double w = (member.weight / p.totalweight) * p.mass;
 	  mass += w;
 	  com += w * p.position;
+	}
+	return (com / mass);
+  }
+
+  Eigen::Vector3d sumWeightedEmbeddedCOM(const std::vector<Cluster::Member>& members) const {
+	double mass = 0.0;
+	Eigen::Vector3d com = Eigen::Vector3d::Zero();
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  double w = (member.weight / p.totalweight) * p.mass;
+	  mass += w;
+	  com += w * p.embeddedPosition;
 	}
 	return (com / mass);
   }
