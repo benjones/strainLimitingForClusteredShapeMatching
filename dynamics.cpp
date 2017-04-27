@@ -59,7 +59,6 @@ void World::timestep(){
 	  Eigen::Matrix3d Apq = computeApq(cluster);
 	  Eigen::Matrix3d A = Apq*cluster.aInv;
 	  if (nu > 0.0) A = A*cluster.Fp.inverse(); // plasticity
-	  //if (cluster.newCluster)std::cout<<A<<std::endl<<std::endl<<Apq<<std::endl<<std::endl<<cluster.aInv<<std::endl<<std::endl<<cluster.Fp<<std::endl<<std::endl<<cluster.Fp.inverse()<<std::endl<<std::endl;
 	  
 	  //do the SVD here so we can handle fracture stuff
 	  Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, 
@@ -67,7 +66,10 @@ void World::timestep(){
 	  
 	  Eigen::Matrix3d U = solver.matrixU(), V = solver.matrixV();
 	  Eigen::Vector3d sigma = solver.singularValues();
-	  if (cluster.newCluster) std::cout<<sigma(0)<<" "<<sigma(1)<<" "<<sigma(2)<<std::endl;
+	  if (cluster.newCluster) {
+		//std::cout<<cluster.aInv<<std::endl<<Apq<<std::endl<<A<<std::endl<<cluster.Fp<<std::endl;
+		//std::cout<<sigma(0)<<" "<<sigma(1)<<" "<<sigma(2)<<std::endl;
+	  }
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
@@ -133,7 +135,8 @@ void World::timestep(){
   }
 
   //std::cout<<"doFracture"<<std::endl;
-  if (fractureOn) {
+  //if (fractureOn) {
+  if (false) {
 	doFracture(std::move(potentialSplits));
 	//std::cout<<"splitoutliers"<<std::endl;
 	splitOutliers();
@@ -151,11 +154,13 @@ void World::timestep(){
 	addClusters(clusteringParams);
 	removeClusters();
 	updateClusterProperties(range(clusters.size()));
+	dealWithBrandNewClusters();
+	//std::cout<<"cluster membership: "<<std::endl;
+	//for (auto &c : clusters) std::cout<<c.members.size()<<" ";
+	//std::cout<<std::endl;
   }
 
-  //std::cout<<"updateTransforms"<<std::endl;
   for (auto &c : clusters) updateTransforms(c);
-  //std::cout<<"selfCollisions"<<std::endl;
   if (selfCollisionsOn) selfCollisions();
 
   bounceOutOfPlanes();
@@ -1101,4 +1106,54 @@ void World::updateClusterProperties(const Container& clusterIndices){
   countClusters();
 }
 
+Eigen::Matrix3d World::computeAqqInv(const Cluster &c) const {
+  Eigen::Matrix3d aInv = Eigen::Matrix3d::Zero();  
+	// adam says: this should take weights into account
+	for (const auto& member : c.members) {
+	  auto &p = particles[member.index];
+	  Eigen::Vector3d qj = member.pos;
+	  aInv += (member.weight/p.totalweight)*p.mass * qj * qj.transpose();
+	}
+	  
+	
+	//do pseudoinverse
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Vector3d sigInv;
+	for(auto i : range(3)){
 
+	  // adam says: on 10/27 I changed this from 0 to 1.0/1.0e-12.  This seemed to resolve an inf issue during self collisions.
+	  // But, I left in the deletion code below anyway.
+	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-12 ? 1.0/solver.singularValues()(i) : 1.0/1.0e-12;
+
+	}
+	aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
+	if(!aInv.allFinite()){
+	  std::cout << aInv << std::endl;
+	  std::cout << solver.singularValues() << std::endl;
+	}
+	assert(aInv.allFinite());
+	return aInv;
+}
+
+void World::dealWithBrandNewClusters() {
+  //for (auto &i : brandNewClusters) {
+	//auto &c = clusters[i];
+	//Eigen::Matrix3d A = computeApq(c)*computeAqqInv(c);
+	//std::cout<<A<<std::endl<<computeApq(c)<<std::endl<<computeAqqInv(c)<<std::endl<<std::endl;
+	//c.FpNew = c.Fp = Eigen::Matrix3d::identity(); //A.inverse(); // = A^-1 
+  //}
+
+  for (auto &i : brandNewClusters) {
+	auto &c = clusters[i];
+	for (auto &m : c.members) {
+	  for (auto &j : particles[m.index].clusters) {
+		if (i != j && c.neighbors.count(j) < 1) {
+		  c.neighbors.insert(j);
+		  clusters[j].neighbors.insert(i);
+		}
+	  }
+	}
+  }
+
+  brandNewClusters.clear();
+}

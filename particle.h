@@ -26,6 +26,7 @@ public:
 	embeddedPosition;
   double mass; 
   double totalweight; // sum of weights of this particle in all clusters
+  double futuretotalweight; // sum of weights of this particle in all clusters after fading in/out
   double tmpd;
   size_t numClusters; // only used to determine singelton particles
   bool outsideSomeMovingPlane;
@@ -85,7 +86,7 @@ class Cluster {
   Eigen::Matrix3d worldToRestTransform, restToWorldTransform;
   Eigen::Matrix4d getVisTransform() const;
   bool justFractured = false;
-  double timeSinceLastFracture;
+  double timeSinceLastFracture = 0.0;
   bool markedForRemoval = false;
   bool newCluster = false;
   int fadeSteps;

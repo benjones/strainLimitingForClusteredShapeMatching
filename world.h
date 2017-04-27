@@ -53,6 +53,8 @@ public:
   void addClusters(const ClusteringParams &params);
   template <typename Container>
 	double pbdIteration(const Container &particleIndices, const Container &clusterIndices);
+  std::vector<int> brandNewClusters;
+  void dealWithBrandNewClusters();
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
@@ -160,6 +162,7 @@ public:
 
   //compute the APQ matrix (see meuller 2005)
   Eigen::Matrix3d computeApq(const Cluster& c) const;
+  Eigen::Matrix3d computeAqqInv(const Cluster &c) const;
   void updateTransforms(Cluster& c) const;
   
   inline Eigen::Vector3d getMomentum(){
