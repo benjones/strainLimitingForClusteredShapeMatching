@@ -14,21 +14,21 @@
 #include <memory>
 #include <iostream>
 #ifndef BEN
-#include <Ogre/OgreRoot.h>
-#include <Ogre/OgrePlugin.h>
-#include <Ogre/OgreWindowEventUtilities.h>
-#include <Ogre/OgreRenderWindow.h>
-#include <Ogre/OgreCamera.h>
-#include <Ogre/OgreViewport.h>
-#include <Ogre/OgreSceneNode.h>
-#include <Ogre/OgreEntity.h>
-#include <Ogre/OgreMaterialManager.h>
-#include <Ogre/OgreMaterial.h>
-#include <Ogre/OgreTechnique.h>
-#include <Ogre/OgreFreeimageCodec.h>
-#include <Ogre/OgreMeshManager.h>
-#include <Ogre/Plugins/OctreeSceneManager/OgreOctreePlugin.h>
-#include <Ogre/RenderSystems/GL/OgreGLPlugin.h>
+#include <OGRE/OgreRoot.h>
+#include <OGRE/OgrePlugin.h>
+#include <OGRE/OgreWindowEventUtilities.h>
+#include <OGRE/OgreRenderWindow.h>
+#include <OGRE/OgreCamera.h>
+#include <OGRE/OgreViewport.h>
+#include <OGRE/OgreSceneNode.h>
+#include <OGRE/OgreEntity.h>
+#include <OGRE/OgreMaterialManager.h>
+#include <OGRE/OgreMaterial.h>
+#include <OGRE/OgreTechnique.h>
+#include <OGRE/OgreFreeImageCodec.h>
+#include <OGRE/OgreMeshManager.h>
+#include <OGRE/Plugins/OctreeSceneManager/OgreOctreePlugin.h>
+#include <OGRE/RenderSystems/GL/OgreGLPlugin.h>
 #else
 #include <Ogre/OgreRoot.h>
 #include <Ogre/OgrePlugin.h>
@@ -257,6 +257,7 @@ auto* window = ogreRoot->initialise(true, "Ductile Fracture for Shape Matching")
   
   
   
+  std::vector<Ogre::MaterialPtr> mats;
   
   for(auto& p : world.particles){
 	p.cleanup = cleanupParticle;
@@ -280,76 +281,93 @@ auto* window = ogreRoot->initialise(true, "Ductile Fracture for Shape Matching")
 		RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
 	material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
 	p.entity->setMaterial(material);
+  mats.push_back(material);
   }
   
   bool readyToExit = false;
 
-  std::string fileBase = "ogreFrames/frame.%04d.png";
+  //std::string fileBase = "ogreFrames/frame.%04d.png";
+  std::string fileBase = std::string(argv[2]) + "/frame.%04d.png";
   char fname[1024];
 
   int frame = 0;
   while(!readyToExit){
 
-	world.timestep();
-	for(auto& p : world.particles){
-	  if(p.sceneNode == nullptr){
-		p.cleanup = cleanupParticle;
-		p.sceneNode = sceneManager->getRootSceneNode()->createChildSceneNode();
-		p.sceneNode->setScale(scaleFactor, scaleFactor, scaleFactor);
-		p.entity = sceneManager->createEntity("sphere.mesh");
-		p.sceneNode->attachObject(p.entity);
-		auto material = Ogre::MaterialManager::getSingleton().create(
-			(std::string("aMat ") + std::to_string(identity_id++)).c_str(),
-			Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-		
-		//find closest color:
-		/*		auto closestCluster = std::min_element(
-			p.clusters.begin(), p.clusters.end(),
-			[&p,&world](int a, int b){
-			  return (p.position - world.clusters[a].worldCom).squaredNorm() <
-			  (p.position - world.clusters[b].worldCom).squaredNorm();
-			  });
-		
-			  RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
-		material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
-		p.entity->setMaterial(material);
-	  }
-	  
-	  p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
-	  //p.sceneNode->setVisible(frame % 2 == 0);
-	}
+    world.timestep();
+    std::cout << world.clusters.size() << std::endl;
+    int i = 0;
+    for(auto& p : world.particles){
+      if(p.sceneNode == nullptr){
+        p.cleanup = cleanupParticle;
+        p.sceneNode = sceneManager->getRootSceneNode()->createChildSceneNode();
+        p.sceneNode->setScale(scaleFactor, scaleFactor, scaleFactor);
+        p.entity = sceneManager->createEntity("sphere.mesh");
+        p.sceneNode->attachObject(p.entity);
+        auto material = Ogre::MaterialManager::getSingleton().create(
+            (std::string("aMat ") + std::to_string(identity_id++)).c_str(),
+            Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
 
-	for(auto i : benlib::range(world.projectiles.size())){
-	  Eigen::Vector3d posNow = world.projectiles[i].start + world.elapsedTime*
-		world.projectiles[i].velocity;
-	  ogreProjectiles[i].second->setPosition(posNow.x(), posNow.y(), posNow.z());
-	  
-	}
-	
-	for(auto i : benlib::range(world.movingPlanes.size())){
-	  Eigen::Vector3d positionNow = world.movingPlanes[i].velocity*world.elapsedTime*
-		world.movingPlanes[i].normal;
-	  ogreMovingPlanes[i].second->setPosition(positionNow.x(), positionNow.y(), positionNow.z());
-	}
-	
+        //find closest color:
+        /*		auto closestCluster = std::min_element(
+              p.clusters.begin(), p.clusters.end(),
+              [&p,&world](int a, int b){
+              return (p.position - world.clusters[a].worldCom).squaredNorm() <
+              (p.position - world.clusters[b].worldCom).squaredNorm();
+              });
 
-	
-	// Pump window messages for nice behaviour
-	Ogre::WindowEventUtilities::messagePump();
-	
-	// Render a frame
-	ogreRoot->renderOneFrame();
-	if(dumpFrames){
-	  sprintf(fname, fileBase.c_str(), frame);
+              RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();*/
+        material->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
+        p.entity->setMaterial(material);
+      } else {
+        //find closest color:
+        auto closestCluster = std::min_element(
+            p.clusters.begin(), p.clusters.end(),
+            [&p,&world](int a, int b){
+            return (p.position - world.clusters[a].worldCom).squaredNorm() <
+            (p.position - world.clusters[b].worldCom).squaredNorm();
+            });
 
-	  window->writeContentsToFile(fname);
-	}
-	std::cout << "finished frame: " << frame << std::endl;
-	frame++;
-	
-	if(window->isClosed()){
-	  readyToExit = true;
-	}
+        RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();
+        p.color = rgb;
+        mats[i]->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
+      }
+
+      p.sceneNode->setPosition(p.position.x(), p.position.y(), p.position.z());
+      //p.sceneNode->setVisible(frame % 2 == 0);
+      i++;
+    }
+
+    for(auto i : benlib::range(world.projectiles.size())){
+      Eigen::Vector3d posNow = world.projectiles[i].start + world.elapsedTime*
+        world.projectiles[i].velocity;
+      ogreProjectiles[i].second->setPosition(posNow.x(), posNow.y(), posNow.z());
+
+    }
+
+    for(auto i : benlib::range(world.movingPlanes.size())){
+      Eigen::Vector3d positionNow = world.movingPlanes[i].velocity*world.elapsedTime*
+        world.movingPlanes[i].normal;
+      ogreMovingPlanes[i].second->setPosition(positionNow.x(), positionNow.y(), positionNow.z());
+    }
+
+
+
+    // Pump window messages for nice behaviour
+    Ogre::WindowEventUtilities::messagePump();
+
+    // Render a frame
+    ogreRoot->renderOneFrame();
+    if(dumpFrames){
+      sprintf(fname, fileBase.c_str(), frame);
+
+      window->writeContentsToFile(fname);
+    }
+    std::cout << "finished frame: " << frame << std::endl;
+    frame++;
+
+    if(window->isClosed()){
+      readyToExit = true;
+    }
   }
   
   
