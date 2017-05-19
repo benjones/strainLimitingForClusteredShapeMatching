@@ -1,0 +1,35 @@
+{
+	"particleFiles" : [ "inputFiles/blue_noise/heart-bn.txt"],
+
+	"neighborRadius" : 0.09,
+	"alpha" : 1.0,
+	"omega" : 0.3,
+	"numConstraintIters" : 4,
+	"maxStretch" : 0.3,
+	"nClusters" : 400,
+	"springDamping": 0.5,
+	"toughness" : 1000.12,
+	"yield" : 0.15,
+	"nu" : 1.0,
+	"hardening" : 0.0,
+
+	"planes" : [ 
+	],
+	"movingPlanes" : [
+		{ 
+			"normal" : [1, 0, 0],
+			"offset" : 0.40,
+			"velocity" : 0.1,
+			"lifetime" : 2
+		},
+		{ 
+			"normal" : [-1, 0, 0],
+			"offset" : 0.40,
+			"velocity" : 0.1,
+			"lifetime" : 2
+		}
+	],
+	"gravity" : [0, -9.8, 0],
+	"gravity" : [0, 0, 0],
+	"clusterFpThreshold" : 1.25
+ }
