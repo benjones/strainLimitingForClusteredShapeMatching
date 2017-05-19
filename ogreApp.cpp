@@ -327,8 +327,8 @@ auto* window = ogreRoot->initialise(true, "Ductile Fracture for Shape Matching")
             (p.position - world.clusters[b].worldCom).squaredNorm();
             });
 
-        RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();
-        p.color = rgb;
+        //RGBColor rgb = HSLColor(2.0*acos(-1)*(*closestCluster%12)/12.0, 0.7, 0.7).to_rgb();
+        //p.color = rgb;
         mats[i]->getTechnique(0)->setDiffuse(p.color.r, p.color.g, p.color.b, 1);
       }
 

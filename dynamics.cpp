@@ -1062,7 +1062,13 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	c.worldCom = sumWeightedWorldCOM(c.members);
 
 	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
-	if(!c.worldCom.allFinite()){std::cout << c.worldCom << std::endl;}
+	if(!c.worldCom.allFinite()){
+	  std::cout << c.worldCom << " "<<c.members.size()<<std::endl;
+	  for (auto &m : c.members) {
+		std::cout<<particles[m.index].position[0]<<" "<<particles[m.index].position[1]<<" "<<particles[m.index].position[2]<<std::endl;
+		std::cout<<particles[m.index].totalweight<<std::endl;
+	  }
+	}
 
 	assert(c.restCom.allFinite());
 	assert(c.worldCom.allFinite());

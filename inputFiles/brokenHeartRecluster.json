@@ -31,5 +31,6 @@
 	],
 	"gravity" : [0, -9.8, 0],
 	"gravity" : [0, 0, 0],
+	"minClusters" : [2],
 	"clusterFpThreshold" : 1.25
  }

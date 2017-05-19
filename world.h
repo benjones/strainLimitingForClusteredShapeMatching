@@ -211,6 +211,7 @@ public:
 
   double clusterFpThreshold;
   double clusterFadeIn, clusterFadeOut;
+  int minClusters;
 
   benlib::Profiler prof;
   
