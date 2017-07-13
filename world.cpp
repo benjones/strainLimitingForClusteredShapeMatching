@@ -122,6 +122,7 @@ void World::loadFromJson(const std::string& _filename){
   clusterFpThreshold = root.get("clusterFpThreshold", -1.0).asDouble();
   clusterFadeOut = root.get("clusterFadeOut", 30).asDouble();
   clusterFadeIn = root.get("clusterFadeIn", 30).asDouble();
+  minClusters = root.get("minClusters", 1).asInt();
   
   collisionRestitution = root.get("collisionRestitution", 0.5).asDouble();
   collisionGeometryThreshold = root.get("collisionGeometryThreshold", 0.5).asDouble();
@@ -182,10 +183,11 @@ void World::loadFromJson(const std::string& _filename){
 	Eigen::Vector3d normal(normalIn[0].asDouble(),
 		normalIn[1].asDouble(),
 		normalIn[2].asDouble());
-   normal.normalize();
+	normal.normalize();
 	movingPlanes.emplace_back(normal, 
 		movingPlanesIn[i]["offset"].asDouble(),
-		movingPlanesIn[i]["velocity"].asDouble());
+		movingPlanesIn[i]["velocity"].asDouble(),
+		movingPlanesIn[i].get("lifetime", std::numeric_limits<double>::max()).asDouble());
 
   }
   std::cout << movingPlanes.size() << " moving planes" << std::endl;
@@ -318,6 +320,7 @@ void World::loadFromJson(const std::string& _filename){
   
   
 
+  updateClusterProperties(range(clusters.size()));
 
   for (auto& c : clusters) {
 	Eigen::Matrix3d Aqq;

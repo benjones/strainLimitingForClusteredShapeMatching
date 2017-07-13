@@ -26,6 +26,8 @@ public:
 	embeddedPosition;
   double mass; 
   double totalweight; // sum of weights of this particle in all clusters
+  double futuretotalweight; // sum of weights of this particle in all clusters after fading in/out
+  double tmpd;
   size_t numClusters; // only used to determine singelton particles
   bool outsideSomeMovingPlane;
   std::vector<int> clusters; 
@@ -72,7 +74,6 @@ class Cluster {
   std::unordered_set<int> neighbors;  // Note: this refers to neighboring CLUSTERS 
   std::unordered_set<int> oldNeighbors;		// Note: this refers to neighboring CLUSTERS
   double mass, width, renderWidth;
-  double condFp;
   double toughness;
   double cstrain; // cumulative strain (for work hardening)
   Cluster() {Fp.setIdentity(); cstrain = 0.0;}
@@ -85,7 +86,7 @@ class Cluster {
   Eigen::Matrix3d worldToRestTransform, restToWorldTransform;
   Eigen::Matrix4d getVisTransform() const;
   bool justFractured = false;
-  double timeSinceLastFracture;
+  double timeSinceLastFracture = 0.0;
   bool markedForRemoval = false;
   bool newCluster = false;
   int fadeSteps;

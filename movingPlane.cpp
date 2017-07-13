@@ -6,17 +6,16 @@ bool MovingPlane::outside(Particle& particle) const {
    if(particle.restPosition.dot(normal) > offset){
       return true;
    }
-
    return false;
 }
 
    
 
 void MovingPlane::bounceParticle(Particle& particle, double timeElapsed) const {
+   if (timeElapsed > lifetime) return;
    double currentOffset = offset + timeElapsed*velocity;
 
    if(outside(particle)){
-	 std::cout<<"outside"<<std::endl;
       Eigen::Vector3d tangential = 
          particle.restPosition - (particle.restPosition.dot(normal))*normal;
 
@@ -26,12 +25,14 @@ void MovingPlane::bounceParticle(Particle& particle, double timeElapsed) const {
 
 
 void MovingPlane::dragParticle(Particle& particle, double timeElapsed) const {
+   if (timeElapsed > lifetime) return;
    if(outside(particle)){
       particle.velocity = velocity*normal;
    }
 }
 
 bool MovingPlane::backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const {
+   if (timeElapsed > lifetime) return false;
    //JAL believes this needs to be debug, it causes weird offsetting
   if (outside(particle)) return false;
    double w = (offset + timeElapsed*velocity);

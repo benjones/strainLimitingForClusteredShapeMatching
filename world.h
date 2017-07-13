@@ -53,6 +53,10 @@ public:
   void removeLonelyParticles();
   void removeClusters();
   void addClusters(const ClusteringParams &params);
+  template <typename Container>
+	double pbdIteration(const Container &particleIndices, const Container &clusterIndices);
+  std::vector<int> brandNewClusters;
+  void dealWithBrandNewClusters();
 
   inline void restart(){ 
 	/*	Eigen::Vector3d oldCameraPosition = cameraPosition;
@@ -148,8 +152,21 @@ public:
 	return (com / mass);
   }
 
+  Eigen::Vector3d sumWeightedEmbeddedCOM(const std::vector<Cluster::Member>& members) const {
+	double mass = 0.0;
+	Eigen::Vector3d com = Eigen::Vector3d::Zero();
+	for (auto &member : members) {
+	  auto &p = particles[member.index];
+	  double w = (member.weight / p.totalweight) * p.mass;
+	  mass += w;
+	  com += w * p.embeddedPosition;
+	}
+	return (com / mass);
+  }
+
   //compute the APQ matrix (see meuller 2005)
   Eigen::Matrix3d computeApq(const Cluster& c) const;
+  Eigen::Matrix3d computeAqqInv(const Cluster &c) const;
   void updateTransforms(Cluster& c) const;
   
   inline Eigen::Vector3d getMomentum(){
@@ -198,6 +215,9 @@ public:
 
   double clusterFpThreshold;
   double clusterFadeIn, clusterFadeOut;
+  int minClusters;
 
   benlib::Profiler prof;
+  
+  void testWorld();
 };

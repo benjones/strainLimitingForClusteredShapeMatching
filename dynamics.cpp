@@ -16,7 +16,7 @@ using benlib::range;
 inline double sqr (const double &x) {return x*x;}
 
 void World::timestep(){
-  std::cout<<"timestep"<<std::endl;
+  //std::cout<<"timestep"<<std::endl;
   for(auto& twistingPlane : twistingPlanes){
 	for(auto& p : particles){
       if (twistingPlane.outside(p) && twistingPlane.lifetime < elapsedTime) 
@@ -66,10 +66,14 @@ void World::timestep(){
 	  
 	  Eigen::Matrix3d U = solver.matrixU(), V = solver.matrixV();
 	  Eigen::Vector3d sigma = solver.singularValues();
+	  if (cluster.newCluster) {
+		//std::cout<<cluster.aInv<<std::endl<<Apq<<std::endl<<A<<std::endl<<cluster.Fp<<std::endl;
+		//std::cout<<sigma(0)<<" "<<sigma(1)<<" "<<sigma(2)<<std::endl;
+	  }
 	  
 	  //std::cout << "sigma " << sigma << std::endl;
 
-	  if (en.first == 17 || en.first == 28) std::cout<<"a: "<<en.first<<" "<<sigma(0)<<std::endl;
+	  //if (en.first == 17 || en.first == 28) std::cout<<"a: "<<en.first<<" "<<sigma(0)<<std::endl;
 	  if(fabs(sigma(0) - 1.0) > cluster.toughness && !cluster.justFractured){
 		potentialSplits.push_back({en.first, 
 				sigma(0) - cluster.toughness, 
@@ -130,13 +134,9 @@ void World::timestep(){
 	assertFinite();
   }
 
-  removeClusters();
-  addClusters(clusteringParams);
-  if (!fractureOn) cullSmallClusters();
-  countClusters();
-
   //std::cout<<"doFracture"<<std::endl;
-  if (fractureOn) {
+  //if (fractureOn) {
+  if (false) {
 	doFracture(std::move(potentialSplits));
 	//std::cout<<"splitoutliers"<<std::endl;
 	splitOutliers();
@@ -149,9 +149,18 @@ void World::timestep(){
 
   updateClusterProperties(range(clusters.size()));
 
-  //std::cout<<"updateTransforms"<<std::endl;
+  {
+	auto timer = prof.timeName("reclustering");
+	addClusters(clusteringParams);
+	removeClusters();
+	updateClusterProperties(range(clusters.size()));
+	dealWithBrandNewClusters();
+	//std::cout<<"cluster membership: "<<std::endl;
+	//for (auto &c : clusters) std::cout<<c.members.size()<<" ";
+	//std::cout<<std::endl;
+  }
+
   for (auto &c : clusters) updateTransforms(c);
-  //std::cout<<"selfCollisions"<<std::endl;
   if (selfCollisionsOn) selfCollisions();
 
   bounceOutOfPlanes();
@@ -220,9 +229,9 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   auto timer = prof.timeName("fracture");
 
   benlib::Profiler fractureProf;
-  for(auto& p : particles){
-	p.flags &= ~(Particle::JUST_SPLIT);
-  }
+  //for(auto& p : particles){
+  //p.flags &= ~(Particle::JUST_SPLIT);
+  //}
 
   //do fracture
   std::sort(potentialSplits.begin(), potentialSplits.end(),
@@ -232,7 +241,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 
   if(!potentialSplits.empty()){
 	std::cout << "potential splits: " << potentialSplits.size() << std::endl;
-	for (auto s : potentialSplits) std::cout<<"\t "<<s.clusterIndex<<std::endl;
+	//for (auto s : potentialSplits) std::cout<<"\t "<<s.clusterIndex<<std::endl;
   }
 
   bool aCancel = false;
@@ -240,14 +249,14 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	auto setupTimer = fractureProf.timeName("setup");
 	size_t cIndex = ps.clusterIndex;
 
-	bool skip = false;
-	for (auto &i : clusters[cIndex].members) {
-	  if (particles[i.index].flags & Particle::JUST_SPLIT) {
-		skip = true;
-		break;
-	  }
-	}
-	if (skip) continue;
+	//bool skip = false;
+	//for (auto &i : clusters[cIndex].members) {
+	// if (particles[i.index].flags & Particle::JUST_SPLIT) {
+	//	skip = true;
+	//	break;
+	//  }
+	//}
+	//if (skip) continue;
 
 	auto worldCOM = clusters[cIndex].worldCom;
 
@@ -260,7 +269,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 	Eigen::JacobiSVD<Eigen::Matrix3d> solver(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	
 	Eigen::Vector3d sigma = solver.singularValues();
-	if (cIndex == 17 || cIndex == 28) std::cout<<cIndex<<" "<<sigma(0)<<std::endl;
+	//if (cIndex == 17 || cIndex == 28) std::cout<<cIndex<<" "<<sigma(0)<<std::endl;
 	if(fabs(sigma(0) - 1) < clusters[cIndex].toughness || clusters[cIndex].justFractured){
 	  if(!aCancel){
 		aCancel = true;
@@ -358,13 +367,13 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		for (auto &i : p.clusters) {
 		  if (i == cIndex || i == clusters.size()-1) continue;
 		  auto &c = clusters[(i)];
-		  if (delayRepeatedFracture) {
-			if (!c.justFractured) std::cout<<"stopping fracture for "<<i<<" ("<<cIndex<<", "<<clusters.size()-1<<")"<<std::endl;
-			c.justFractured = true;
-		  }
-		  if (toughnessBoost > 0.0) {
-			c.timeSinceLastFracture = 0.0;
-		  }
+		  //if (delayRepeatedFracture) {
+		  //if (!c.justFractured) std::cout<<"stopping fracture for "<<i<<" ("<<cIndex<<", "<<clusters.size()-1<<")"<<std::endl;
+		  //c.justFractured = true;
+		  //}
+		  //if (toughnessBoost > 0.0) {
+		  //c.timeSinceLastFracture = 0.0;
+		  //}
 		  if(((p.position - worldCOM).dot(splitDirection) >= 0) !=
 			  ((c.worldCom - worldCOM).dot(splitDirection) >= 0 )){
 			unsigned int j = 0;
@@ -378,7 +387,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		}
 		if (n == 0) continue;
 		p.flags |= Particle::SPLIT;
-		p.flags |= Particle::JUST_SPLIT;
+		//p.flags |= Particle::JUST_SPLIT;
 		Particle q(p);
 		//init ogre stuff to null
 		q.sceneNode  = nullptr;
@@ -388,6 +397,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 		q.numClusters = n;
 		q.mass = (w1 / p.totalweight) * p.mass;
 		q.totalweight = w1;
+		q.id = particles.size()+newParticles.size();
 		
 		p.numClusters -= n;
 		p.mass = ((p.totalweight - w1) / p.totalweight) * p.mass;
@@ -440,6 +450,7 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
 			q.numClusters = 1;
 			q.mass = (w / particle.totalweight) * particle.mass;
 			q.totalweight = w;
+			q.id = particles.size()+newParticles.size();
 			double newMass = ((particle.totalweight - w) / particle.totalweight) * particle.mass;
 			particle.numClusters--;
 			particle.mass = newMass;
@@ -493,8 +504,8 @@ void World::doFracture(std::vector<World::FractureInfo> potentialSplits){
   auto endTime = std::chrono::high_resolution_clock::now();
   double secsElapsed = std::chrono::duration<double>(endTime - start).count();
   if(secsElapsed > 0.001){
-	//std::cout << "fracture took more than 1ms: " << secsElapsed << std::endl;
-	//fractureProf.dump<std::chrono::duration<double>>(std::cout);
+	std::cout << "fracture took more than 1ms: " << secsElapsed << std::endl;
+	fractureProf.dump<std::chrono::duration<double>>(std::cout);
   }
 }	
 
@@ -515,6 +526,7 @@ void World::splitOutliers() {
 		q.numClusters = 1;
 		q.mass = (member.weight/p.totalweight) * p.mass;
 		q.totalweight = member.weight;
+		q.id = particles.size();
 		double newMass = ((p.totalweight-member.weight)/p.totalweight) * p.mass;
 		//if (newMass < 0.1*p.mass || q.mass < 0.1*p.mass) {
 		//continue;
@@ -614,7 +626,8 @@ void World::removeLonelyParticles() {
 	  [](Particle& p){ p.cleanup(p);});
   
   particles.erase(it, particles.end());
-  
+
+  for (unsigned int i=0; i<particles.size(); i++) particles[i].id = i;
 }
 
 /////////////////////////////////////
@@ -985,6 +998,18 @@ void World::updateTransforms(Cluster& c) const{
   c.worldToRestTransform = A.inverse();
 } 	
 
+void World::testWorld() {
+  for (unsigned int i=0; i<particles.size(); i++) assert (particles[i].id == i);
+  for (auto &p : particles) {
+	for (auto &j : p.clusters) {
+	  auto &cluster = clusters[j];
+	  int k=0;
+	  while (k < cluster.members.size() && cluster.members[k].index != p.id) {k++;}
+	  assert (k < cluster.members.size());
+	}
+  }
+}
+
 void World::countClusters(){
   for(auto& p : particles){
 	p.numClusters = 0;
@@ -1006,7 +1031,7 @@ void World::updateClusterProperties(const Container& clusterIndices){
   countClusters(); //TODO, just touch a subset...
 
   for(auto& p : particles){
-	if (p.mass <= 0.0) std::cout<<p.mass<<" "<<std::endl;
+	if (p.mass <= 0.0) std::cout<<p.mass<<" "<<p.totalweight<<std::endl;
 	assert(p.mass > 0.0);
   }
 
@@ -1037,7 +1062,13 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	c.worldCom = sumWeightedWorldCOM(c.members);
 
 	if(!c.restCom.allFinite()){std::cout << c.restCom << std::endl;}
-	if(!c.worldCom.allFinite()){std::cout << c.worldCom << std::endl;}
+	if(!c.worldCom.allFinite()){
+	  std::cout << c.worldCom << " "<<c.members.size()<<std::endl;
+	  for (auto &m : c.members) {
+		std::cout<<particles[m.index].position[0]<<" "<<particles[m.index].position[1]<<" "<<particles[m.index].position[2]<<std::endl;
+		std::cout<<particles[m.index].totalweight<<std::endl;
+	  }
+	}
 
 	assert(c.restCom.allFinite());
 	assert(c.worldCom.allFinite());
@@ -1078,7 +1109,57 @@ void World::updateClusterProperties(const Container& clusterIndices){
 	}
 	assert(c.aInv.allFinite());
   }
-
+  countClusters();
 }
 
+Eigen::Matrix3d World::computeAqqInv(const Cluster &c) const {
+  Eigen::Matrix3d aInv = Eigen::Matrix3d::Zero();  
+	// adam says: this should take weights into account
+	for (const auto& member : c.members) {
+	  auto &p = particles[member.index];
+	  Eigen::Vector3d qj = member.pos;
+	  aInv += (member.weight/p.totalweight)*p.mass * qj * qj.transpose();
+	}
+	  
+	
+	//do pseudoinverse
+	Eigen::JacobiSVD<Eigen::Matrix3d> solver(aInv, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Vector3d sigInv;
+	for(auto i : range(3)){
 
+	  // adam says: on 10/27 I changed this from 0 to 1.0/1.0e-12.  This seemed to resolve an inf issue during self collisions.
+	  // But, I left in the deletion code below anyway.
+	  sigInv(i) = fabs(solver.singularValues()(i)) > 1e-12 ? 1.0/solver.singularValues()(i) : 1.0/1.0e-12;
+
+	}
+	aInv = solver.matrixV()*sigInv.asDiagonal()*solver.matrixU().transpose();//c.aInv.inverse().eval();
+	if(!aInv.allFinite()){
+	  std::cout << aInv << std::endl;
+	  std::cout << solver.singularValues() << std::endl;
+	}
+	assert(aInv.allFinite());
+	return aInv;
+}
+
+void World::dealWithBrandNewClusters() {
+  //for (auto &i : brandNewClusters) {
+	//auto &c = clusters[i];
+	//Eigen::Matrix3d A = computeApq(c)*computeAqqInv(c);
+	//std::cout<<A<<std::endl<<computeApq(c)<<std::endl<<computeAqqInv(c)<<std::endl<<std::endl;
+	//c.FpNew = c.Fp = Eigen::Matrix3d::identity(); //A.inverse(); // = A^-1 
+  //}
+
+  for (auto &i : brandNewClusters) {
+	auto &c = clusters[i];
+	for (auto &m : c.members) {
+	  for (auto &j : particles[m.index].clusters) {
+		if (i != j && c.neighbors.count(j) < 1) {
+		  c.neighbors.insert(j);
+		  clusters[j].neighbors.insert(i);
+		}
+	  }
+	}
+  }
+
+  brandNewClusters.clear();
+}

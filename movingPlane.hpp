@@ -5,8 +5,8 @@ class Particle;
 class MovingPlane{
 public:
 
-  MovingPlane(Eigen::Vector3d _normal, double _offset, double _velocity)
-	:normal(_normal.normalized()), offset(_offset), velocity(_velocity)
+  MovingPlane(Eigen::Vector3d _normal, double _offset, double _velocity, double _lifetime)
+	:normal(_normal.normalized()), offset(_offset), velocity(_velocity), lifetime(_lifetime)
   {}
 
   bool outside(Particle& particle) const;
@@ -15,5 +15,5 @@ public:
   bool backsideReflectBounceParticle(Particle& particle, double timeElapsed, double epsilon) const;
 
   Eigen::Vector3d normal;
-  double offset, velocity;
+  double offset, velocity, lifetime;
 };
