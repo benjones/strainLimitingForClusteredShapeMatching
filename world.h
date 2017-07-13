@@ -9,6 +9,8 @@
 #include "projectile.hpp"
 #include "cylinderObstacle.hpp"
 
+#include "triangleMesh.hpp"
+
 #include "preallocVector.hpp"
 #include "profiler.hpp"
 #include <SDL.h>
@@ -108,6 +110,8 @@ public:
 
   std::vector<Particle> particles;
   std::vector<Cluster> clusters;
+
+  TriangleMesh triangleMesh;
 
   void printCOM() const;
   

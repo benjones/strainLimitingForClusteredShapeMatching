@@ -32,7 +32,7 @@ OPT = -O3 -g
 
 TARGETS = runSimulator mitsubafy mitsubafyClusters
 
-OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o constraintPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o clustering.o
+OBJECTS =  particle.o world.o jsoncpp.o movingPlane.o twistingPlane.o tiltingPlane.o constraintPlane.o color_spaces.o projectile.o cylinderObstacle.o dynamics.o clustering.o triangleMesh.o
 
 #-----------------------------------------
 
