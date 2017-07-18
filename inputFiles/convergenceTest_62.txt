@@ -1,0 +1,21 @@
+{
+	"particleFiles" : [ "inputFiles/blue_noise/thinBox-bn-1000.txt"],
+"dt" : 0.0055555555555556,
+	"neighborRadius" : 0.25,
+	"alpha" : 1.0,
+	"omega" : 0.1,
+"mass" : 0.01,
+	"numConstraintIters" : 20,
+	"maxStretch" : 0.05,
+"nClusters" : 62, 
+
+	"springDamping": 0.2,
+	"constraintPlanes" : [
+		{ 
+"x" : -0.4
+		}
+
+
+	],
+	"gravity" : [0, -10, 0]
+}
